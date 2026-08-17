@@ -29,5 +29,25 @@ jobs:
           git config user.name "clarity-snapshot-bot"
           git config user.email "actions@github.com"
           git add reporting/data
-          git diff --cached --quiet || git commit -m "Clarity-Snapshot $(date -u +%Y-%m-%d)"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "Keine Aenderungen, nichts zu committen."
+            exit 0
+          fi
+
+          git commit -m "Clarity-Snapshot $(date -u +%Y-%m-%d)"
+
+          # Falls zwischen Checkout und Push jemand anderes (z.B. ein
+          # App-Deploy oder ein zweiter Lauf) main aktualisiert hat, schlaegt
+          # ein einfacher "git push" mit "rejected (fetch first)" fehl -
+          # live beobachtet. Rebase + ein paar Versuche fangen das ab, statt
+          # den taeglichen Snapshot bei jedem Konflikt verstummen zu lassen.
+          for i in 1 2 3; do
+            if git pull --rebase origin main && git push; then
+              exit 0
+            fi
+            echo "Push fehlgeschlagen (Versuch $i/3), warte und versuche erneut..."
+            sleep 10
+          done
+          echo "Push nach 3 Versuchen weiterhin fehlgeschlagen."
+          exit 1
