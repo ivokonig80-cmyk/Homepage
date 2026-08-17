@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>Deine Skulptur — Analytics Report</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page-plane: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --axis: #c3c2b7;
+    --series-1: #2a78d6;
+    --border: rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page-plane: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --axis: #383835;
+      --series-1: #3987e5;
+      --border: rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page-plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --axis: #383835;
+    --series-1: #3987e5;
+    --border: rgba(255,255,255,0.10);
+  }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 24px; background: var(--page-plane); color: var(--text-primary); line-height: 1.5; }
+  .back-link { display: inline-block; font-size: 13px; color: var(--text-secondary); text-decoration: none; margin-bottom: 16px; }
+  .back-link:hover { color: var(--text-primary); }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  .subtitle { color: var(--text-secondary); margin-top: 0; }
+  .meta { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+  h2 { margin-top: 48px; border-bottom: 2px solid var(--gridline); padding-bottom: 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .source-tag { font-size: 12px; font-weight: 400; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; }
+  h3 { margin-top: 24px; font-size: 16px; color: var(--text-secondary); }
+  .narrative { font-size: 15px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+  .stat-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--text-primary); }
+  .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
+  th, td { border: 1px solid var(--gridline); padding: 6px 10px; text-align: left; }
+  th { background: var(--surface-1); color: var(--text-secondary); }
+  figure { margin: 24px 0; }
+  figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+  .muted { color: var(--text-muted); font-style: italic; }
+  .note { background: #fff8e6; border: 1px solid #f0d98c; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 24px 0; color: #4a3a00; }
+  .viz-root .viz-bar { fill: var(--series-1); }
+  .viz-root .viz-axis { stroke: var(--axis); stroke-width: 1; }
+  .viz-root .viz-label { fill: var(--text-secondary); font-size: 12px; }
+  .viz-root .viz-value { fill: var(--text-primary); font-size: 12px; font-weight: 600; }
+  .chart-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <a href="/" class="back-link">← Zurück zur Startseite</a>
+  <h1>Deine Skulptur — Analytics Report</h1>
+  <p class="subtitle">Zeitraum: 2026-08-17 bis 2026-08-17</p>
+  <p class="meta">Erstellt am 17.8.2026, 18:56:25 · Danke fürs Testen — so haben sich Besucher bisher auf der Seite verhalten.</p>
+
+  <h2>Microsoft Clarity <span class="source-tag">Quelle: Microsoft Clarity</span></h2>
+  <div class="note">
+    Hinweis zur Methodik: Clarity liefert über die API immer nur die letzten
+    1–3 Tage. Dieser Abschnitt basiert daher auf täglich gespeicherten
+    Snapshots (reporting/data/) statt einer Live-Abfrage für beliebige
+    Zeiträume. Zeiträume vor Beginn der Snapshot-Erfassung lassen sich
+    nachträglich nicht rekonstruieren.
+  </div>
+
+  <h3>Auf einen Blick</h3>
+  <p class="narrative">Im gewählten Zeitraum (1 Tag erfasst) gab es 11 Sitzungen von 11 unterschiedlichen Nutzern. Am meisten besucht: / (Startseite) (6 Sitzungen). Im Schnitt wurde 81,1% der Seite gescrollt. 8 Dead Clicks (Klicks auf nicht-interaktive Elemente) deuten auf mögliche Verwirrungspunkte hin. Hinweis: Basis ist bisher nur ein einzelner Tag — für belastbare Trends (steigend/fallend) sind mehr Tage Sammelzeit nötig.</p>
+  <div class="stat-grid"><div class="stat-tile">
+        <div class="stat-value">11</div>
+        <div class="stat-label">Sitzungen</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">11</div>
+        <div class="stat-label">Eindeutige Nutzer</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">81,1%</div>
+        <div class="stat-label">Ø Scroll-Tiefe</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Rage Clicks</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Dead Clicks</div>
+      </div></div>
+
+  <h3>Sitzungen nach Seite</h3>
+  <div class="chart-card">
+    <svg class="viz-root" viewBox="0 0 700 152" width="100%" height="152" role="img" aria-label="Balkendiagramm">
+      <line x1="220" y1="0" x2="220" y2="152" class="viz-axis" />
+      
+        <text x="210" y="29" text-anchor="end" class="viz-label">/ (Startseite)</text>
+        <rect x="220" y="16" width="420" height="18" rx="4" class="viz-bar" />
+        <text x="648" y="29" class="viz-value">6</text>
+        <text x="210" y="63" text-anchor="end" class="viz-label">/konfigurator</text>
+        <rect x="220" y="50" width="210" height="18" rx="4" class="viz-bar" />
+        <text x="438" y="63" class="viz-value">3</text>
+        <text x="210" y="97" text-anchor="end" class="viz-label">/shop/eule</text>
+        <rect x="220" y="84" width="70" height="18" rx="4" class="viz-bar" />
+        <text x="298" y="97" class="viz-value">1</text>
+        <text x="210" y="131" text-anchor="end" class="viz-label">/shop</text>
+        <rect x="220" y="118" width="70" height="18" rx="4" class="viz-bar" />
+        <text x="298" y="131" class="viz-value">1</text>
+    </svg></div>
+
+  <h3>Heatmap-Screenshots</h3>
+  <p class="muted">Keine Screenshots für diesen Zeitraum abgelegt.</p>
+
+  <h3>Weitere Kennzahlen</h3>
+  
+    <h3>ExcessiveScroll</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>sessionsCount</th><th>sessionsWithMetricPercentage</th><th>sessionsWithoutMetricPercentage</th><th>pagesViews</th><th>subTotal</th></tr></thead>
+      <tbody><tr><td>11</td><td>0</td><td>100</td><td>0</td><td>0</td></tr></tbody>
+    </table></div>
+
+    <h3>QuickbackClick</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>sessionsCount</th><th>sessionsWithMetricPercentage</th><th>sessionsWithoutMetricPercentage</th><th>pagesViews</th><th>subTotal</th></tr></thead>
+      <tbody><tr><td>11</td><td>0</td><td>100</td><td>0</td><td>0</td></tr></tbody>
+    </table></div>
+
+    <h3>ScriptErrorCount</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>sessionsCount</th><th>sessionsWithMetricPercentage</th><th>sessionsWithoutMetricPercentage</th><th>pagesViews</th><th>subTotal</th></tr></thead>
+      <tbody><tr><td>11</td><td>0</td><td>100</td><td>0</td><td>0</td></tr></tbody>
+    </table></div>
+
+    <h3>ErrorClickCount</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>sessionsCount</th><th>sessionsWithMetricPercentage</th><th>sessionsWithoutMetricPercentage</th><th>pagesViews</th><th>subTotal</th></tr></thead>
+      <tbody><tr><td>11</td><td>0</td><td>100</td><td>0</td><td>0</td></tr></tbody>
+    </table></div>
+
+    <h3>EngagementTime</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>totalTime</th><th>activeTime</th></tr></thead>
+      <tbody><tr><td>94</td><td>26</td></tr></tbody>
+    </table></div>
+
+    <h3>Browser</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td>Edge</td><td>11</td></tr></tbody>
+    </table></div>
+
+    <h3>Device</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td>PC</td><td>11</td></tr></tbody>
+    </table></div>
+
+    <h3>OS</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td>Windows</td><td>11</td></tr></tbody>
+    </table></div>
+
+    <h3>Country</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td>Germany</td><td>11</td></tr></tbody>
+    </table></div>
+
+    <h3>PageTitle</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td>Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst</td><td>9</td></tr><tr><td>Eule — Deine Skulptur</td><td>1</td></tr><tr><td>Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur</td><td>1</td></tr></tbody>
+    </table></div>
+
+    <h3>ReferrerUrl</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>name</th><th>sessionsCount</th></tr></thead>
+      <tbody><tr><td></td><td>11</td></tr></tbody>
+    </table></div>
+
+    <h3>PopularPages</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>url</th><th>visitsCount</th></tr></thead>
+      <tbody><tr><td>https://lowpoly-sculptures.onrender.com/</td><td>6</td></tr><tr><td>https://lowpoly-sculptures.onrender.com/konfigurator</td><td>3</td></tr><tr><td>https://lowpoly-sculptures.onrender.com/shop/eule</td><td>1</td></tr><tr><td>https://lowpoly-sculptures.onrender.com/shop</td><td>1</td></tr></tbody>
+    </table></div>
+
+  <h2>Google Analytics <span class="source-tag">Quelle: Google Analytics (GA4)</span></h2>
+  <div class="note">
+    Im Unterschied zu Clarity erlaubt GA4 beliebige historische Zeiträume
+    direkt auf Anfrage — dieser Abschnitt ist eine Live-Abfrage für genau
+    den oben gewählten Zeitraum, kein Archiv nötig.
+  </div>
+  
+    <div class="stat-grid"><div class="stat-tile">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Sitzungen</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Aktive Nutzer</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Seitenaufrufe</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">0%</div>
+        <div class="stat-label">Engagement-Rate</div>
+      </div><div class="stat-tile">
+        <div class="stat-value">265,1s</div>
+        <div class="stat-label">Ø Sitzungsdauer</div>
+      </div></div>
+    <h3>Sitzungen nach Seite</h3>
+    <div class="chart-card">
+    <svg class="viz-root" viewBox="0 0 700 118" width="100%" height="118" role="img" aria-label="Balkendiagramm">
+      <line x1="220" y1="0" x2="220" y2="118" class="viz-axis" />
+      
+        <text x="210" y="29" text-anchor="end" class="viz-label">/shop/fuchs</text>
+        <rect x="220" y="16" width="420" height="18" rx="4" class="viz-bar" />
+        <text x="648" y="29" class="viz-value">2</text>
+        <text x="210" y="63" text-anchor="end" class="viz-label">/ (Startseite)</text>
+        <rect x="220" y="50" width="210" height="18" rx="4" class="viz-bar" />
+        <text x="438" y="63" class="viz-value">1</text>
+        <text x="210" y="97" text-anchor="end" class="viz-label">/shop</text>
+        <rect x="220" y="84" width="210" height="18" rx="4" class="viz-bar" />
+        <text x="438" y="97" class="viz-value">1</text>
+    </svg></div>
+    <h3>Sitzungen nach Quelle / Medium</h3>
+    <div class="chart-card">
+    <svg class="viz-root" viewBox="0 0 700 84" width="100%" height="84" role="img" aria-label="Balkendiagramm">
+      <line x1="220" y1="0" x2="220" y2="84" class="viz-axis" />
+      
+        <text x="210" y="29" text-anchor="end" class="viz-label">(direct) / (none)</text>
+        <rect x="220" y="16" width="420" height="18" rx="4" class="viz-bar" />
+        <text x="648" y="29" class="viz-value">2</text>
+        <text x="210" y="63" text-anchor="end" class="viz-label">(not set) / (not set)</text>
+        <rect x="220" y="50" width="210" height="18" rx="4" class="viz-bar" />
+        <text x="438" y="63" class="viz-value">1</text>
+    </svg></div>
+    <h3>Funnel-Events</h3>
+    <div class="table-wrap"><table>
+        <thead><tr><th>Event</th><th>Anzahl</th></tr></thead>
+        <tbody><tr><td>product_view</td><td>4</td></tr><tr><td>shop_product_click</td><td>4</td></tr></tbody>
+      </table></div>
+</body>
+</html>

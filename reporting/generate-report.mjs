@@ -410,6 +410,8 @@ async function main() {
     --border: rgba(255,255,255,0.10);
   }
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 24px; background: var(--page-plane); color: var(--text-primary); line-height: 1.5; }
+  .back-link { display: inline-block; font-size: 13px; color: var(--text-secondary); text-decoration: none; margin-bottom: 16px; }
+  .back-link:hover { color: var(--text-primary); }
   h1 { font-size: 28px; margin-bottom: 4px; }
   .subtitle { color: var(--text-secondary); margin-top: 0; }
   .meta { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
@@ -438,9 +440,10 @@ async function main() {
 </style>
 </head>
 <body>
+  <a href="/" class="back-link">← Zurück zur Startseite</a>
   <h1>Deine Skulptur — Analytics Report</h1>
   <p class="subtitle">Zeitraum: ${rangeLabel}</p>
-  <p class="meta">Erstellt am ${generatedAt} · Testbetrieb ohne Kundenkonto, ohne echte Zahlung.</p>
+  <p class="meta">Erstellt am ${generatedAt} · Danke fürs Testen — so haben sich Besucher bisher auf der Seite verhalten.</p>
 
   <h2>Microsoft Clarity <span class="source-tag">Quelle: Microsoft Clarity</span></h2>
   <div class="note">
@@ -474,8 +477,14 @@ async function main() {
 </body>
 </html>`;
 
-  await mkdir(OUTPUT_DIR, { recursive: true });
-  const outFile = path.join(OUTPUT_DIR, `report-${from ?? "alle"}-bis-${to ?? "heute"}.html`);
+  // --out erlaubt einen festen Zielpfad (z.B. public/ergebnisse.html, damit
+  // Next.js die Datei automatisch unter einer stabilen URL ausliefert) -
+  // ohne --out landet der Report wie bisher unter reporting/out/ mit einem
+  // vom Zeitraum abgeleiteten Dateinamen.
+  const outFile = typeof args.out === "string"
+    ? path.join(process.cwd(), args.out)
+    : path.join(OUTPUT_DIR, `report-${from ?? "alle"}-bis-${to ?? "heute"}.html`);
+  await mkdir(path.dirname(outFile), { recursive: true });
   await writeFile(outFile, html, "utf8");
   console.log(`Report gespeichert: ${outFile}`);
 }

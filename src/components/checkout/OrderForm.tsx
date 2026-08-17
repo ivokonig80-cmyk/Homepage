@@ -73,6 +73,14 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
         <p className="mt-1 text-xs text-foreground-muted">
           Bestellnummer: <span className="font-mono">{orderId}</span>
         </p>
+        <a
+          href="/ergebnisse.html"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-block text-sm font-medium text-accent-warm underline hover:opacity-80"
+        >
+          Testergebnisse ansehen — so haben sich Besucher bisher verhalten
+        </a>
       </div>
     );
   }

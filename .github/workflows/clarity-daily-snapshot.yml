@@ -1,4 +1,4 @@
-name: Clarity Daily Snapshot
+name: Daily Analytics Snapshot & Report
 
 on:
   schedule:
@@ -19,23 +19,37 @@ jobs:
         with:
           node-version: 22
 
+      - name: Abhaengigkeiten installieren
+        run: npm ci
+
       - name: Snapshot von Clarity abrufen
         env:
           CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
         run: node reporting/clarity-snapshot.mjs
 
-      - name: Snapshot committen
+      - name: Oeffentlichen Ergebnis-Report erzeugen
+        # Erzeugt /ergebnisse.html neu, mit dem aktuellen Clarity-Archiv
+        # UND live abgefragten GA4-Daten (siehe reporting/README.md). Die
+        # Bestellbestaetigung (OrderForm.tsx) verlinkt hierher - so sehen
+        # Tester nach ihrer Testbestellung die bisherigen Auswertungen.
+        # Degradiert sauber (kein Absturz), falls GA4-Secrets fehlen.
+        env:
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GA4_SERVICE_ACCOUNT_JSON: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+        run: node reporting/generate-report.mjs --out public/ergebnisse.html
+
+      - name: Snapshot + Report committen
         run: |
           git config user.name "clarity-snapshot-bot"
           git config user.email "actions@github.com"
-          git add reporting/data
+          git add reporting/data public/ergebnisse.html
 
           if git diff --cached --quiet; then
             echo "Keine Aenderungen, nichts zu committen."
             exit 0
           fi
 
-          git commit -m "Clarity-Snapshot $(date -u +%Y-%m-%d)"
+          git commit -m "Analytics-Snapshot + Ergebnis-Report $(date -u +%Y-%m-%d)"
 
           # Falls zwischen Checkout und Push jemand anderes (z.B. ein
           # App-Deploy oder ein zweiter Lauf) main aktualisiert hat, schlaegt
