@@ -1,6 +1,6 @@
 {
   "date": "2026-08-17",
-  "fetchedAt": "2026-08-17T17:10:26.956Z",
+  "fetchedAt": "2026-08-17T17:14:46.766Z",
   "overall": [
     {
       "metricName": "DeadClickCount",
@@ -173,27 +173,27 @@
       "information": [
         {
           "url": "https://lowpoly-sculptures.onrender.com/",
-          "visitsCount": 10
+          "visitsCount": "10"
         },
         {
           "url": "https://lowpoly-sculptures.onrender.com/shop/fuchs",
-          "visitsCount": 6
+          "visitsCount": "6"
         },
         {
           "url": "https://lowpoly-sculptures.onrender.com/shop",
-          "visitsCount": 6
+          "visitsCount": "6"
         },
         {
           "url": "https://lowpoly-sculptures.onrender.com/konfigurator",
-          "visitsCount": 3
+          "visitsCount": "3"
         },
         {
           "url": "https://polinova.store/",
-          "visitsCount": 1
+          "visitsCount": "1"
         },
         {
           "url": "https://lowpoly-sculptures.onrender.com/shop/eule",
-          "visitsCount": 1
+          "visitsCount": "1"
         }
       ]
     }
