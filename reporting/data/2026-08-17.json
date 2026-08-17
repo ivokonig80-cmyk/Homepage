@@ -1,0 +1,492 @@
+{
+  "date": "2026-08-17",
+  "fetchedAt": "2026-08-17T11:51:35.964Z",
+  "overall": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": "11",
+          "sessionsWithMetricPercentage": 27.27,
+          "sessionsWithoutMetricPercentage": 72.73,
+          "pagesViews": "3",
+          "subTotal": "8"
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": 11,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": "11",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": "11",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": "11",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": "11",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 81.08
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": "11",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "11",
+          "pagesPerSessionPercentage": 1.0909090909090908
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": "94",
+          "activeTime": "26"
+        }
+      ]
+    },
+    {
+      "metricName": "Browser",
+      "information": [
+        {
+          "name": "Edge",
+          "sessionsCount": "11"
+        }
+      ]
+    },
+    {
+      "metricName": "Device",
+      "information": [
+        {
+          "name": "PC",
+          "sessionsCount": "11"
+        }
+      ]
+    },
+    {
+      "metricName": "OS",
+      "information": [
+        {
+          "name": "Windows",
+          "sessionsCount": "11"
+        }
+      ]
+    },
+    {
+      "metricName": "Country",
+      "information": [
+        {
+          "name": "Germany",
+          "sessionsCount": "11"
+        }
+      ]
+    },
+    {
+      "metricName": "PageTitle",
+      "information": [
+        {
+          "name": "Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst",
+          "sessionsCount": "9"
+        },
+        {
+          "name": "Eule — Deine Skulptur",
+          "sessionsCount": "1"
+        },
+        {
+          "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
+          "sessionsCount": "1"
+        }
+      ]
+    },
+    {
+      "metricName": "ReferrerUrl",
+      "information": [
+        {
+          "name": null,
+          "sessionsCount": "11"
+        }
+      ]
+    },
+    {
+      "metricName": "PopularPages",
+      "information": [
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/",
+          "visitsCount": "6"
+        },
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/konfigurator",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/shop/eule",
+          "visitsCount": "1"
+        },
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/shop",
+          "visitsCount": "1"
+        }
+      ]
+    }
+  ],
+  "byUrl": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 100,
+          "sessionsWithoutMetricPercentage": 0,
+          "pagesViews": "1",
+          "subTotal": "1",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 66.67,
+          "sessionsWithoutMetricPercentage": 33.33,
+          "pagesViews": "2",
+          "subTotal": "7",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": 6,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": 3,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "averageScrollDepth": 72.86,
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "averageScrollDepth": 63,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "totalSessionCount": "6",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "6",
+          "pagesPerSessionPercentage": 1.1666666666666667,
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": "20",
+          "activeTime": "20",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "totalTime": "151",
+          "activeTime": "27",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "totalTime": "36",
+          "activeTime": "35",
+          "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
+        },
+        {
+          "totalTime": "1",
+          "activeTime": "1",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop"
+        }
+      ]
+    }
+  ]
+}
