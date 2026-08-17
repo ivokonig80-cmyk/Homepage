@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0c;
+  --background-elevated: #131316;
+  --foreground: #f4f4f2;
+  --foreground-muted: #a1a1aa;
+  --accent: #9aa5b1;
+  --accent-warm: #c9a961;
+  --border-subtle: #232326;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-accent: var(--accent);
+  --color-accent-warm: var(--accent-warm);
+  --color-border-subtle: var(--border-subtle);
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Barrierefreiheit: reduzierte Bewegung respektieren.
+   Framer-Motion-Komponenten fragen das zusätzlich per useReducedMotion()
+   ab (siehe src/components/motion/Reveal.tsx), das hier deckt zusätzlich
+   jede CSS-Transition/-Animation ab, die nicht über Framer Motion läuft. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background: var(--accent-warm);
+  color: #0a0a0c;
+}
+
+/* Sichtbarer Fokus-Ring für Tastaturnutzung (Barrierefreiheit) - Tailwind
+   deckt das größtenteils über focus-visible-Utilities in den Komponenten
+   ab, das hier ist das globale Sicherheitsnetz. */
+:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 2px;
+}
+
+/* Für die Hero-Katzen-Puzzle-Montage (LowPolyCat.tsx): "elektrische"
+   Energie-Tether zwischen zerstreuten und montierten Facetten, plus ein
+   sanft pulsierender Umgebungs-Glow. Reines CSS (kein Framer-Motion-
+   Overhead pro Frame), respektiert automatisch die
+   prefers-reduced-motion-Regel oben (animation-duration wird dort auf
+   0.01ms erzwungen). */
+@keyframes tether-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.cat-tether {
+  stroke-dasharray: 7 5;
+  animation: tether-dash 0.5s linear infinite;
+}
+
+@keyframes cat-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+
+.cat-glow-pulse {
+  animation: cat-glow-pulse 2.6s ease-in-out infinite;
+}
