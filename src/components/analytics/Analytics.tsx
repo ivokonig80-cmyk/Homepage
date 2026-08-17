@@ -6,6 +6,7 @@ import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "ds-analytics-consent";
 const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 type ConsentState = "unknown" | "granted" | "denied";
 
@@ -38,16 +39,17 @@ function setConsent(value: "granted" | "denied") {
 
 /**
  * DSGVO-konforme Einwilligungssteuerung für Microsoft Clarity (Heatmaps +
- * Session-Recordings, für die im Konzept geforderte Heatmap-Auswertung).
+ * Session-Recordings) und Google Analytics (gtag.js/GA4).
  *
  * - Ohne aktive Zustimmung wird KEIN Tracking-Script geladen - das
- *   Banner unten blockiert nichts anderes, aber Clarity startet erst nach
- *   Klick auf "Zustimmen".
+ *   Banner unten blockiert nichts anderes, aber beide Tools starten erst
+ *   nach Klick auf "Zustimmen".
  * - Entscheidung wird in localStorage gemerkt, damit das Banner nicht bei
  *   jedem Seitenaufruf erneut erscheint.
- * - Ohne gesetzte NEXT_PUBLIC_CLARITY_PROJECT_ID passiert gar nichts (auch
- *   nach Zustimmung) - so kann das Projekt ohne Analytics-Konto laufen,
- *   bis die Project-ID eingetragen ist (siehe .env.example).
+ * - Ohne gesetzte NEXT_PUBLIC_CLARITY_PROJECT_ID bzw.
+ *   NEXT_PUBLIC_GA_MEASUREMENT_ID passiert für das jeweilige Tool gar
+ *   nichts (auch nach Zustimmung) - so laufen beide unabhängig voneinander,
+ *   bis ihre ID eingetragen ist (siehe .env.example).
  */
 export function Analytics() {
   const consent = useSyncExternalStore(subscribe, readConsent, getServerSnapshot);
@@ -64,6 +66,22 @@ export function Analytics() {
         </Script>
       )}
 
+      {consent === "granted" && GA_MEASUREMENT_ID && (
+        <>
+          <Script
+            id="ga4-loader"
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          />
+          <Script id="ga4-init" strategy="afterInteractive">
+            {`window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');`}
+          </Script>
+        </>
+      )}
+
       {consent === "unknown" && (
         <div
           role="dialog"
@@ -74,8 +92,9 @@ export function Analytics() {
           <div className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-foreground-muted">
               Wir würden gerne anonymisierte Analyse-Tools (Microsoft
-              Clarity) für Heatmaps und Nutzungsstatistiken einsetzen, um
-              diese Seite zu verbessern. Mehr dazu in unserer{" "}
+              Clarity und Google Analytics) für Heatmaps und
+              Nutzungsstatistiken einsetzen, um diese Seite zu verbessern.
+              Mehr dazu in unserer{" "}
               <Link href="/datenschutz" className="underline hover:text-foreground">
                 Datenschutzerklärung
               </Link>
