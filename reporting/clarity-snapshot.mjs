@@ -32,19 +32,38 @@ async function loadLocalEnv() {
 }
 
 const BASE_URL = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
+const REQUEST_TIMEOUT_MS = 20_000;
 
 async function fetchClarity(token, params) {
   const url = new URL(BASE_URL);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-  });
+  console.log(`Rufe ${url} ab...`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error(
+        `Clarity API hat innerhalb von ${REQUEST_TIMEOUT_MS / 1000}s nicht geantwortet (${url}).`
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Clarity API antwortete mit ${res.status}: ${body}`);
   }
+  console.log(`... ${url} beantwortet mit ${res.status}`);
   return res.json();
 }
 
