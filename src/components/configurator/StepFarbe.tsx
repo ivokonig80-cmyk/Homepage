@@ -9,15 +9,16 @@ interface StepFarbeProps {
   materialId: string;
   onMaterialChange: (id: string) => void;
   scale: number;
+  modelUrl?: string;
 }
 
-export function StepFarbe({ materialId, onMaterialChange, scale }: StepFarbeProps) {
+export function StepFarbe({ materialId, onMaterialChange, scale, modelUrl }: StepFarbeProps) {
   const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
 
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 items-center gap-8 md:grid-cols-2">
       <SculptureViewer
-        parts={PLACEHOLDER_ITEM.parts}
+        {...(modelUrl ? { modelUrl } : { parts: PLACEHOLDER_ITEM.parts })}
         colorHex={material.colorHex}
         scale={scale}
         interactive

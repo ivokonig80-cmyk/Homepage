@@ -9,16 +9,17 @@ interface StepSockelProps {
   materialId: string;
   sizeId: string;
   onSizeChange: (id: string) => void;
+  modelUrl?: string;
 }
 
-export function StepSockel({ materialId, sizeId, onSizeChange }: StepSockelProps) {
+export function StepSockel({ materialId, sizeId, onSizeChange, modelUrl }: StepSockelProps) {
   const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1];
 
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 items-center gap-8 md:grid-cols-2">
       <SculptureViewer
-        parts={PLACEHOLDER_ITEM.parts}
+        {...(modelUrl ? { modelUrl } : { parts: PLACEHOLDER_ITEM.parts })}
         colorHex={material.colorHex}
         scale={size.scale}
         interactive

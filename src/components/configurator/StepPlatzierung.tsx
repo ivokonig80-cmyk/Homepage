@@ -12,9 +12,10 @@ const MAX_SIZE_MB = 20;
 interface StepPlatzierungProps {
   materialId: string;
   sizeId: string;
+  modelUrl?: string;
 }
 
-export function StepPlatzierung({ materialId, sizeId }: StepPlatzierungProps) {
+export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierungProps) {
   const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1];
 
@@ -69,7 +70,7 @@ export function StepPlatzierung({ materialId, sizeId }: StepPlatzierungProps) {
       {!snapshotUrl && (
         <div className="sr-only" aria-hidden>
           <SculptureViewer
-            parts={PLACEHOLDER_ITEM.parts}
+            {...(modelUrl ? { modelUrl } : { parts: PLACEHOLDER_ITEM.parts })}
             colorHex={material.colorHex}
             scale={size.scale}
             autoRotateSpeed={0}

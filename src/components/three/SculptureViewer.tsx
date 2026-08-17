@@ -1,10 +1,10 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
-import { Suspense, useEffect, useRef } from "react";
-import type { Group } from "three";
+import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Box3, Vector3, MeshStandardMaterial, type Group, type Mesh } from "three";
 import type { SculpturePart } from "@/lib/catalog";
 
 /**
@@ -27,6 +27,51 @@ function PartMesh({ part, color }: { part: SculpturePart; color: string }) {
       {part.geometry === "box" && <boxGeometry args={[1, 1, 1]} />}
       <meshStandardMaterial color={color} flatShading roughness={0.35} metalness={0.7} />
     </mesh>
+  );
+}
+
+const GENERATED_MODEL_TARGET_SIZE = 2.2;
+
+/**
+ * Rendert ein echtes von Tripo generiertes Modell (glTF/GLB, per
+ * modelUrl-Prop von SculptureViewer). Der Task wird bewusst ohne Textur/PBR
+ * erzeugt (siehe backend/providers/tripo.rs), deshalb bekommt jedes Mesh
+ * hier dasselbe Low-Poly-Flatshading-Material wie die Platzhalter-Formen,
+ * eingefärbt nach der gewählten Material-Farbe. Größe/Position schwankt von
+ * Modell zu Modell stark, daher Auto-Fit auf eine feste Zielgröße anhand der
+ * Bounding Box - sonst wäre der Zoom je nach Upload-Foto unterschiedlich.
+ */
+function GeneratedModel({ url, color }: { url: string; color: string }) {
+  const { scene } = useGLTF(url);
+
+  const { model, autoScale } = useMemo(() => {
+    const cloned = scene.clone(true);
+    cloned.traverse((child) => {
+      if ((child as Mesh).isMesh) {
+        (child as Mesh).material = new MeshStandardMaterial({
+          color,
+          flatShading: true,
+          roughness: 0.35,
+          metalness: 0.7,
+        });
+      }
+    });
+
+    const box = new Box3().setFromObject(cloned);
+    const size = new Vector3();
+    box.getSize(size);
+    const center = new Vector3();
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+
+    cloned.position.set(-center.x, -center.y, -center.z);
+    return { model: cloned, autoScale: GENERATED_MODEL_TARGET_SIZE / maxDim };
+  }, [scene, color]);
+
+  return (
+    <group scale={autoScale}>
+      <primitive object={model} />
+    </group>
   );
 }
 
@@ -70,7 +115,10 @@ function SnapshotCapture({ onSnapshot }: { onSnapshot: (dataUrl: string) => void
 }
 
 interface SculptureViewerProps {
-  parts: SculpturePart[];
+  /** Prozedurale Platzhalter-Form. Wird ignoriert, wenn modelUrl gesetzt ist. */
+  parts?: SculpturePart[];
+  /** URL eines echten, von Tripo generierten glTF/GLB-Modells. Hat Vorrang vor parts. */
+  modelUrl?: string;
   colorHex: string;
   scale?: number;
   interactive?: boolean;
@@ -83,6 +131,7 @@ interface SculptureViewerProps {
 
 export function SculptureViewer({
   parts,
+  modelUrl,
   colorHex,
   scale = 1,
   interactive = false,
@@ -106,9 +155,11 @@ export function SculptureViewer({
         <Suspense fallback={null}>
           <group scale={scale}>
             <RotatingGroup speed={effectiveSpeed}>
-              {parts.map((part, i) => (
-                <PartMesh key={i} part={part} color={colorHex} />
-              ))}
+              {modelUrl ? (
+                <GeneratedModel url={modelUrl} color={colorHex} />
+              ) : (
+                (parts ?? []).map((part, i) => <PartMesh key={i} part={part} color={colorHex} />)
+              )}
             </RotatingGroup>
           </group>
         </Suspense>
