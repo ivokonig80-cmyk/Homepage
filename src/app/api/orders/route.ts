@@ -3,20 +3,18 @@ import { randomUUID } from "node:crypto";
 import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
 
-// Demo-Bestellannahme OHNE echte Zahlung (siehe StepCheckout/ProductConfigurator):
-// erfasst die Bestellung server-seitig (Name/Adresse/Auswahl/Preis) und gibt
-// eine Bestellnummer zurück, verarbeitet aber keine Zahlung. Für den echten
-// Betrieb würde hier ein Payment-Provider (z.B. Stripe) UND eine echte
-// Datenbank statt der lokalen Log-Datei stehen - das Log ist bewusst simpel
-// gehalten, bis dieser Schritt ansteht, und übersteht keine Neu-Deploys.
+// Demo-Bestellannahme OHNE echte Zahlung (siehe OrderForm.tsx): erfasst nur
+// einen anonymen Nickname (E-Mail freiwillig, fuer eine persoenliche Kopie
+// vom Betreiber) statt echter Name/Adresse-Daten - es wird ja ohnehin
+// nichts verschickt. Fuer den echten Betrieb wuerde hier ein
+// Payment-Provider UND eine echte Datenbank statt der lokalen Log-Datei
+// stehen - das Log ist bewusst simpel gehalten und uebersteht keine
+// Neu-Deploys.
 const ORDERS_LOG = path.join(process.cwd(), ".data", "orders.log");
 
 interface OrderPayload {
-  name: string;
-  email: string;
-  street: string;
-  zip: string;
-  city: string;
+  nickname: string;
+  email?: string;
   item: string;
   material: string;
   size: string;
@@ -28,11 +26,8 @@ function isValidPayload(body: unknown): body is OrderPayload {
   if (typeof body !== "object" || body === null) return false;
   const b = body as Record<string, unknown>;
   return (
-    typeof b.name === "string" && b.name.trim().length > 0 &&
-    typeof b.email === "string" && /\S+@\S+\.\S+/.test(b.email) &&
-    typeof b.street === "string" && b.street.trim().length > 0 &&
-    typeof b.zip === "string" && b.zip.trim().length > 0 &&
-    typeof b.city === "string" && b.city.trim().length > 0 &&
+    typeof b.nickname === "string" && b.nickname.trim().length > 0 &&
+    (b.email === undefined || b.email === "" || (typeof b.email === "string" && /\S+@\S+\.\S+/.test(b.email))) &&
     typeof b.item === "string" &&
     typeof b.material === "string" &&
     typeof b.size === "string" &&

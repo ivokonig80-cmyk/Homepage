@@ -67,8 +67,10 @@ export default function DatenschutzPage() {
           <p className="text-foreground-muted">
             Der Bestellprozess befindet sich aktuell im Testbetrieb: es ist
             kein Zahlungsanbieter angebunden, es findet keine echte Zahlung
-            statt. Die im Bestellformular angegebenen Kontaktdaten werden
-            ausschließlich zu Testzwecken serverseitig erfasst.
+            statt, und es werden keine echten Namen oder Adressen abgefragt —
+            ein anonymer Nickname genügt. Eine E-Mail-Adresse ist freiwillig
+            und wird nur erfasst, wenn Sie persönlich eine Kopie vom
+            Betreiber erhalten möchten.
           </p>
         </section>
 

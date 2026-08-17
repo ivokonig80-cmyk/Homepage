@@ -13,14 +13,15 @@ interface OrderFormProps {
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-const emptyForm = { name: "", email: "", street: "", zip: "", city: "" };
+const emptyForm = { nickname: "", email: "" };
 
 /**
  * Gemeinsames Bestellformular für Konfigurator- und Shop-Checkout. Sendet an
- * /api/orders - bewusst OHNE Zahlungsanbindung (siehe dort), das ist ein
- * separater, noch nicht begonnener Schritt. Markiert Kaufabsicht und
- * Bestellabschluss als Clarity-Events, damit der Funnel bis zum Kauf-Klick
- * auswertbar ist.
+ * /api/orders - bewusst OHNE Zahlungsanbindung (siehe dort) und bewusst
+ * ohne echte Name/Adresse-Abfrage: ein anonymer Nickname reicht, E-Mail ist
+ * freiwillig (nur für eine persönliche Kopie vom Betreiber). Markiert
+ * Kaufabsicht und Bestellabschluss als Analytics-Events, damit der Funnel
+ * bis zum Kauf-Klick auswertbar ist.
  */
 export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eventContext }: OrderFormProps) {
   const [form, setForm] = useState(emptyForm);
@@ -73,6 +74,11 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
         <p className="mt-1 text-xs text-foreground-muted">
           Bestellnummer: <span className="font-mono">{orderId}</span>
         </p>
+        {form.email && (
+          <p className="mt-2 text-xs text-foreground-muted">
+            Du bekommst außerdem persönlich eine Kopie per E-Mail.
+          </p>
+        )}
         <a
           href="/ergebnisse.html"
           target="_blank"
@@ -90,13 +96,22 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-3 text-left">
-      <input required type="text" placeholder="Name" autoComplete="name" value={form.name} onChange={update("name")} className={inputClass} />
-      <input required type="email" placeholder="E-Mail" autoComplete="email" value={form.email} onChange={update("email")} className={inputClass} />
-      <input required type="text" placeholder="Straße & Hausnummer" autoComplete="street-address" value={form.street} onChange={update("street")} className={inputClass} />
-      <div className="flex gap-3">
-        <input required type="text" placeholder="PLZ" autoComplete="postal-code" value={form.zip} onChange={update("zip")} className={`${inputClass} w-28`} />
-        <input required type="text" placeholder="Stadt" autoComplete="address-level2" value={form.city} onChange={update("city")} className={inputClass} />
-      </div>
+      <input
+        required
+        type="text"
+        placeholder="Nickname (anonym, keine echten Daten nötig)"
+        value={form.nickname}
+        onChange={update("nickname")}
+        className={inputClass}
+      />
+      <input
+        type="email"
+        placeholder="E-Mail (freiwillig — für eine Kopie von mir)"
+        autoComplete="email"
+        value={form.email}
+        onChange={update("email")}
+        className={inputClass}
+      />
 
       <button
         type="submit"
