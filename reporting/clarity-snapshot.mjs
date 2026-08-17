@@ -12,24 +12,9 @@
 // dieses Archiv auf. Zwei Aufrufe pro Lauf (Gesamt + nach URL) bleiben weit
 // unter dem Limit von 10 Anfragen/Tag.
 
-import { writeFile, mkdir, readFile } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-
-// Minimaler .env-Loader fuer lokale/manuelle Laeufe (kein dotenv-Package,
-// um reporting/ bewusst ohne zusaetzliche npm-Abhaengigkeiten lauffaehig zu
-// halten). Der automatische taegliche Lauf nutzt stattdessen direkt das
-// GitHub-Actions-Secret CLARITY_API_TOKEN als Env-Var.
-async function loadLocalEnv() {
-  try {
-    const raw = await readFile(path.join(process.cwd(), "reporting", ".env"), "utf8");
-    for (const line of raw.split("\n")) {
-      const match = line.match(/^([A-Z_]+)=(.*)$/);
-      if (match && !process.env[match[1]]) process.env[match[1]] = match[2].trim();
-    }
-  } catch {
-    // Keine lokale .env vorhanden - kein Problem, z.B. in CI.
-  }
-}
+import { loadLocalEnv } from "./localEnv.mjs";
 
 const BASE_URL = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
 const REQUEST_TIMEOUT_MS = 20_000;

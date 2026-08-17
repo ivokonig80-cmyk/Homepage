@@ -44,6 +44,10 @@ yarn-error.log*
 # reporting/data + reporting/screenshots neu erzeugbar, gehört nicht ins Repo
 /reporting/out
 
+# GA4-Dienstkonto-Schlüssel (siehe reporting/README.md) - niemals committen,
+# nur lokal bzw. als GitHub-Actions-Secret
+/reporting/secrets/*.json
+
 # vercel
 .vercel
 

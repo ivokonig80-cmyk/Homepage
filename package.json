@@ -11,6 +11,7 @@
     "report:generate": "node reporting/generate-report.mjs"
   },
   "dependencies": {
+    "@google-analytics/data": "^7.0.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "clsx": "^2.1.1",

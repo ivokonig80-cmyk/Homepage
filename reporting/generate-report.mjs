@@ -12,6 +12,8 @@
 
 import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { fetchGa4Data } from "./ga4Api.mjs";
+import { loadLocalEnv } from "./localEnv.mjs";
 
 const DATA_DIR = path.join(process.cwd(), "reporting", "data");
 const SCREENSHOTS_DIR = path.join(process.cwd(), "reporting", "screenshots");
@@ -86,24 +88,102 @@ async function loadScreenshots(from, to) {
   return shots;
 }
 
-// Die Clarity-API liefert je metricName ein Array "information" mit je nach
-// Metrik unterschiedlichen Feldern (Doku: "Additional metrics and
-// dimensions may be included in the full API response"). Statt einzelne
-// Feldnamen hart zu verdrahten und beim ersten echten Response mit
-// abweichendem Schema zu brechen, werden alle vorhandenen Felder generisch
-// als Tabelle dargestellt.
-function collectMetrics(snapshots, key) {
-  const byMetric = new Map();
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ---- Zugriff auf die Rohdaten (Feldnamen anhand echter API-Antwort vom
+// 17.08.2026 verifiziert, siehe reporting/README.md) ---------------------
+
+function metricEntries(snapshots, key, metricName) {
+  const rows = [];
   for (const snap of snapshots) {
     const payload = snap[key];
     if (!Array.isArray(payload)) continue;
-    for (const entry of payload) {
-      const list = byMetric.get(entry.metricName) ?? [];
-      list.push(...(entry.information ?? []));
-      byMetric.set(entry.metricName, list);
-    }
+    const match = payload.find((m) => m.metricName === metricName);
+    if (match) rows.push(...(match.information ?? []));
   }
-  return byMetric;
+  return rows;
+}
+
+function sumField(snapshots, key, metricName, field) {
+  return metricEntries(snapshots, key, metricName).reduce((total, row) => total + (Number(row[field]) || 0), 0);
+}
+
+function avgField(snapshots, key, metricName, field) {
+  const rows = metricEntries(snapshots, key, metricName).filter((r) => r[field] != null);
+  if (!rows.length) return null;
+  return rows.reduce((total, row) => total + Number(row[field]), 0) / rows.length;
+}
+
+function aggregateByUrl(snapshots, metricName, field) {
+  const totals = new Map();
+  for (const row of metricEntries(snapshots, "byUrl", metricName)) {
+    const url = row.Url ?? row.URL ?? "unbekannt";
+    totals.set(url, (totals.get(url) ?? 0) + (Number(row[field]) || 0));
+  }
+  return [...totals.entries()]
+    .map(([url, value]) => ({ url, value, path: shortenUrl(url) }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function shortenUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.pathname === "/" ? "/ (Startseite)" : u.pathname;
+  } catch {
+    return url;
+  }
+}
+
+function formatNumber(n) {
+  if (n == null || Number.isNaN(n)) return "–";
+  return n.toLocaleString("de-DE", { maximumFractionDigits: 1 });
+}
+
+// ---- Stat-Tiles (siehe dataviz-Skill: label + value, keine Legende noetig) ----
+
+function renderStatTiles(tiles) {
+  return `<div class="stat-grid">${tiles
+    .map(
+      (t) => `<div class="stat-tile">
+        <div class="stat-value">${t.value}</div>
+        <div class="stat-label">${t.label}</div>
+      </div>`
+    )
+    .join("")}</div>`;
+}
+
+// ---- Horizontaler Balken-Chart (ein Merkmal = eine Farbe, keine Legende
+// noetig - siehe dataviz-Skill marks-and-anatomy.md) ----------------------
+
+function renderBarChart(rows, { valueSuffix = "" } = {}) {
+  if (!rows.length) return '<p class="muted">Keine Daten für diesen Zeitraum.</p>';
+  const top = rows.slice(0, 8);
+  const max = Math.max(...top.map((r) => r.value), 1);
+  const rowHeight = 34;
+  const barHeight = 18;
+  const labelWidth = 220;
+  const chartWidth = 420;
+  const width = labelWidth + chartWidth + 60;
+  const height = top.length * rowHeight + 16;
+
+  const bars = top
+    .map((r, i) => {
+      const y = 16 + i * rowHeight;
+      const barLen = Math.max((r.value / max) * chartWidth, 2);
+      return `
+        <text x="${labelWidth - 10}" y="${y + barHeight / 2 + 4}" text-anchor="end" class="viz-label">${escapeHtml(r.path)}</text>
+        <rect x="${labelWidth}" y="${y}" width="${barLen}" height="${barHeight}" rx="4" class="viz-bar" />
+        <text x="${labelWidth + barLen + 8}" y="${y + barHeight / 2 + 4}" class="viz-value">${formatNumber(r.value)}${valueSuffix}</text>`;
+    })
+    .join("");
+
+  return `
+    <svg class="viz-root" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="Balkendiagramm">
+      <line x1="${labelWidth}" y1="0" x2="${labelWidth}" y2="${height}" class="viz-axis" />
+      ${bars}
+    </svg>`;
 }
 
 function renderMetricTable(metricName, rows) {
@@ -122,11 +202,89 @@ function renderMetricTable(metricName, rows) {
 function renderScreenshots(shots) {
   if (!shots.length) return '<p class="muted">Keine Screenshots für diesen Zeitraum abgelegt.</p>';
   return shots
-    .map((s) => `<figure><img src="${s.dataUri}" alt="${s.caption}" /><figcaption>${s.caption} — ${s.date}</figcaption></figure>`)
+    .map((s) => `<figure><img src="${s.dataUri}" alt="${escapeHtml(s.caption)}" /><figcaption>${escapeHtml(s.caption)} — ${s.date}</figcaption></figure>`)
     .join("\n");
 }
 
+// ---- Kurze, regelbasierte Zusammenfassung - erfindet KEINEN Trend, wenn
+// nur ein Tag Daten vorliegt (siehe Hinweis unten im Report selbst). ------
+
+function renderNarrative(snapshots, { sessions, distinctUsers, avgScroll, rageClicks, deadClicks, topPage }) {
+  if (!snapshots.length) return "";
+  const dayCount = snapshots.length;
+  const parts = [];
+
+  parts.push(
+    `Im gewählten Zeitraum (${dayCount} ${dayCount === 1 ? "Tag" : "Tage"} erfasst) gab es ${formatNumber(sessions)} Sitzungen von ${formatNumber(distinctUsers)} unterschiedlichen Nutzern.`
+  );
+  if (topPage) {
+    parts.push(`Am meisten besucht: ${topPage.path} (${formatNumber(topPage.value)} Sitzungen).`);
+  }
+  if (avgScroll != null) {
+    parts.push(`Im Schnitt wurde ${formatNumber(avgScroll)}% der Seite gescrollt.`);
+  }
+  if (deadClicks > 0) {
+    parts.push(`${formatNumber(deadClicks)} Dead Clicks (Klicks auf nicht-interaktive Elemente) deuten auf mögliche Verwirrungspunkte hin.`);
+  }
+  if (rageClicks > 0) {
+    parts.push(`${formatNumber(rageClicks)} Rage Clicks wurden erfasst — Stellen mit wiederholten frustrierten Klicks, einen Blick wert.`);
+  }
+  if (dayCount === 1) {
+    parts.push("Hinweis: Basis ist bisher nur ein einzelner Tag — für belastbare Trends (steigend/fallend) sind mehr Tage Sammelzeit nötig.");
+  }
+  return parts.join(" ");
+}
+
+// ---- Google-Analytics-Abschnitt (eigene Quelle, eigener Block - siehe
+// reporting/README.md: GA4 wird live abgefragt, nicht aus einem Snapshot-
+// Archiv wie Clarity, deshalb hier separat statt vermischt) --------------
+
+function shortenGa4Path(p) {
+  return p === "/" ? "/ (Startseite)" : p;
+}
+
+function renderGa4Section(ga4) {
+  if (!ga4) {
+    return `<p class="muted">Google Analytics ist für diesen Report nicht konfiguriert (GA4_PROPERTY_ID bzw. Zugangsdaten fehlen) — siehe reporting/README.md.</p>`;
+  }
+
+  const o = ga4.overall ?? {};
+  const statTilesHtml = renderStatTiles([
+    { label: "Sitzungen", value: formatNumber(o.sessions) },
+    { label: "Aktive Nutzer", value: formatNumber(o.activeUsers) },
+    { label: "Seitenaufrufe", value: formatNumber(o.screenPageViews) },
+    { label: "Engagement-Rate", value: o.engagementRate != null ? `${formatNumber(o.engagementRate * 100)}%` : "–" },
+    { label: "Ø Sitzungsdauer", value: o.averageSessionDuration != null ? `${formatNumber(o.averageSessionDuration)}s` : "–" },
+  ]);
+
+  const byPageRows = (ga4.byPage ?? []).map((r) => ({ path: shortenGa4Path(r.pagePath), value: r.sessions }));
+  const byPageChart = renderBarChart(byPageRows);
+
+  const bySourceRows = (ga4.bySource ?? []).map((r) => ({
+    path: `${r.sessionSource || "(direkt)"} / ${r.sessionMedium || "none"}`,
+    value: r.sessions,
+  }));
+  const bySourceChart = renderBarChart(bySourceRows);
+
+  const eventTable = (ga4.byEvent ?? []).length
+    ? `<div class="table-wrap"><table>
+        <thead><tr><th>Event</th><th>Anzahl</th></tr></thead>
+        <tbody>${ga4.byEvent.map((r) => `<tr><td>${escapeHtml(r.eventName)}</td><td>${formatNumber(r.eventCount)}</td></tr>`).join("")}</tbody>
+      </table></div>`
+    : '<p class="muted">Keine Funnel-Events in diesem Zeitraum erfasst.</p>';
+
+  return `
+    ${statTilesHtml}
+    <h3>Sitzungen nach Seite</h3>
+    <div class="chart-card">${byPageChart}</div>
+    <h3>Sitzungen nach Quelle / Medium</h3>
+    <div class="chart-card">${bySourceChart}</div>
+    <h3>Funnel-Events</h3>
+    ${eventTable}`;
+}
+
 async function main() {
+  await loadLocalEnv();
   const args = parseArgs(process.argv.slice(2));
   let from = typeof args.from === "string" ? args.from : null;
   let to = typeof args.to === "string" ? args.to : null;
@@ -150,13 +308,59 @@ async function main() {
   }
 
   const allDates = [...snapshots.map((s) => s.date), ...screenshots.map((s) => s.date)].sort();
-  const rangeLabel = `${from ?? allDates[0]} bis ${to ?? allDates[allDates.length - 1]}`;
+  const effectiveFrom = from ?? allDates[0] ?? isoDate(new Date());
+  const effectiveTo = to ?? allDates[allDates.length - 1] ?? isoDate(new Date());
+  const rangeLabel = `${effectiveFrom} bis ${effectiveTo}`;
 
-  const overallHtml = [...collectMetrics(snapshots, "overall").entries()]
+  let ga4Data = null;
+  let ga4Error = null;
+  try {
+    ga4Data = await fetchGa4Data(effectiveFrom, effectiveTo);
+  } catch (err) {
+    ga4Error = err.message;
+    console.warn(`Google Analytics konnte nicht abgefragt werden: ${err.message}`);
+  }
+
+  // Kernzahlen
+  const sessions = sumField(snapshots, "overall", "Traffic", "totalSessionCount");
+  const distinctUsers = sumField(snapshots, "overall", "Traffic", "distinctUserCount");
+  const avgScroll = avgField(snapshots, "overall", "ScrollDepth", "averageScrollDepth");
+  const rageClicks = sumField(snapshots, "overall", "RageClickCount", "subTotal");
+  const deadClicks = sumField(snapshots, "overall", "DeadClickCount", "subTotal");
+  const pagesRanked = aggregateByUrl(snapshots, "Traffic", "totalSessionCount");
+  const topPage = pagesRanked[0] ?? null;
+
+  const statTilesHtml = renderStatTiles([
+    { label: "Sitzungen", value: formatNumber(sessions) },
+    { label: "Eindeutige Nutzer", value: formatNumber(distinctUsers) },
+    { label: "Ø Scroll-Tiefe", value: avgScroll != null ? `${formatNumber(avgScroll)}%` : "–" },
+    { label: "Rage Clicks", value: formatNumber(rageClicks) },
+    { label: "Dead Clicks", value: formatNumber(deadClicks) },
+  ]);
+
+  const narrative = renderNarrative(snapshots, { sessions, distinctUsers, avgScroll, rageClicks, deadClicks, topPage });
+  const barChartHtml = renderBarChart(pagesRanked, { valueSuffix: "" });
+
+  // Alles jenseits der oben kuratierten Kennzahlen bleibt als generische
+  // Tabelle sichtbar (Browser/Device/OS/Country/PageTitle/... siehe
+  // reporting/README.md) - kein Datenverlust, nur nicht extra visualisiert.
+  const CURATED = new Set(["Traffic", "ScrollDepth", "RageClickCount", "DeadClickCount"]);
+  function collectRemaining(key) {
+    const byMetric = new Map();
+    for (const snap of snapshots) {
+      const payload = snap[key];
+      if (!Array.isArray(payload)) continue;
+      for (const entry of payload) {
+        if (key === "overall" && CURATED.has(entry.metricName)) continue;
+        const list = byMetric.get(entry.metricName) ?? [];
+        list.push(...(entry.information ?? []));
+        byMetric.set(entry.metricName, list);
+      }
+    }
+    return byMetric;
+  }
+  const remainingOverallHtml = [...collectRemaining("overall").entries()]
     .map(([name, rows]) => renderMetricTable(name, rows))
-    .join("\n");
-  const byUrlHtml = [...collectMetrics(snapshots, "byUrl").entries()]
-    .map(([name, rows]) => renderMetricTable(`${name} nach Seite`, rows))
     .join("\n");
 
   const generatedAt = new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
@@ -167,45 +371,106 @@ async function main() {
 <meta charset="utf-8" />
 <title>Deine Skulptur — Analytics Report</title>
 <style>
-  :root { color-scheme: light; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a; line-height: 1.5; }
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page-plane: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --axis: #c3c2b7;
+    --series-1: #2a78d6;
+    --border: rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page-plane: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --axis: #383835;
+      --series-1: #3987e5;
+      --border: rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page-plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --axis: #383835;
+    --series-1: #3987e5;
+    --border: rgba(255,255,255,0.10);
+  }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 24px; background: var(--page-plane); color: var(--text-primary); line-height: 1.5; }
   h1 { font-size: 28px; margin-bottom: 4px; }
-  .subtitle { color: #666; margin-top: 0; }
-  .meta { font-size: 13px; color: #888; margin-bottom: 32px; }
-  h2 { margin-top: 40px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
-  h3 { margin-top: 24px; font-size: 16px; }
+  .subtitle { color: var(--text-secondary); margin-top: 0; }
+  .meta { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+  h2 { margin-top: 48px; border-bottom: 2px solid var(--gridline); padding-bottom: 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .source-tag { font-size: 12px; font-weight: 400; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; }
+  h3 { margin-top: 24px; font-size: 16px; color: var(--text-secondary); }
+  .narrative { font-size: 15px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+  .stat-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--text-primary); }
+  .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
   .table-wrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
-  th, td { border: 1px solid #e2e2e2; padding: 6px 10px; text-align: left; }
-  th { background: #f7f7f7; }
+  th, td { border: 1px solid var(--gridline); padding: 6px 10px; text-align: left; }
+  th { background: var(--surface-1); color: var(--text-secondary); }
   figure { margin: 24px 0; }
-  figure img { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; }
-  figcaption { font-size: 13px; color: #555; margin-top: 6px; }
-  .muted { color: #888; font-style: italic; }
-  .note { background: #fff8e6; border: 1px solid #f0d98c; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 24px 0; }
+  figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+  .muted { color: var(--text-muted); font-style: italic; }
+  .note { background: #fff8e6; border: 1px solid #f0d98c; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 24px 0; color: #4a3a00; }
+  .viz-root .viz-bar { fill: var(--series-1); }
+  .viz-root .viz-axis { stroke: var(--axis); stroke-width: 1; }
+  .viz-root .viz-label { fill: var(--text-secondary); font-size: 12px; }
+  .viz-root .viz-value { fill: var(--text-primary); font-size: 12px; font-weight: 600; }
+  .chart-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
 </style>
 </head>
 <body>
   <h1>Deine Skulptur — Analytics Report</h1>
-  <p class="subtitle">Zeitraum: ${rangeLabel} · Quelle: Microsoft Clarity</p>
+  <p class="subtitle">Zeitraum: ${rangeLabel}</p>
   <p class="meta">Erstellt am ${generatedAt} · Testbetrieb ohne Kundenkonto, ohne echte Zahlung.</p>
 
+  <h2>Microsoft Clarity <span class="source-tag">Quelle: Microsoft Clarity</span></h2>
   <div class="note">
     Hinweis zur Methodik: Clarity liefert über die API immer nur die letzten
-    1–3 Tage. Dieser Report basiert daher auf täglich gespeicherten
+    1–3 Tage. Dieser Abschnitt basiert daher auf täglich gespeicherten
     Snapshots (reporting/data/) statt einer Live-Abfrage für beliebige
     Zeiträume. Zeiträume vor Beginn der Snapshot-Erfassung lassen sich
     nachträglich nicht rekonstruieren.
   </div>
 
-  <h2>Kennzahlen (gesamt)</h2>
-  ${overallHtml || '<p class="muted">Keine Snapshot-Daten für diesen Zeitraum.</p>'}
+  <h3>Auf einen Blick</h3>
+  <p class="narrative">${narrative}</p>
+  ${statTilesHtml}
 
-  <h2>Nach Seite</h2>
-  ${byUrlHtml || '<p class="muted">Keine Snapshot-Daten für diesen Zeitraum.</p>'}
+  <h3>Sitzungen nach Seite</h3>
+  <div class="chart-card">${barChartHtml}</div>
 
-  <h2>Heatmap-Screenshots</h2>
+  <h3>Heatmap-Screenshots</h3>
   ${renderScreenshots(screenshots)}
+
+  <h3>Weitere Kennzahlen</h3>
+  ${remainingOverallHtml || '<p class="muted">Keine weiteren Daten für diesen Zeitraum.</p>'}
+
+  <h2>Google Analytics <span class="source-tag">Quelle: Google Analytics (GA4)</span></h2>
+  <div class="note">
+    Im Unterschied zu Clarity erlaubt GA4 beliebige historische Zeiträume
+    direkt auf Anfrage — dieser Abschnitt ist eine Live-Abfrage für genau
+    den oben gewählten Zeitraum, kein Archiv nötig.
+  </div>
+  ${ga4Error ? `<p class="muted">Google Analytics konnte nicht abgefragt werden: ${escapeHtml(ga4Error)}</p>` : renderGa4Section(ga4Data)}
 </body>
 </html>`;
 

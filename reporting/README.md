@@ -1,8 +1,10 @@
 # Analytics-Reporting
 
-Baut aus Microsoft-Clarity-Daten plus manuell abgelegten Heatmap-Screenshots
-einen einzigen, selbstständigen HTML-Report zum Teilen mit Stakeholdern
-**ohne Clarity-Zugang** — per Mail als Anhang verschickbar, kein Login nötig.
+Baut aus Microsoft-Clarity-Daten, Google-Analytics(GA4)-Daten und manuell
+abgelegten Heatmap-Screenshots einen einzigen, selbstständigen HTML-Report
+zum Teilen mit Stakeholdern **ohne Clarity-/GA4-Zugang** — per Mail als
+Anhang verschickbar, kein Login nötig. Beide Quellen bleiben im Report klar
+getrennt und mit eigener Quellenangabe ausgewiesen, nicht vermischt.
 
 ## Warum zwei Schritte (Snapshot + Report)?
 
@@ -20,6 +22,11 @@ Heatmap-**Bilder** selbst kann Clarity über keine API exportieren, nur
 Zahlen — die Screenshots müssen weiterhin manuell aus dem Dashboard
 geschossen werden (siehe unten).
 
+**Google Analytics (GA4) tickt anders:** die GA4-Data-API erlaubt beliebige
+historische Zeiträume direkt auf Anfrage — kein 1-3-Tage-Limit wie bei
+Clarity. GA4 braucht deshalb **kein** Snapshot-Archiv, sondern wird bei
+jeder Report-Anfrage live abgefragt (`reporting/ga4Api.mjs`).
+
 ## Einmalige Einrichtung
 
 1. In Clarity: **Settings → Data Export → Generate new API token** (nur
@@ -30,6 +37,21 @@ geschossen werden (siehe unten).
    (`.github/workflows/clarity-daily-snapshot.yml`) läuft danach automatisch.
 3. Für lokale/manuelle Läufe: `reporting/.env.example` nach
    `reporting/.env` kopieren und den Token eintragen.
+4. **Für GA4:** Google-Cloud-Projekt anlegen (falls dein Google-Konto Teil
+   einer Organisation ist, die Dienstkontoschlüssel blockiert
+   `iam.disableServiceAccountKeyCreation` — Google-Workspace-Standard —,
+   ein Projekt unter einem **privaten** Google-Konto ohne Organisation
+   anlegen), darin die **"Google Analytics Data API"** aktivieren, ein
+   Dienstkonto ohne besondere Cloud-Rolle anlegen, JSON-Schlüssel
+   herunterladen. Die Dienstkonto-E-Mail in GA4 unter **Verwaltung →
+   Property-Zugriffsverwaltung** als **Betrachter** hinzufügen. Die
+   GA4-Property-ID (Verwaltung → Property-Details, eine Zahl — nicht die
+   Measurement-ID `G-XXXXXXXXXX`) sowie den JSON-Schlüssel als
+   GitHub-Actions-Secrets hinterlegen (`GA4_PROPERTY_ID`,
+   `GA4_SERVICE_ACCOUNT_JSON` = kompletter Dateiinhalt). Für lokale Läufe:
+   Property-ID in `reporting/.env`, JSON-Datei unter
+   `reporting/secrets/ga4-service-account.json` (gitignored, nie
+   committen).
 
 ## Täglicher Snapshot
 
