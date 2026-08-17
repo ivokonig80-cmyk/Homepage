@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "report:snapshot": "node reporting/clarity-snapshot.mjs",
+    "report:generate": "node reporting/generate-report.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
