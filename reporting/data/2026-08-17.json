@@ -1,16 +1,16 @@
 {
   "date": "2026-08-17",
-  "fetchedAt": "2026-08-17T11:51:35.964Z",
+  "fetchedAt": "2026-08-17T17:10:26.956Z",
   "overall": [
     {
       "metricName": "DeadClickCount",
       "information": [
         {
-          "sessionsCount": "11",
-          "sessionsWithMetricPercentage": 27.27,
-          "sessionsWithoutMetricPercentage": 72.73,
-          "pagesViews": "3",
-          "subTotal": "8"
+          "sessionsCount": "26",
+          "sessionsWithMetricPercentage": 19.23,
+          "sessionsWithoutMetricPercentage": 80.77,
+          "pagesViews": "5",
+          "subTotal": "14"
         }
       ]
     },
@@ -18,11 +18,11 @@
       "metricName": "ExcessiveScroll",
       "information": [
         {
-          "sessionsCount": 11,
+          "sessionsCount": "26",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": 0,
-          "subTotal": 0
+          "pagesViews": "0",
+          "subTotal": "0"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "metricName": "RageClickCount",
       "information": [
         {
-          "sessionsCount": "11",
+          "sessionsCount": "26",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -42,7 +42,7 @@
       "metricName": "QuickbackClick",
       "information": [
         {
-          "sessionsCount": "11",
+          "sessionsCount": "26",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -54,7 +54,7 @@
       "metricName": "ScriptErrorCount",
       "information": [
         {
-          "sessionsCount": "11",
+          "sessionsCount": "26",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -66,7 +66,7 @@
       "metricName": "ErrorClickCount",
       "information": [
         {
-          "sessionsCount": "11",
+          "sessionsCount": "26",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -78,7 +78,7 @@
       "metricName": "ScrollDepth",
       "information": [
         {
-          "averageScrollDepth": 81.08
+          "averageScrollDepth": 77.11
         }
       ]
     },
@@ -86,10 +86,10 @@
       "metricName": "Traffic",
       "information": [
         {
-          "totalSessionCount": "11",
+          "totalSessionCount": "26",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "11",
-          "pagesPerSessionPercentage": 1.0909090909090908
+          "distinctUserCount": "27",
+          "pagesPerSessionPercentage": 1.037037037037037
         }
       ]
     },
@@ -97,8 +97,8 @@
       "metricName": "EngagementTime",
       "information": [
         {
-          "totalTime": "94",
-          "activeTime": "26"
+          "totalTime": "76",
+          "activeTime": "20"
         }
       ]
     },
@@ -107,7 +107,7 @@
       "information": [
         {
           "name": "Edge",
-          "sessionsCount": "11"
+          "sessionsCount": "26"
         }
       ]
     },
@@ -116,7 +116,7 @@
       "information": [
         {
           "name": "PC",
-          "sessionsCount": "11"
+          "sessionsCount": "26"
         }
       ]
     },
@@ -125,7 +125,7 @@
       "information": [
         {
           "name": "Windows",
-          "sessionsCount": "11"
+          "sessionsCount": "26"
         }
       ]
     },
@@ -134,7 +134,7 @@
       "information": [
         {
           "name": "Germany",
-          "sessionsCount": "11"
+          "sessionsCount": "26"
         }
       ]
     },
@@ -143,14 +143,18 @@
       "information": [
         {
           "name": "Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst",
-          "sessionsCount": "9"
+          "sessionsCount": "14"
         },
         {
-          "name": "Eule — Deine Skulptur",
-          "sessionsCount": "1"
+          "name": "Fuchs — Deine Skulptur",
+          "sessionsCount": "6"
         },
         {
           "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
+          "sessionsCount": "5"
+        },
+        {
+          "name": "Eule — Deine Skulptur",
           "sessionsCount": "1"
         }
       ]
@@ -160,7 +164,7 @@
       "information": [
         {
           "name": null,
-          "sessionsCount": "11"
+          "sessionsCount": "26"
         }
       ]
     },
@@ -169,19 +173,27 @@
       "information": [
         {
           "url": "https://lowpoly-sculptures.onrender.com/",
-          "visitsCount": "6"
+          "visitsCount": 10
         },
         {
-          "url": "https://lowpoly-sculptures.onrender.com/konfigurator",
-          "visitsCount": "3"
-        },
-        {
-          "url": "https://lowpoly-sculptures.onrender.com/shop/eule",
-          "visitsCount": "1"
+          "url": "https://lowpoly-sculptures.onrender.com/shop/fuchs",
+          "visitsCount": 6
         },
         {
           "url": "https://lowpoly-sculptures.onrender.com/shop",
-          "visitsCount": "1"
+          "visitsCount": 6
+        },
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/konfigurator",
+          "visitsCount": 3
+        },
+        {
+          "url": "https://polinova.store/",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://lowpoly-sculptures.onrender.com/shop/eule",
+          "visitsCount": 1
         }
       ]
     }
@@ -192,6 +204,14 @@
       "information": [
         {
           "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
           "sessionsWithMetricPercentage": 100,
           "sessionsWithoutMetricPercentage": 0,
           "pagesViews": "1",
@@ -199,12 +219,20 @@
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
         },
         {
-          "sessionsCount": "6",
+          "sessionsCount": "10",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "sessionsCount": "6",
+          "sessionsWithMetricPercentage": 33.33,
+          "sessionsWithoutMetricPercentage": 66.67,
+          "pagesViews": "2",
+          "subTotal": "6",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "sessionsCount": "3",
@@ -215,7 +243,7 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -228,35 +256,51 @@
       "metricName": "ExcessiveScroll",
       "information": [
         {
-          "sessionsCount": 1,
+          "sessionsCount": "1",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": 0,
-          "subTotal": 0,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
         },
         {
-          "sessionsCount": 6,
+          "sessionsCount": "10",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": 0,
-          "subTotal": 0,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
-          "sessionsCount": 3,
+          "sessionsCount": "6",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": 0,
-          "subTotal": 0,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": 1,
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": 0,
-          "subTotal": 0,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop"
         }
       ]
@@ -270,7 +314,23 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "10",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
           "sessionsCount": "6",
@@ -278,7 +338,7 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
-          "Url": "https://lowpoly-sculptures.onrender.com/"
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "sessionsCount": "3",
@@ -289,7 +349,7 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -307,7 +367,23 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "10",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
           "sessionsCount": "6",
@@ -315,7 +391,7 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
-          "Url": "https://lowpoly-sculptures.onrender.com/"
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "sessionsCount": "3",
@@ -326,7 +402,7 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -344,7 +420,23 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "10",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
           "sessionsCount": "6",
@@ -352,7 +444,7 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
-          "Url": "https://lowpoly-sculptures.onrender.com/"
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "sessionsCount": "3",
@@ -363,7 +455,7 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -381,7 +473,23 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "sessionsCount": "10",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
           "sessionsCount": "6",
@@ -389,7 +497,7 @@
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
           "subTotal": "0",
-          "Url": "https://lowpoly-sculptures.onrender.com/"
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "sessionsCount": "3",
@@ -400,7 +508,7 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": "5",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -413,19 +521,27 @@
       "metricName": "ScrollDepth",
       "information": [
         {
+          "averageScrollDepth": 82,
+          "Url": "https://polinova.store/"
+        },
+        {
           "averageScrollDepth": 100,
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
         },
         {
-          "averageScrollDepth": 72.86,
+          "averageScrollDepth": 63.09,
           "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "averageScrollDepth": 84.17,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "averageScrollDepth": 100,
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "averageScrollDepth": 63,
+          "averageScrollDepth": 80.2,
           "Url": "https://lowpoly-sculptures.onrender.com/shop"
         }
       ]
@@ -438,14 +554,28 @@
           "totalBotSessionCount": "0",
           "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
+          "pagesPerSessionPercentage": 1,
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
+        },
+        {
+          "totalSessionCount": "10",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "10",
+          "pagesPerSessionPercentage": 1.1,
+          "Url": "https://lowpoly-sculptures.onrender.com/"
         },
         {
           "totalSessionCount": "6",
           "totalBotSessionCount": "0",
           "distinctUserCount": "6",
-          "pagesPerSessionPercentage": 1.1666666666666667,
-          "Url": "https://lowpoly-sculptures.onrender.com/"
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "totalSessionCount": "3",
@@ -455,9 +585,9 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "totalSessionCount": "1",
+          "totalSessionCount": "5",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "1",
+          "distinctUserCount": "6",
           "pagesPerSessionPercentage": 1,
           "Url": "https://lowpoly-sculptures.onrender.com/shop"
         }
@@ -467,14 +597,24 @@
       "metricName": "EngagementTime",
       "information": [
         {
+          "totalTime": "465",
+          "activeTime": "63",
+          "Url": "https://polinova.store/"
+        },
+        {
           "totalTime": "20",
           "activeTime": "20",
           "Url": "https://lowpoly-sculptures.onrender.com/shop/eule"
         },
         {
-          "totalTime": "151",
-          "activeTime": "27",
+          "totalTime": "98",
+          "activeTime": "23",
           "Url": "https://lowpoly-sculptures.onrender.com/"
+        },
+        {
+          "totalTime": "65",
+          "activeTime": "13",
+          "Url": "https://lowpoly-sculptures.onrender.com/shop/fuchs"
         },
         {
           "totalTime": "36",
@@ -482,8 +622,8 @@
           "Url": "https://lowpoly-sculptures.onrender.com/konfigurator"
         },
         {
-          "totalTime": "1",
-          "activeTime": "1",
+          "totalTime": "2",
+          "activeTime": "2",
           "Url": "https://lowpoly-sculptures.onrender.com/shop"
         }
       ]
