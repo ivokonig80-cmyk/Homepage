@@ -149,9 +149,10 @@ export function SculptureViewer({
         gl={{ antialias: true, alpha: true, powerPreference: "low-power", preserveDrawingBuffer: true }}
         camera={{ position: [0, 0.5, 4.4], fov: 36 }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 4, 2]} intensity={1.1} />
-        <directionalLight position={[-3, -1.5, -2]} intensity={0.3} />
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[3, 4, 2]} intensity={1.6} />
+        <directionalLight position={[-3, -1.5, -2]} intensity={0.6} />
+        <directionalLight position={[0, 5, -2]} intensity={0.5} />
         <Suspense fallback={null}>
           <group scale={scale}>
             <RotatingGroup speed={effectiveSpeed}>
