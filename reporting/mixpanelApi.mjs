@@ -70,6 +70,13 @@ async function fetchSegmentation(fromDate, toDate) {
   for (const event of FUNNEL_EVENTS) {
     try {
       const data = await mixpanelGet("/segmentation", { event, from_date: fromDate, to_date: toDate, type: "general" });
+      // Temporaeres Debug-Logging fuer das erste Event - zeigt die rohe
+      // Mixpanel-Antwort, um zu klaeren, ob Events wirklich ankommen und
+      // ob das erwartete Feld/Format (data.values.<event>) tatsaechlich
+      // stimmt (live noch nicht bestaetigt).
+      if (event === FUNNEL_EVENTS[0]) {
+        console.log(`Rohe Segmentation-Antwort fuer "${event}":`, JSON.stringify(data));
+      }
       const series = data?.data?.values?.[event] ?? {};
       const total = Object.values(series).reduce((sum, n) => sum + Number(n || 0), 0);
       if (total > 0) results[event] = total;
@@ -115,6 +122,8 @@ export async function fetchMixpanelData(startDate, endDate) {
   if (!process.env.MIXPANEL_PROJECT_ID || !process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME || !process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET) {
     return null;
   }
+
+  console.log(`Mixpanel-Abfrage fuer Zeitraum ${startDate} bis ${endDate} (Region: ${regionHost()}, Projekt: ${process.env.MIXPANEL_PROJECT_ID})`);
 
   const [segmentation, retention, funnel] = await Promise.all([
     fetchSegmentation(startDate, endDate),
