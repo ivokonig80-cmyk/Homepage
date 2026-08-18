@@ -1,16 +1,16 @@
 {
   "date": "2026-08-18",
-  "fetchedAt": "2026-08-18T19:04:29.282Z",
+  "fetchedAt": "2026-08-18T19:06:40.010Z",
   "overall": [
     {
       "metricName": "DeadClickCount",
       "information": [
         {
-          "sessionsCount": "107",
-          "sessionsWithMetricPercentage": 13.08,
-          "sessionsWithoutMetricPercentage": 86.92,
-          "pagesViews": "14",
-          "subTotal": "20"
+          "sessionsCount": "101",
+          "sessionsWithMetricPercentage": 12.87,
+          "sessionsWithoutMetricPercentage": 87.13,
+          "pagesViews": "13",
+          "subTotal": "18"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "metricName": "ExcessiveScroll",
       "information": [
         {
-          "sessionsCount": "107",
+          "sessionsCount": "101",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -30,7 +30,7 @@
       "metricName": "RageClickCount",
       "information": [
         {
-          "sessionsCount": "107",
+          "sessionsCount": "101",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -42,7 +42,7 @@
       "metricName": "QuickbackClick",
       "information": [
         {
-          "sessionsCount": "107",
+          "sessionsCount": "101",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -54,11 +54,11 @@
       "metricName": "ScriptErrorCount",
       "information": [
         {
-          "sessionsCount": "107",
+          "sessionsCount": 101,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0"
+          "pagesViews": 0,
+          "subTotal": 0
         }
       ]
     },
@@ -66,7 +66,7 @@
       "metricName": "ErrorClickCount",
       "information": [
         {
-          "sessionsCount": "107",
+          "sessionsCount": "101",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -78,7 +78,7 @@
       "metricName": "ScrollDepth",
       "information": [
         {
-          "averageScrollDepth": 78.52
+          "averageScrollDepth": 78.3
         }
       ]
     },
@@ -86,10 +86,10 @@
       "metricName": "Traffic",
       "information": [
         {
-          "totalSessionCount": "107",
+          "totalSessionCount": "101",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "108",
-          "pagesPerSessionPercentage": 1.0185185185185186
+          "distinctUserCount": "102",
+          "pagesPerSessionPercentage": 1.0196078431372548
         }
       ]
     },
@@ -97,7 +97,7 @@
       "metricName": "EngagementTime",
       "information": [
         {
-          "totalTime": "44",
+          "totalTime": "45",
           "activeTime": "18"
         }
       ]
@@ -107,11 +107,11 @@
       "information": [
         {
           "name": "SamsungInternet",
-          "sessionsCount": "75"
+          "sessionsCount": "68"
         },
         {
           "name": "Edge",
-          "sessionsCount": "32"
+          "sessionsCount": "33"
         }
       ]
     },
@@ -120,11 +120,11 @@
       "information": [
         {
           "name": "Mobile",
-          "sessionsCount": "75"
+          "sessionsCount": "68"
         },
         {
           "name": "PC",
-          "sessionsCount": "32"
+          "sessionsCount": "33"
         }
       ]
     },
@@ -133,11 +133,11 @@
       "information": [
         {
           "name": "Android",
-          "sessionsCount": "75"
+          "sessionsCount": "68"
         },
         {
           "name": "Windows",
-          "sessionsCount": "32"
+          "sessionsCount": "33"
         }
       ]
     },
@@ -146,7 +146,7 @@
       "information": [
         {
           "name": "Germany",
-          "sessionsCount": "107"
+          "sessionsCount": "101"
         }
       ]
     },
@@ -155,7 +155,7 @@
       "information": [
         {
           "name": "Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst",
-          "sessionsCount": "52"
+          "sessionsCount": "46"
         },
         {
           "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
@@ -200,7 +200,7 @@
       "information": [
         {
           "name": null,
-          "sessionsCount": "69"
+          "sessionsCount": "63"
         },
         {
           "name": "https://polinova.store/ergebnisse.html",
@@ -217,7 +217,7 @@
       "information": [
         {
           "url": "https://polinova.store/",
-          "visitsCount": "31"
+          "visitsCount": "29"
         },
         {
           "url": "https://polinova.store/shop",
@@ -245,15 +245,15 @@
         },
         {
           "url": "https://polinova.store/konfigurator/platzierung",
-          "visitsCount": "4"
-        },
-        {
-          "url": "https://polinova.store/konfigurator/sockel",
           "visitsCount": "3"
         },
         {
           "url": "https://polinova.store/shop/hase",
           "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/baer",
+          "visitsCount": "2"
         }
       ]
     }
@@ -263,7 +263,7 @@
       "metricName": "DeadClickCount",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -311,7 +311,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -327,7 +327,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -343,7 +343,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -351,11 +351,11 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
-          "sessionsWithMetricPercentage": 75,
-          "sessionsWithoutMetricPercentage": 25,
-          "pagesViews": "3",
-          "subTotal": "7",
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 66.67,
+          "sessionsWithoutMetricPercentage": 33.33,
+          "pagesViews": "2",
+          "subTotal": "3",
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
         {
@@ -379,7 +379,7 @@
           "sessionsWithMetricPercentage": 71.43,
           "sessionsWithoutMetricPercentage": 28.569999999999993,
           "pagesViews": "5",
-          "subTotal": "6",
+          "subTotal": "8",
           "Url": "https://polinova.store/konfigurator/upload"
         },
         {
@@ -396,7 +396,7 @@
       "metricName": "ExcessiveScroll",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -444,7 +444,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -460,7 +460,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -476,7 +476,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -484,7 +484,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -529,7 +529,7 @@
       "metricName": "RageClickCount",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -577,7 +577,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -593,7 +593,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -609,7 +609,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -617,7 +617,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -662,7 +662,7 @@
       "metricName": "QuickbackClick",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -710,7 +710,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -726,7 +726,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -742,7 +742,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -750,7 +750,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -795,7 +795,7 @@
       "metricName": "ScriptErrorCount",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -843,7 +843,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -859,7 +859,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -875,7 +875,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -883,7 +883,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -928,7 +928,7 @@
       "metricName": "ErrorClickCount",
       "information": [
         {
-          "sessionsCount": "30",
+          "sessionsCount": "28",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -976,7 +976,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -992,7 +992,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -1008,7 +1008,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "2",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -1016,7 +1016,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -1061,7 +1061,7 @@
       "metricName": "ScrollDepth",
       "information": [
         {
-          "averageScrollDepth": 60.13,
+          "averageScrollDepth": 60.25,
           "Url": "https://polinova.store/"
         },
         {
@@ -1085,7 +1085,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "averageScrollDepth": 93.33,
+          "averageScrollDepth": 95,
           "Url": "https://polinova.store/konfigurator/farbe"
         },
         {
@@ -1093,7 +1093,7 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "averageScrollDepth": 93.33,
+          "averageScrollDepth": 95,
           "Url": "https://polinova.store/konfigurator/vorschau"
         },
         {
@@ -1101,7 +1101,7 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "averageScrollDepth": 98.33,
+          "averageScrollDepth": 99,
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
@@ -1137,9 +1137,9 @@
           "Url": null
         },
         {
-          "totalSessionCount": "30",
+          "totalSessionCount": "28",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "31",
+          "distinctUserCount": "29",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/"
         },
@@ -1179,9 +1179,9 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "totalSessionCount": "3",
+          "totalSessionCount": "2",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "3",
+          "distinctUserCount": "2",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/farbe"
         },
@@ -1193,9 +1193,9 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "totalSessionCount": "3",
+          "totalSessionCount": "2",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "3",
+          "distinctUserCount": "2",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/vorschau"
         },
@@ -1207,16 +1207,16 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "totalSessionCount": "3",
+          "totalSessionCount": "2",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "3",
+          "distinctUserCount": "2",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "totalSessionCount": "4",
+          "totalSessionCount": "3",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "4",
+          "distinctUserCount": "3",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
@@ -1254,7 +1254,7 @@
       "metricName": "EngagementTime",
       "information": [
         {
-          "totalTime": "47",
+          "totalTime": "49",
           "activeTime": "17",
           "Url": "https://polinova.store/"
         },
@@ -1294,8 +1294,8 @@
           "Url": "https://polinova.store/konfigurator/checkout"
         },
         {
-          "totalTime": "7",
-          "activeTime": "7",
+          "totalTime": "6",
+          "activeTime": "6",
           "Url": "https://polinova.store/konfigurator/vorschau"
         },
         {
@@ -1304,13 +1304,13 @@
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "totalTime": "6",
-          "activeTime": "6",
+          "totalTime": "5",
+          "activeTime": "5",
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "totalTime": "52",
-          "activeTime": "37",
+          "totalTime": "22",
+          "activeTime": "17",
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
         {
@@ -1324,8 +1324,8 @@
           "Url": "https://polinova.store/datenschutz"
         },
         {
-          "totalTime": "12",
-          "activeTime": "10",
+          "totalTime": "18",
+          "activeTime": "17",
           "Url": "https://polinova.store/konfigurator/upload"
         },
         {
