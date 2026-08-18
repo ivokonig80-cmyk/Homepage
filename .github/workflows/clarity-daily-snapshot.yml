@@ -41,7 +41,6 @@ jobs:
           MIXPANEL_SERVICE_ACCOUNT_USERNAME: ${{ secrets.MIXPANEL_SERVICE_ACCOUNT_USERNAME }}
           MIXPANEL_SERVICE_ACCOUNT_SECRET: ${{ secrets.MIXPANEL_SERVICE_ACCOUNT_SECRET }}
           MIXPANEL_REGION: ${{ secrets.MIXPANEL_REGION }}
-          MIXPANEL_FUNNEL_ID: ${{ secrets.MIXPANEL_FUNNEL_ID }}
         run: node reporting/generate-report.mjs --out public/ergebnisse.html
 
       - name: Snapshot + Report committen

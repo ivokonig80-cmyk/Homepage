@@ -289,15 +289,11 @@ function renderGa4Section(ga4) {
 // Funnel-Conversion pro Schritt und Retention/Kohorten. Wie GA4 eine
 // Live-Abfrage fuer den gewaehlten Zeitraum, kein Archiv noetig. ---------
 
-function renderRetentionTable({ data, error } = {}) {
-  if (error) {
-    return `<p class="muted">Mixpanel-Retention-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
-  }
-  if (!data || typeof data !== "object" || !Object.keys(data).length) {
+function renderRetentionTable(retention) {
+  const cohortDates = Object.keys(retention ?? {}).sort();
+  if (!cohortDates.length) {
     return '<p class="muted">Keine Retention-Daten für diesen Zeitraum (oder noch keine Bestellungen, an die sich eine Rückkehr messen ließe).</p>';
   }
-  const retention = data;
-  const cohortDates = Object.keys(retention).sort();
   const maxIntervals = Math.max(...cohortDates.map((d) => (retention[d].counts ?? []).length));
   const intervalHeaders = Array.from({ length: maxIntervals }, (_, i) => `<th>Tag ${i}</th>`).join("");
 
@@ -320,58 +316,26 @@ function renderRetentionTable({ data, error } = {}) {
     </table></div>`;
 }
 
-function renderFunnelChart({ data, error, configured } = {}) {
-  if (!configured) {
-    return '<p class="muted">Kein Funnel konfiguriert (MIXPANEL_FUNNEL_ID) — siehe reporting/README.md, wie man in der Mixpanel-UI einen Funnel-Report anlegt und dessen ID einträgt.</p>';
-  }
-  if (error) {
-    return `<p class="muted">Mixpanel-Funnel-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
-  }
-  if (!data) {
-    return '<p class="muted">Keine Funnel-Daten für diesen Zeitraum.</p>';
-  }
-  // Mixpanel liefert Funnel-Daten pro Tag im Zeitraum - fuer die
-  // Gesamtansicht ueber den ganzen Zeitraum werden die Schritt-Counts
-  // je Tag aufsummiert, statt nur den letzten Tag zu zeigen.
-  const dayEntries = Object.values(data.data ?? {});
-  if (!dayEntries.length) {
-    return '<p class="muted">Keine Funnel-Daten für diesen Zeitraum.</p>';
-  }
-  const stepCount = Math.max(...dayEntries.map((d) => d.steps?.length ?? 0));
-  const totals = Array.from({ length: stepCount }, () => 0);
-  const labels = Array.from({ length: stepCount }, () => "");
-  for (const day of dayEntries) {
-    (day.steps ?? []).forEach((step, i) => {
-      totals[i] += step.count ?? 0;
-      if (step.goal) labels[i] = step.goal;
-    });
-  }
-  const rows = totals.map((value, i) => ({ path: labels[i] || `Schritt ${i + 1}`, value }));
-  return renderBarChart(rows);
-}
-
-function renderEventCounts({ results, error } = {}) {
-  if (error) {
-    return `<p class="muted">Mixpanel-Event-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
-  }
-  const segRows = Object.entries(results ?? {})
-    .map(([event, value]) => ({ path: event, value }))
-    .sort((a, b) => b.value - a.value);
-  return renderBarChart(segRows);
-}
-
 function renderMixpanelSection(mixpanel) {
   if (!mixpanel) {
     return '<p class="muted">Mixpanel ist für diesen Report nicht konfiguriert (MIXPANEL_PROJECT_ID bzw. Service-Account-Zugangsdaten fehlen) — siehe reporting/README.md.</p>';
   }
+  if (mixpanel.totalEvents === 0) {
+    return '<p class="muted">Noch keine Mixpanel-Events für diesen Zeitraum erfasst.</p>';
+  }
+
+  const eventRows = Object.entries(mixpanel.eventCounts ?? {})
+    .map(([event, value]) => ({ path: event, value }))
+    .sort((a, b) => b.value - a.value);
 
   return `
     <h3>Event-Zählungen</h3>
-    <div class="chart-card">${renderEventCounts(mixpanel.segmentation)}</div>
+    <div class="chart-card">${renderBarChart(eventRows)}</div>
     <h3>Retention — kommen Nutzer nach einer Bestellung zurück?</h3>
     ${renderRetentionTable(mixpanel.retention)}
     <h3>Funnel-Conversion</h3>
-    ${renderFunnelChart(mixpanel.funnel)}`;
+    <div class="chart-card">${renderBarChart(mixpanel.funnel ?? [])}</div>
+    <p class="muted" style="margin-top:8px;">Hinweis: Frühe Funnel-Schritte laufen anonym, erst ab der Bestellung unter dem gewählten Nickname — die Conversion bis "order_completed" kann dadurch leicht unterschätzt werden.</p>`;
 }
 
 async function main() {

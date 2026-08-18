@@ -65,26 +65,29 @@ werden bei jeder Report-Anfrage live abgefragt (`reporting/ga4Api.mjs`,
    `reporting/secrets/ga4-service-account.json` (gitignored, nie
    committen).
 5. **Für Mixpanel:** Account auf mixpanel.com anlegen, Projekt erstellen
-   (Region beachten — US/EU/Indien, bei Projekterstellung wählbar).
-   Projekt-Token unter **Project Settings → Access Keys** kopieren (das ist
-   der öffentliche, client-seitige Token für `NEXT_PUBLIC_MIXPANEL_TOKEN`,
-   siehe `.env.example` im Repo-Root). Für die Report-API zusätzlich unter
-   **Organization Settings → Service Accounts → Create** ein Dienstkonto
-   anlegen — Username + Secret werden angezeigt (Secret nur einmal
-   sichtbar, sofort sichern). Projekt-ID unter **Project Settings**
-   notieren. Als GitHub-Actions-Secrets hinterlegen:
+   (Region beachten — US/EU/Indien, bei Projekterstellung wählbar, danach
+   nicht mehr änderbar). Projekt-Token unter **Project Settings → Access
+   Keys** kopieren (das ist der öffentliche, client-seitige Token für
+   `NEXT_PUBLIC_MIXPANEL_TOKEN`, siehe `.env.example` im Repo-Root). Für
+   die Report-API zusätzlich unter **Organization Settings → Service
+   Accounts → Create** ein Dienstkonto anlegen — Username + Secret werden
+   angezeigt (Secret nur einmal sichtbar, sofort sichern). Projekt-ID unter
+   **Project Settings** notieren (auch aus der Projekt-URL ablesbar:
+   `.../project/<ID>/...`). Als GitHub-Actions-Secrets hinterlegen:
    `MIXPANEL_PROJECT_ID`, `MIXPANEL_SERVICE_ACCOUNT_USERNAME`,
-   `MIXPANEL_SERVICE_ACCOUNT_SECRET` (optional `MIXPANEL_REGION` bei
-   EU/Indien-Projekten). Für lokale Läufe: alles in `reporting/.env`.
+   `MIXPANEL_SERVICE_ACCOUNT_SECRET` (bei EU/Indien-Projekten zusätzlich
+   `MIXPANEL_REGION` = `eu` bzw. `in`). Für lokale Läufe: alles in
+   `reporting/.env`.
 
-   **Optional — Funnel-Conversion:** die Mixpanel-Funnels-API braucht einen
-   vorher in der Mixpanel-UI angelegten Funnel-Report (kein Ad-hoc-Query
-   möglich). In Mixpanel unter **Funnels → New Report** die Schritte
-   festlegen (z. B. `cta_start_configurator` → `configurator_step_view` →
-   `buy_button_click` → `order_completed`), speichern, die ID steht in der
-   URL als `report-<ID>` — als Secret `MIXPANEL_FUNNEL_ID` hinterlegen. Ohne
-   diese Variable wird der Funnel-Abschnitt im Report einfach
-   übersprungen, der Rest läuft trotzdem.
+   **Wichtig — Free-Plan-Einschränkung:** Mixpanel's Query-API
+   (Segmentation/Retention/Funnels, vorgefertigte Auswertungen) ist auf
+   bezahlte Growth-/Enterprise-Pläne beschränkt und liefert auf dem
+   kostenlosen Plan durchgängig leere Ergebnisse ohne Fehlermeldung. Diese
+   Pipeline nutzt deshalb stattdessen die **Raw-Data-Export-API** (auf
+   jedem Plan verfügbar, siehe `reporting/mixpanelApi.mjs`) und berechnet
+   Event-Zählungen, Retention und Funnel-Conversion selbst aus den rohen
+   Einzel-Events. Kein vorher in der Mixpanel-UI angelegter Funnel-Report
+   nötig — `MIXPANEL_FUNNEL_ID` wird dadurch nicht mehr verwendet.
 
 ## Täglicher Snapshot
 
@@ -121,13 +124,21 @@ versioniert, jederzeit neu erzeugbar) — per Mail verschickbar. Auf Wunsch
 kann daraus auch ein Google-Doc/PDF oder ein teilbarer Artifact-Link
 gemacht werden.
 
-## Mixpanel-Ratenlimit
+## Mixpanel — Raw Export statt Query API
 
-Mixpanel erlaubt 60 Query-API-Aufrufe pro Stunde. Ein Report-Lauf braucht
-davon ca. 12 (ein Aufruf je Funnel-Event für die Event-Zählungen, plus
-Retention, plus Funnel) — für den täglichen automatischen Lauf unkritisch,
-bei sehr häufigen manuellen Report-Anfragen (deutlich mehr als 5×/Stunde)
-im Chat theoretisch relevant.
+Ein Report-Lauf braucht nur **einen einzigen** Mixpanel-API-Aufruf (Export
+aller Funnel-Events im Zeitraum als JSONL, Limit 60/Stunde bzw. 3/Sekunde —
+für den täglichen automatischen Lauf und gelegentliche manuelle Anfragen
+unkritisch). Event-Zählungen, Retention-Kohorten und die
+Funnel-Conversion-Schritte werden danach lokal aus den Rohdaten berechnet.
+
+**Bekannte Einschränkung:** Mixpanel führt anonyme und identifizierte
+Sitzungen serverseitig zusammen (ID-Merging nach `identify()` — der
+Nickname wird erst bei Bestellabschluss gesetzt, siehe
+`src/lib/analytics.ts`). Diese eigene Berechnung repliziert dieses Merging
+nicht, arbeitet direkt mit der `distinct_id` aus den Rohdaten — die
+Funnel-Conversion bis `order_completed` kann dadurch leicht unterschätzt
+werden.
 
 ## Bekannte Einschränkung
 
