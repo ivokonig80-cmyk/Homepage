@@ -1,16 +1,16 @@
 {
   "date": "2026-08-18",
-  "fetchedAt": "2026-08-18T18:27:20.368Z",
+  "fetchedAt": "2026-08-18T18:48:55.764Z",
   "overall": [
     {
       "metricName": "DeadClickCount",
       "information": [
         {
-          "sessionsCount": "101",
-          "sessionsWithMetricPercentage": 11.88,
-          "sessionsWithoutMetricPercentage": 88.12,
-          "pagesViews": "12",
-          "subTotal": "17"
+          "sessionsCount": "103",
+          "sessionsWithMetricPercentage": 12.62,
+          "sessionsWithoutMetricPercentage": 87.38,
+          "pagesViews": "13",
+          "subTotal": "19"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "metricName": "ExcessiveScroll",
       "information": [
         {
-          "sessionsCount": "101",
+          "sessionsCount": "103",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -30,11 +30,11 @@
       "metricName": "RageClickCount",
       "information": [
         {
-          "sessionsCount": "101",
+          "sessionsCount": 103,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0"
+          "pagesViews": 0,
+          "subTotal": 0
         }
       ]
     },
@@ -42,7 +42,7 @@
       "metricName": "QuickbackClick",
       "information": [
         {
-          "sessionsCount": "101",
+          "sessionsCount": "103",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -54,7 +54,7 @@
       "metricName": "ScriptErrorCount",
       "information": [
         {
-          "sessionsCount": "101",
+          "sessionsCount": "103",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -66,7 +66,7 @@
       "metricName": "ErrorClickCount",
       "information": [
         {
-          "sessionsCount": "101",
+          "sessionsCount": "103",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -78,7 +78,7 @@
       "metricName": "ScrollDepth",
       "information": [
         {
-          "averageScrollDepth": 78.33
+          "averageScrollDepth": 78.75
         }
       ]
     },
@@ -86,10 +86,10 @@
       "metricName": "Traffic",
       "information": [
         {
-          "totalSessionCount": "101",
+          "totalSessionCount": "103",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "102",
-          "pagesPerSessionPercentage": 1.0196078431372548
+          "distinctUserCount": "104",
+          "pagesPerSessionPercentage": 1.0192307692307692
         }
       ]
     },
@@ -97,8 +97,8 @@
       "metricName": "EngagementTime",
       "information": [
         {
-          "totalTime": 44,
-          "activeTime": 18
+          "totalTime": "43",
+          "activeTime": "18"
         }
       ]
     },
@@ -111,7 +111,7 @@
         },
         {
           "name": "Edge",
-          "sessionsCount": "26"
+          "sessionsCount": "28"
         }
       ]
     },
@@ -124,7 +124,7 @@
         },
         {
           "name": "PC",
-          "sessionsCount": "26"
+          "sessionsCount": "28"
         }
       ]
     },
@@ -137,7 +137,7 @@
         },
         {
           "name": "Windows",
-          "sessionsCount": "26"
+          "sessionsCount": "28"
         }
       ]
     },
@@ -146,7 +146,7 @@
       "information": [
         {
           "name": "Germany",
-          "sessionsCount": "101"
+          "sessionsCount": "103"
         }
       ]
     },
@@ -155,7 +155,7 @@
       "information": [
         {
           "name": "Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst",
-          "sessionsCount": "48"
+          "sessionsCount": "50"
         },
         {
           "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
@@ -200,15 +200,15 @@
       "information": [
         {
           "name": null,
-          "sessionsCount": "63"
+          "sessionsCount": 65
         },
         {
           "name": "https://polinova.store/ergebnisse.html",
-          "sessionsCount": "32"
+          "sessionsCount": 32
         },
         {
           "name": "https://polinova.store/shop",
-          "sessionsCount": "6"
+          "sessionsCount": 6
         }
       ]
     },
@@ -245,7 +245,7 @@
         },
         {
           "url": "https://polinova.store/konfigurator/platzierung",
-          "visitsCount": "3"
+          "visitsCount": "4"
         },
         {
           "url": "https://polinova.store/konfigurator/vorschau",
@@ -311,7 +311,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -351,11 +351,11 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
-          "sessionsWithMetricPercentage": 66.67,
-          "sessionsWithoutMetricPercentage": 33.33,
-          "pagesViews": "2",
-          "subTotal": "5",
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 75,
+          "sessionsWithoutMetricPercentage": 25,
+          "pagesViews": "3",
+          "subTotal": "7",
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
         {
@@ -444,7 +444,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -484,7 +484,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "4",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -577,7 +577,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -617,7 +617,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "4",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -710,7 +710,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -750,7 +750,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "4",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -843,7 +843,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -883,7 +883,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "4",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -976,7 +976,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "2",
+          "sessionsCount": "3",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -1016,7 +1016,7 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "sessionsCount": "3",
+          "sessionsCount": "4",
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
           "pagesViews": "0",
@@ -1085,7 +1085,7 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "averageScrollDepth": 90,
+          "averageScrollDepth": 93.33,
           "Url": "https://polinova.store/konfigurator/farbe"
         },
         {
@@ -1179,9 +1179,9 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "totalSessionCount": "2",
+          "totalSessionCount": "3",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "2",
+          "distinctUserCount": "3",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/farbe"
         },
@@ -1214,9 +1214,9 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "totalSessionCount": "3",
+          "totalSessionCount": "4",
           "totalBotSessionCount": "0",
-          "distinctUserCount": "3",
+          "distinctUserCount": "4",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
@@ -1284,8 +1284,8 @@
           "Url": "https://polinova.store/impressum"
         },
         {
-          "totalTime": "6",
-          "activeTime": "6",
+          "totalTime": "7",
+          "activeTime": "7",
           "Url": "https://polinova.store/konfigurator/farbe"
         },
         {
@@ -1309,8 +1309,8 @@
           "Url": "https://polinova.store/konfigurator/sockel"
         },
         {
-          "totalTime": "61",
-          "activeTime": "40",
+          "totalTime": "52",
+          "activeTime": "37",
           "Url": "https://polinova.store/konfigurator/platzierung"
         },
         {
