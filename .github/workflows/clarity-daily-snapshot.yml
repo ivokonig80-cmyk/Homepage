@@ -24,16 +24,30 @@ jobs:
         run: npm ci
 
       - name: Snapshot von Clarity abrufen
+        id: clarity_snapshot
+        continue-on-error: true
+        # Clarity erlaubt nur 10 API-Anfragen/Tag - bei haeufigem manuellen
+        # Testen (z.B. mehrere Workflow-Laeufe am selben Tag) kann das
+        # Kontingent ausgeschoepft sein. continue-on-error verhindert, dass
+        # dieser eine, ratenlimitierte Schritt die unten folgende
+        # GA4-/Mixpanel-Aktualisierung mit blockiert (live beobachtet: ohne
+        # dies wurden bei einem Clarity-Fehler automatisch ALLE weiteren
+        # Schritte uebersprungen, obwohl sie unabhaengig funktioniert
+        # haetten).
         env:
           CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
         run: node reporting/clarity-snapshot.mjs
 
       - name: Oeffentlichen Ergebnis-Report erzeugen
+        if: always()
         # Erzeugt /ergebnisse.html neu, mit dem aktuellen Clarity-Archiv
-        # UND live abgefragten GA4-Daten (siehe reporting/README.md). Die
-        # Bestellbestaetigung (OrderForm.tsx) verlinkt hierher - so sehen
-        # Tester nach ihrer Testbestellung die bisherigen Auswertungen.
-        # Degradiert sauber (kein Absturz), falls GA4-Secrets fehlen.
+        # UND live abgefragten GA4-/Mixpanel-Daten (siehe
+        # reporting/README.md). Die Bestellbestaetigung (OrderForm.tsx)
+        # verlinkt hierher - so sehen Tester nach ihrer Testbestellung die
+        # bisherigen Auswertungen. Degradiert sauber (kein Absturz), falls
+        # einzelne Secrets fehlen oder der Clarity-Schritt oben
+        # fehlgeschlagen ist (nutzt dann einfach den letzten vorhandenen
+        # Clarity-Snapshot weiter).
         env:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GA4_SERVICE_ACCOUNT_JSON: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
@@ -44,6 +58,7 @@ jobs:
         run: node reporting/generate-report.mjs --out public/ergebnisse.html
 
       - name: Snapshot + Report committen
+        if: always()
         run: |
           git config user.name "clarity-snapshot-bot"
           git config user.email "actions@github.com"
