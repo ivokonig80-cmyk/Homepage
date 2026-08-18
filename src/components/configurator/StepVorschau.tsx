@@ -56,7 +56,7 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
           scale={scale}
           interactive
           autoRotateSpeed={0.3}
-          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-border-subtle bg-background-elevated"
+          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-stage-border bg-stage"
         />
       ) : (
         <SculptureViewer
@@ -65,7 +65,7 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
           scale={scale}
           interactive
           autoRotateSpeed={isGenerating ? 0.15 : 0.3}
-          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-border-subtle bg-background-elevated"
+          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-stage-border bg-stage"
         />
       )}
 

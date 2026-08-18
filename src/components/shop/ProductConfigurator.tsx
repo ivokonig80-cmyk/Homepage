@@ -42,7 +42,7 @@ export function ProductConfigurator({ item }: { item: CatalogItem }) {
           scale={size.scale}
           interactive
           autoRotateSpeed={0.25}
-          className="h-[420px] w-full rounded-2xl border border-border-subtle bg-background-elevated"
+          className="h-[420px] w-full rounded-2xl border border-stage-border bg-stage"
         />
         <p className="mt-2 text-center text-xs text-foreground-muted">
           Zum Drehen ziehen

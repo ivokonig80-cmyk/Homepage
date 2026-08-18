@@ -23,7 +23,7 @@ export function StepFarbe({ materialId, onMaterialChange, scale, modelUrl }: Ste
         scale={scale}
         interactive
         autoRotateSpeed={0.3}
-        className="h-72 w-full rounded-2xl border border-border-subtle bg-background-elevated"
+        className="h-72 w-full rounded-2xl border border-stage-border bg-stage"
       />
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">

@@ -8,6 +8,12 @@
   --accent: #9aa5b1;
   --accent-warm: #c9a961;
   --border-subtle: #232326;
+  /* Bewusster Kontrast zum sonst durchgehend dunklen Theme: die 3D-Vorschau
+     einzelner Skulpturen bekommt eine weiße "Bühne", damit Silhouette und
+     Gesichtsdetails (Ohren, Schnauze etc.) der Low-Poly-Form nicht mit dem
+     dunklen Hintergrund verschwimmen. */
+  --stage: #ffffff;
+  --stage-border: #e4e4e7;
 }
 
 @theme inline {
@@ -18,6 +24,8 @@
   --color-accent: var(--accent);
   --color-accent-warm: var(--accent-warm);
   --color-border-subtle: var(--border-subtle);
+  --color-stage: var(--stage);
+  --color-stage-border: var(--stage-border);
   --font-display: var(--font-space-grotesk);
   --font-sans: var(--font-geist-sans);
 }
