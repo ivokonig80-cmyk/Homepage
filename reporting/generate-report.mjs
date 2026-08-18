@@ -289,14 +289,15 @@ function renderGa4Section(ga4) {
 // Funnel-Conversion pro Schritt und Retention/Kohorten. Wie GA4 eine
 // Live-Abfrage fuer den gewaehlten Zeitraum, kein Archiv noetig. ---------
 
-function renderRetentionTable(retention) {
-  if (!retention || typeof retention !== "object") {
+function renderRetentionTable({ data, error } = {}) {
+  if (error) {
+    return `<p class="muted">Mixpanel-Retention-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
+  }
+  if (!data || typeof data !== "object" || !Object.keys(data).length) {
     return '<p class="muted">Keine Retention-Daten für diesen Zeitraum (oder noch keine Bestellungen, an die sich eine Rückkehr messen ließe).</p>';
   }
+  const retention = data;
   const cohortDates = Object.keys(retention).sort();
-  if (!cohortDates.length) {
-    return '<p class="muted">Keine Retention-Daten für diesen Zeitraum.</p>';
-  }
   const maxIntervals = Math.max(...cohortDates.map((d) => (retention[d].counts ?? []).length));
   const intervalHeaders = Array.from({ length: maxIntervals }, (_, i) => `<th>Tag ${i}</th>`).join("");
 
@@ -319,14 +320,20 @@ function renderRetentionTable(retention) {
     </table></div>`;
 }
 
-function renderFunnelChart(funnel) {
-  if (!funnel?.data) {
+function renderFunnelChart({ data, error, configured } = {}) {
+  if (!configured) {
     return '<p class="muted">Kein Funnel konfiguriert (MIXPANEL_FUNNEL_ID) — siehe reporting/README.md, wie man in der Mixpanel-UI einen Funnel-Report anlegt und dessen ID einträgt.</p>';
+  }
+  if (error) {
+    return `<p class="muted">Mixpanel-Funnel-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
+  }
+  if (!data) {
+    return '<p class="muted">Keine Funnel-Daten für diesen Zeitraum.</p>';
   }
   // Mixpanel liefert Funnel-Daten pro Tag im Zeitraum - fuer die
   // Gesamtansicht ueber den ganzen Zeitraum werden die Schritt-Counts
   // je Tag aufsummiert, statt nur den letzten Tag zu zeigen.
-  const dayEntries = Object.values(funnel.data);
+  const dayEntries = Object.values(data.data ?? {});
   if (!dayEntries.length) {
     return '<p class="muted">Keine Funnel-Daten für diesen Zeitraum.</p>';
   }
@@ -343,18 +350,24 @@ function renderFunnelChart(funnel) {
   return renderBarChart(rows);
 }
 
+function renderEventCounts({ results, error } = {}) {
+  if (error) {
+    return `<p class="muted">Mixpanel-Event-Abfrage fehlgeschlagen: ${escapeHtml(error)}</p>`;
+  }
+  const segRows = Object.entries(results ?? {})
+    .map(([event, value]) => ({ path: event, value }))
+    .sort((a, b) => b.value - a.value);
+  return renderBarChart(segRows);
+}
+
 function renderMixpanelSection(mixpanel) {
   if (!mixpanel) {
     return '<p class="muted">Mixpanel ist für diesen Report nicht konfiguriert (MIXPANEL_PROJECT_ID bzw. Service-Account-Zugangsdaten fehlen) — siehe reporting/README.md.</p>';
   }
 
-  const segRows = Object.entries(mixpanel.segmentation ?? {})
-    .map(([event, value]) => ({ path: event, value }))
-    .sort((a, b) => b.value - a.value);
-
   return `
     <h3>Event-Zählungen</h3>
-    <div class="chart-card">${renderBarChart(segRows)}</div>
+    <div class="chart-card">${renderEventCounts(mixpanel.segmentation)}</div>
     <h3>Retention — kommen Nutzer nach einer Bestellung zurück?</h3>
     ${renderRetentionTable(mixpanel.retention)}
     <h3>Funnel-Conversion</h3>

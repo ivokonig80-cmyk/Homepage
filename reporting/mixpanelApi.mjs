@@ -12,6 +12,13 @@
 // - (optional) Funnel-Conversion pro Schritt mit exakter Abbruchrate -
 //   braucht einen vorher in der Mixpanel-UI angelegten Funnel-Report
 //   (funnel_id), da die Funnels-Query-API keine Ad-hoc-Definition erlaubt.
+//
+// Fehler werden bewusst NICHT stillschweigend verschluckt (frueherer Bug:
+// jeder API-Fehler wurde intern gefangen und als "leer"/"nicht
+// konfiguriert" dargestellt - live nicht mehr von einem echten Auth-/
+// Parameterfehler zu unterscheiden). Stattdessen wird jeder Fehler
+// geloggt UND als eigenes Feld zurueckgegeben, damit der Report die
+// tatsaechliche Ursache anzeigen kann.
 
 const FUNNEL_EVENTS = [
   "cta_start_configurator",
@@ -47,29 +54,34 @@ async function mixpanelGet(path, params) {
     if (value != null) url.searchParams.set(key, value);
   }
 
+  console.log(`Rufe ${url} ab...`);
   const res = await fetch(url, { headers: { Authorization: authHeader() } });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Mixpanel API antwortete mit ${res.status}: ${body}`);
+    throw new Error(`${res.status} bei ${path}: ${body}`);
   }
+  console.log(`... ${path} beantwortet mit ${res.status}`);
   return res.json();
 }
 
 async function fetchSegmentation(fromDate, toDate) {
   const results = {};
+  const errors = [];
   for (const event of FUNNEL_EVENTS) {
     try {
       const data = await mixpanelGet("/segmentation", { event, from_date: fromDate, to_date: toDate, type: "general" });
       const series = data?.data?.values?.[event] ?? {};
       const total = Object.values(series).reduce((sum, n) => sum + Number(n || 0), 0);
       if (total > 0) results[event] = total;
-    } catch {
-      // Einzelnes Event ohne Daten/Fehler blockiert nicht die anderen -
-      // Mixpanel antwortet z.B. mit Fehler, wenn ein Event im Zeitraum
-      // noch nie gefeuert wurde.
+    } catch (err) {
+      console.warn(`Mixpanel-Segmentation fuer Event "${event}" fehlgeschlagen: ${err.message}`);
+      errors.push(err.message);
     }
   }
-  return results;
+  // Nur einen Beispiel-Fehler zurueckgeben (nicht 10x dieselbe Ursache) -
+  // falls JEDES Event fehlschlaegt, ist das fast immer ein einziges
+  // zugrundeliegendes Auth-/Parameterproblem, kein Zufall pro Event.
+  return { results, error: results && Object.keys(results).length === 0 && errors.length ? errors[0] : null };
 }
 
 async function fetchRetention(fromDate, toDate) {
@@ -80,19 +92,22 @@ async function fetchRetention(fromDate, toDate) {
       born_event: "order_completed",
       unit: "day",
     });
-    return data;
-  } catch {
-    return null;
+    return { data, error: null };
+  } catch (err) {
+    console.warn(`Mixpanel-Retention fehlgeschlagen: ${err.message}`);
+    return { data: null, error: err.message };
   }
 }
 
 async function fetchFunnel(fromDate, toDate) {
   const funnelId = process.env.MIXPANEL_FUNNEL_ID;
-  if (!funnelId) return null;
+  if (!funnelId) return { data: null, error: null, configured: false };
   try {
-    return await mixpanelGet("/funnels", { funnel_id: funnelId, from_date: fromDate, to_date: toDate });
-  } catch {
-    return null;
+    const data = await mixpanelGet("/funnels", { funnel_id: funnelId, from_date: fromDate, to_date: toDate });
+    return { data, error: null, configured: true };
+  } catch (err) {
+    console.warn(`Mixpanel-Funnel (ID ${funnelId}) fehlgeschlagen: ${err.message}`);
+    return { data: null, error: err.message, configured: true };
   }
 }
 
