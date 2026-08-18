@@ -50,13 +50,19 @@ export default function DatenschutzPage() {
           </h2>
           <p className="text-foreground-muted">
             Mit Ihrer Einwilligung über das Cookie-Banner setzen wir
-            Microsoft Clarity und Google Analytics ein, um anonymisierte
-            Nutzungsstatistiken und Heatmaps zu erstellen (z. B. welche
-            Bereiche der Seite besonders beachtet werden). Die Erhebung
-            startet erst nach aktiver Zustimmung — ohne Zustimmung wird kein
-            Analyse-Script geladen. Ihre Entscheidung wird lokal in Ihrem
-            Browser gespeichert und lässt sich jederzeit ändern, indem Sie
-            die Browserdaten dieser Seite löschen und die Seite neu laden.
+            Microsoft Clarity, Google Analytics und Mixpanel ein, um
+            anonymisierte Nutzungsstatistiken zu erstellen — Heatmaps und
+            Sitzungsaufzeichnungen (Clarity), Besucherherkunft (Google
+            Analytics) sowie Funnel- und Wiederkehr-Auswertungen (Mixpanel).
+            Wenn Sie im Bestellformular einen Nickname angeben, wird dieser
+            als anonyme Kennung an Mixpanel übermittelt, um Ihre
+            Interaktionen über mehrere Besuche hinweg zusammenzuführen — es
+            werden dabei keine echten Namen oder sonstigen Klardaten
+            verarbeitet. Die Erhebung startet erst nach aktiver Zustimmung —
+            ohne Zustimmung wird kein Analyse-Script geladen. Ihre
+            Entscheidung wird lokal in Ihrem Browser gespeichert und lässt
+            sich jederzeit ändern, indem Sie die Browserdaten dieser Seite
+            löschen und die Seite neu laden.
           </p>
         </section>
 

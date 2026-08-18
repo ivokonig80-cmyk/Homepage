@@ -13,6 +13,7 @@
 import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fetchGa4Data } from "./ga4Api.mjs";
+import { fetchMixpanelData } from "./mixpanelApi.mjs";
 import { loadLocalEnv } from "./localEnv.mjs";
 
 const DATA_DIR = path.join(process.cwd(), "reporting", "data");
@@ -283,6 +284,83 @@ function renderGa4Section(ga4) {
     ${eventTable}`;
 }
 
+// ---- Mixpanel-Abschnitt (eigene Quelle, eigener Block) - liefert, was
+// weder Clarity (UX/Heatmaps) noch GA4 (Traffic/Marketing) gut abdecken:
+// Funnel-Conversion pro Schritt und Retention/Kohorten. Wie GA4 eine
+// Live-Abfrage fuer den gewaehlten Zeitraum, kein Archiv noetig. ---------
+
+function renderRetentionTable(retention) {
+  if (!retention || typeof retention !== "object") {
+    return '<p class="muted">Keine Retention-Daten für diesen Zeitraum (oder noch keine Bestellungen, an die sich eine Rückkehr messen ließe).</p>';
+  }
+  const cohortDates = Object.keys(retention).sort();
+  if (!cohortDates.length) {
+    return '<p class="muted">Keine Retention-Daten für diesen Zeitraum.</p>';
+  }
+  const maxIntervals = Math.max(...cohortDates.map((d) => (retention[d].counts ?? []).length));
+  const intervalHeaders = Array.from({ length: maxIntervals }, (_, i) => `<th>Tag ${i}</th>`).join("");
+
+  const rows = cohortDates
+    .map((date) => {
+      const cohort = retention[date];
+      const cells = Array.from({ length: maxIntervals }, (_, i) => {
+        const count = cohort.counts?.[i];
+        const pct = count != null && cohort.first ? Math.round((count / cohort.first) * 100) : null;
+        return `<td>${count != null ? `${formatNumber(count)}${pct != null ? ` (${pct}%)` : ""}` : "–"}</td>`;
+      }).join("");
+      return `<tr><td>${date}</td><td>${formatNumber(cohort.first)}</td>${cells}</tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Kohorte (erster "order_completed")</th><th>Kohortengröße</th>${intervalHeaders}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function renderFunnelChart(funnel) {
+  if (!funnel?.data) {
+    return '<p class="muted">Kein Funnel konfiguriert (MIXPANEL_FUNNEL_ID) — siehe reporting/README.md, wie man in der Mixpanel-UI einen Funnel-Report anlegt und dessen ID einträgt.</p>';
+  }
+  // Mixpanel liefert Funnel-Daten pro Tag im Zeitraum - fuer die
+  // Gesamtansicht ueber den ganzen Zeitraum werden die Schritt-Counts
+  // je Tag aufsummiert, statt nur den letzten Tag zu zeigen.
+  const dayEntries = Object.values(funnel.data);
+  if (!dayEntries.length) {
+    return '<p class="muted">Keine Funnel-Daten für diesen Zeitraum.</p>';
+  }
+  const stepCount = Math.max(...dayEntries.map((d) => d.steps?.length ?? 0));
+  const totals = Array.from({ length: stepCount }, () => 0);
+  const labels = Array.from({ length: stepCount }, () => "");
+  for (const day of dayEntries) {
+    (day.steps ?? []).forEach((step, i) => {
+      totals[i] += step.count ?? 0;
+      if (step.goal) labels[i] = step.goal;
+    });
+  }
+  const rows = totals.map((value, i) => ({ path: labels[i] || `Schritt ${i + 1}`, value }));
+  return renderBarChart(rows);
+}
+
+function renderMixpanelSection(mixpanel) {
+  if (!mixpanel) {
+    return '<p class="muted">Mixpanel ist für diesen Report nicht konfiguriert (MIXPANEL_PROJECT_ID bzw. Service-Account-Zugangsdaten fehlen) — siehe reporting/README.md.</p>';
+  }
+
+  const segRows = Object.entries(mixpanel.segmentation ?? {})
+    .map(([event, value]) => ({ path: event, value }))
+    .sort((a, b) => b.value - a.value);
+
+  return `
+    <h3>Event-Zählungen</h3>
+    <div class="chart-card">${renderBarChart(segRows)}</div>
+    <h3>Retention — kommen Nutzer nach einer Bestellung zurück?</h3>
+    ${renderRetentionTable(mixpanel.retention)}
+    <h3>Funnel-Conversion</h3>
+    ${renderFunnelChart(mixpanel.funnel)}`;
+}
+
 async function main() {
   await loadLocalEnv();
   const args = parseArgs(process.argv.slice(2));
@@ -319,6 +397,15 @@ async function main() {
   } catch (err) {
     ga4Error = err.message;
     console.warn(`Google Analytics konnte nicht abgefragt werden: ${err.message}`);
+  }
+
+  let mixpanelData = null;
+  let mixpanelError = null;
+  try {
+    mixpanelData = await fetchMixpanelData(effectiveFrom, effectiveTo);
+  } catch (err) {
+    mixpanelError = err.message;
+    console.warn(`Mixpanel konnte nicht abgefragt werden: ${err.message}`);
   }
 
   // Kernzahlen
@@ -474,6 +561,15 @@ async function main() {
     den oben gewählten Zeitraum, kein Archiv nötig.
   </div>
   ${ga4Error ? `<p class="muted">Google Analytics konnte nicht abgefragt werden: ${escapeHtml(ga4Error)}</p>` : renderGa4Section(ga4Data)}
+
+  <h2>Mixpanel <span class="source-tag">Quelle: Mixpanel</span></h2>
+  <div class="note">
+    Ergänzt Clarity (UX/Heatmaps) und GA4 (Traffic/Marketing) um
+    Produkt-Analytics: Funnel-Conversion pro Schritt und Retention — kommen
+    Nutzer nach einer Bestellung zurück? Wie GA4 eine Live-Abfrage für den
+    gewählten Zeitraum.
+  </div>
+  ${mixpanelError ? `<p class="muted">Mixpanel konnte nicht abgefragt werden: ${escapeHtml(mixpanelError)}</p>` : renderMixpanelSection(mixpanelData)}
 </body>
 </html>`;
 

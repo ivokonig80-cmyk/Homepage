@@ -1,13 +1,17 @@
-// Dünner Wrapper um die Microsoft-Clarity- und Google-Analytics(gtag)-JS-
-// APIs (siehe components/analytics/Analytics.tsx für das Laden der Scripts
+// Dünner Wrapper um Microsoft Clarity, Google Analytics (gtag) und Mixpanel
+// (siehe components/analytics/Analytics.tsx für das Laden/Initialisieren
 // nach Consent). Custom Events + Tags markieren die Funnel-Schritte
 // (Seitenaufruf -> Konfigurator/Produkt -> Kaufen-Button -> Bestellung) als
-// in beiden Tools filterbare/segmentierbare Signale, zusätzlich zu Clarity's
-// automatischen Heatmaps/Session-Recordings.
+// in allen drei Tools filterbare/segmentierbare Signale - zusätzlich zu
+// Clarity's Heatmaps/Session-Recordings, GA4's Trafficquellen und
+// Mixpanel's Funnel-/Retention-Analyse (drei bewusst unterschiedliche,
+// sich ergänzende Perspektiven statt einer vierten Ansicht derselben Daten).
 //
-// No-op je Tool, wenn es noch nicht geladen ist (kein Consent, keine
-// Projekt-/Measurement-ID, Script noch nicht initialisiert) - ruft NICHT
-// selbst zur Zustimmung auf.
+// No-op je Tool, wenn es noch nicht geladen/initialisiert ist (kein
+// Consent, keine ID, Script noch nicht bereit) - ruft NICHT selbst zur
+// Zustimmung auf.
+
+import mixpanel from "mixpanel-browser";
 
 type ClarityFn = (...args: unknown[]) => void;
 type GtagFn = (...args: unknown[]) => void;
@@ -17,6 +21,24 @@ declare global {
     clarity?: ClarityFn;
     gtag?: GtagFn;
   }
+}
+
+let mixpanelReady = false;
+
+export function initMixpanel(token: string) {
+  if (mixpanelReady) return;
+  mixpanel.init(token, { autocapture: false, track_pageview: true, persistence: "localStorage" });
+  mixpanelReady = true;
+}
+
+/**
+ * Verknüpft den vom Nutzer selbst gewählten Nickname (siehe OrderForm.tsx)
+ * als durchgehende Mixpanel-Identität - einziger Ort, an dem eine
+ * (freiwillige, anonyme) Kennung an ein Analytics-Tool weitergegeben wird.
+ */
+export function identifyUser(nickname: string) {
+  if (!mixpanelReady || !nickname) return;
+  mixpanel.identify(nickname);
 }
 
 export function trackEvent(name: string, tags?: Record<string, string | number | boolean>) {
@@ -33,5 +55,9 @@ export function trackEvent(name: string, tags?: Record<string, string | number |
 
   if (typeof window.gtag === "function") {
     window.gtag("event", name, tags ?? {});
+  }
+
+  if (mixpanelReady) {
+    mixpanel.track(name, tags);
   }
 }

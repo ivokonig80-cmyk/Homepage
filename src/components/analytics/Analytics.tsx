@@ -2,11 +2,13 @@
 
 import Script from "next/script";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { initMixpanel } from "@/lib/analytics";
 
 const STORAGE_KEY = "ds-analytics-consent";
 const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
 type ConsentState = "unknown" | "granted" | "denied";
 
@@ -46,13 +48,20 @@ function setConsent(value: "granted" | "denied") {
  *   nach Klick auf "Zustimmen".
  * - Entscheidung wird in localStorage gemerkt, damit das Banner nicht bei
  *   jedem Seitenaufruf erneut erscheint.
- * - Ohne gesetzte NEXT_PUBLIC_CLARITY_PROJECT_ID bzw.
- *   NEXT_PUBLIC_GA_MEASUREMENT_ID passiert für das jeweilige Tool gar
- *   nichts (auch nach Zustimmung) - so laufen beide unabhängig voneinander,
- *   bis ihre ID eingetragen ist (siehe .env.example).
+ * - Ohne gesetzte NEXT_PUBLIC_CLARITY_PROJECT_ID,
+ *   NEXT_PUBLIC_GA_MEASUREMENT_ID bzw. NEXT_PUBLIC_MIXPANEL_TOKEN passiert
+ *   für das jeweilige Tool gar nichts (auch nach Zustimmung) - so laufen
+ *   alle drei unabhängig voneinander, bis ihre ID eingetragen ist (siehe
+ *   .env.example).
  */
 export function Analytics() {
   const consent = useSyncExternalStore(subscribe, readConsent, getServerSnapshot);
+
+  useEffect(() => {
+    if (consent === "granted" && MIXPANEL_TOKEN) {
+      initMixpanel(MIXPANEL_TOKEN);
+    }
+  }, [consent]);
 
   return (
     <>
@@ -92,7 +101,7 @@ export function Analytics() {
           <div className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-foreground-muted">
               Wir würden gerne anonymisierte Analyse-Tools (Microsoft
-              Clarity und Google Analytics) für Heatmaps und
+              Clarity, Google Analytics und Mixpanel) für Heatmaps und
               Nutzungsstatistiken einsetzen, um diese Seite zu verbessern.
               Mehr dazu in unserer{" "}
               <Link href="/datenschutz" className="underline hover:text-foreground">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, identifyUser } from "@/lib/analytics";
 
 interface OrderFormProps {
   itemLabel: string;
@@ -55,6 +55,7 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
       const data = (await res.json()) as { orderId: string };
       setOrderId(data.orderId);
       setStatus("success");
+      identifyUser(form.nickname);
       trackEvent("order_completed", { context: eventContext, orderId: data.orderId, value: totalPrice });
     } catch {
       setStatus("error");
