@@ -17,6 +17,10 @@
 // Funnel-Conversion bis zu "order_completed" dadurch leicht unterschaetzen
 // (fruehe Schritte laufen anonym, erst danach unter dem Nickname).
 
+const REQUEST_TIMEOUT_MS = 20_000;
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 5_000;
+
 const FUNNEL_EVENTS = [
   "cta_start_configurator",
   "shop_product_click",
@@ -36,43 +40,100 @@ const FUNNEL_EVENTS = [
 // falsch eingeordnet).
 const FUNNEL_SEQUENCE = ["cta_start_configurator", "configurator_step_view", "buy_button_click", "order_completed"];
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Zentraler, getrimmter Env-Reader - schliesst "Zugangsdaten mit
+// fuehrendem/nachgestelltem Leerzeichen aus Copy-Paste" strukturell als
+// Fehlerursache aus, statt das nur zu vermuten. Wird ausnahmslos ueberall
+// verwendet, wo eine MIXPANEL_*-Variable gelesen wird.
+function trimmedEnv(name) {
+  const raw = process.env[name];
+  return raw == null ? undefined : raw.trim();
+}
+
 function regionHost() {
-  const region = (process.env.MIXPANEL_REGION ?? "").toLowerCase();
+  const region = (trimmedEnv("MIXPANEL_REGION") ?? "").toLowerCase();
   if (region === "eu") return "data-eu.mixpanel.com";
   if (region === "in") return "data-in.mixpanel.com";
   return "data.mixpanel.com";
 }
 
 function authHeader() {
-  const username = process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME;
-  const secret = process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET;
+  const username = trimmedEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME") ?? "";
+  const secret = trimmedEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET") ?? "";
   const token = Buffer.from(`${username}:${secret}`).toString("base64");
   return `Basic ${token}`;
 }
 
 /**
- * Laedt alle Rohdaten-Events unserer bekannten Funnel-Events im Zeitraum in
- * einem einzigen Aufruf (JSONL - eine Zeile pro Event). Deutlich sparsamer
- * als die alte Segmentation-Loesung mit einer Anfrage pro Event.
+ * Loggt AUSSCHLIESSLICH sichere Metadaten ueber die Zugangsdaten - niemals
+ * die Werte selbst. "present" (Boolean), "length" (Zahl) und
+ * "hasLeadingOrTrailingWhitespace" (Boolean) lassen sich nicht zum
+ * Originalwert zurueckrechnen, liefern aber genug Signal, um z.B. ein
+ * leeres/verkuerztes/verunreinigtes Secret von einem plausiblen zu
+ * unterscheiden - die naechste konkrete Evidenz fuer die Fehlersuche,
+ * ohne dabei selbst ein Sicherheitsrisiko zu sein.
  */
-async function fetchRawEvents(fromDate, toDate) {
-  const url = new URL(`https://${regionHost()}/api/2.0/export`);
-  url.searchParams.set("project_id", process.env.MIXPANEL_PROJECT_ID);
-  url.searchParams.set("from_date", fromDate);
-  url.searchParams.set("to_date", toDate);
-  url.searchParams.set("event", JSON.stringify(FUNNEL_EVENTS));
-  url.searchParams.set("limit", "100000");
-
-  console.log(`Rufe ${url} ab...`);
-  const res = await fetch(url, { headers: { Authorization: authHeader(), Accept: "text/plain" } });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`${res.status} beim Raw-Export: ${body}`);
+function logCredentialDiagnostics() {
+  const fields = [
+    ["MIXPANEL_SERVICE_ACCOUNT_USERNAME", process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME],
+    ["MIXPANEL_SERVICE_ACCOUNT_SECRET", process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET],
+    ["MIXPANEL_PROJECT_ID", process.env.MIXPANEL_PROJECT_ID],
+  ];
+  console.log("Mixpanel-Zugangsdaten-Diagnose (Werte selbst werden nie geloggt):");
+  for (const [name, raw] of fields) {
+    const present = raw != null && raw !== "";
+    const length = present ? raw.length : 0;
+    const hasWhitespace = present && raw !== raw.trim();
+    console.log(`  ${name}: present=${present} length=${length} hasLeadingOrTrailingWhitespace=${hasWhitespace}`);
   }
+  console.log(`  MIXPANEL_REGION: ${trimmedEnv("MIXPANEL_REGION") ?? "(nicht gesetzt -> US-Standard)"}`);
+}
 
-  const text = await res.text();
-  console.log(`... Raw-Export beantwortet mit ${res.status}, ${text.trim() ? text.trim().split("\n").length : 0} Zeilen`);
+/**
+ * Ordnet einen HTTP-Status einer verstaendlichen, secret-freien Meldung zu.
+ * "body" ist Mixpanel's eigener Server-Fehlertext (z.B. woertlich "Unable
+ * to authenticate request") - keine Widerspiegelung der uebermittelten
+ * Zugangsdaten, daher unbedenklich mit auszugeben.
+ */
+function classifyMixpanelError(status, body) {
+  const suffix = body ? `: ${body}` : "";
+  if (status === 400 || status === 401) {
+    return `Mixpanel-Authentifizierung fehlgeschlagen (${status})${suffix} — Service-Account-Username/-Secret und Projekt-Zugriff pruefen.`;
+  }
+  if (status === 403) {
+    return `Mixpanel-Zugriff verweigert (${status})${suffix} — Service-Account-Berechtigungen/Projekt-Zugriff pruefen.`;
+  }
+  if (status === 429) {
+    return `Mixpanel Rate-Limit erreicht (429)${suffix} — spaeter erneut versuchen.`;
+  }
+  if (status >= 500) {
+    return `Mixpanel Server-Fehler (${status})${suffix} — voruebergehend, spaeter erneut versuchen.`;
+  }
+  return `${status} beim Raw-Export${suffix}`;
+}
 
+async function fetchMixpanelOnce(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      headers: { Authorization: authHeader(), Accept: "text/plain" },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error(`Mixpanel Raw-Export hat innerhalb von ${REQUEST_TIMEOUT_MS / 1000}s nicht geantwortet.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseRawEventLines(text) {
   return text
     .trim()
     .split("\n")
@@ -91,6 +152,65 @@ async function fetchRawEvents(fromDate, toDate) {
       time: row.properties?.time ? Number(row.properties.time) * 1000 : null,
     }))
     .filter((e) => e.time != null);
+}
+
+/**
+ * Laedt alle Rohdaten-Events unserer bekannten Funnel-Events im Zeitraum in
+ * einem einzigen Aufruf (JSONL - eine Zeile pro Event). Deutlich sparsamer
+ * als die alte Segmentation-Loesung mit einer Anfrage pro Event.
+ *
+ * 400/401/403 werden NIE wiederholt - da hilft nur ein Eingriff an den
+ * Zugangsdaten/Berechtigungen, ein Retry aendert daran nichts (gleiche
+ * Logik wie in clarity-snapshot.mjs). 429/5xx gelten als transient und
+ * werden mit Backoff wiederholt.
+ */
+async function fetchRawEvents(fromDate, toDate) {
+  const url = new URL(`https://${regionHost()}/api/2.0/export`);
+  url.searchParams.set("project_id", trimmedEnv("MIXPANEL_PROJECT_ID") ?? "");
+  url.searchParams.set("from_date", fromDate);
+  url.searchParams.set("to_date", toDate);
+  url.searchParams.set("event", JSON.stringify(FUNNEL_EVENTS));
+  url.searchParams.set("limit", "100000");
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    console.log(`Rufe ${url} ab... (Versuch ${attempt}/${MAX_ATTEMPTS})`);
+    let res;
+    try {
+      res = await fetchMixpanelOnce(url);
+    } catch (err) {
+      if (attempt === MAX_ATTEMPTS) throw err;
+      console.warn(`... Netzwerkfehler/Timeout (${err.message}), versuche erneut in ${RETRY_BASE_DELAY_MS * attempt}ms`);
+      await sleep(RETRY_BASE_DELAY_MS * attempt);
+      continue;
+    }
+
+    if (res.status === 429 && attempt < MAX_ATTEMPTS) {
+      await res.text().catch(() => "");
+      const retryAfterHeader = res.headers.get("retry-after");
+      const retryAfterMs =
+        retryAfterHeader && !Number.isNaN(Number(retryAfterHeader))
+          ? Number(retryAfterHeader) * 1000
+          : RETRY_BASE_DELAY_MS * attempt;
+      console.warn(`... 429 (Rate-Limit bei Mixpanel), versuche erneut in ${retryAfterMs}ms`);
+      await sleep(retryAfterMs);
+      continue;
+    }
+
+    if (res.status >= 500 && attempt < MAX_ATTEMPTS) {
+      console.warn(`... ${res.status} (Server-Fehler bei Mixpanel), versuche erneut in ${RETRY_BASE_DELAY_MS * attempt}ms`);
+      await sleep(RETRY_BASE_DELAY_MS * attempt);
+      continue;
+    }
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(classifyMixpanelError(res.status, body));
+    }
+
+    const text = await res.text();
+    console.log(`... Raw-Export beantwortet mit ${res.status}, ${text.trim() ? text.trim().split("\n").length : 0} Zeilen`);
+    return parseRawEventLines(text);
+  }
 }
 
 function computeEventCounts(events) {
@@ -171,11 +291,15 @@ function computeFunnel(events, sequence) {
 }
 
 export async function fetchMixpanelData(startDate, endDate) {
-  if (!process.env.MIXPANEL_PROJECT_ID || !process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME || !process.env.MIXPANEL_SERVICE_ACCOUNT_SECRET) {
+  const projectId = trimmedEnv("MIXPANEL_PROJECT_ID");
+  const username = trimmedEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME");
+  const secret = trimmedEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET");
+  if (!projectId || !username || !secret) {
     return null;
   }
 
-  console.log(`Mixpanel-Rohdaten-Export fuer Zeitraum ${startDate} bis ${endDate} (Region: ${regionHost()}, Projekt: ${process.env.MIXPANEL_PROJECT_ID})`);
+  logCredentialDiagnostics();
+  console.log(`Mixpanel-Rohdaten-Export fuer Zeitraum ${startDate} bis ${endDate} (Region: ${regionHost()}, Projekt: ${projectId})`);
 
   const events = await fetchRawEvents(startDate, endDate);
 
