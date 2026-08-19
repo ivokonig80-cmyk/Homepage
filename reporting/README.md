@@ -99,6 +99,35 @@ unter **Actions → Clarity Daily Snapshot → Run workflow**, oder lokal:
 npm run report:snapshot
 ```
 
+## Automatischer Heatmap-Screenshot (Material-Beliebtheit im Shop)
+
+Zusätzlich zu manuell abgelegten Screenshots (siehe unten) erzeugt der
+tägliche Workflow automatisch einen Screenshot der Material-Auswahl auf der
+Shop-Produktseite (`/shop/baer`) und markiert per Playwright (Headless-
+Chromium) direkt im DOM das laut Mixpanel meistgeklickte Material — kein
+manuelles Clarity-Screenshotten nötig, kein separates Bildbearbeitungs-Tool.
+
+**Warum nicht einfach Clarity's eigene Heatmap-Ansicht screenshotten?**
+Clarity baut deren Hintergrundbild aus einem automatischen DOM-Snapshot, der
+Canvas-/WebGL-Inhalte (unsere 3D-Vorschau) oft nicht sauber einfängt — live
+beobachtet: kaputter/leerer Hintergrund an der Stelle des Canvas-Elements.
+Playwright rendert stattdessen die echte, live gehostete Seite.
+
+**Voraussetzung:** Klicks auf die Material-Buttons werden dafür als
+`material_select`-Event (mit `material`- und `context`-Property, siehe
+`src/lib/analytics.ts`, `ProductConfigurator.tsx`, `StepFarbe.tsx`) an
+Mixpanel gesendet. Ohne mindestens einen echten Klick im gewählten
+Zeitraum (`reporting/material-heatmap-screenshot.mjs`, Standard: letzte 90
+Tage) erzeugt das Skript bewusst **kein** Bild, statt eine erfundene
+"Beliebtheit" zu zeigen.
+
+Manuell auslösen:
+```
+npm run report:heatmap
+```
+Env-Variablen (optional): `SITE_BASE_URL` (Standard `https://polinova.store`),
+`HEATMAP_PRODUCT_SLUG` (Standard `baer`).
+
 ## Screenshots hinzufügen
 
 Ablage-Konvention:

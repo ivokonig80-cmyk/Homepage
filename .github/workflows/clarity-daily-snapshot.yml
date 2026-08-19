@@ -12,7 +12,7 @@ permissions:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
 
@@ -22,6 +22,25 @@ jobs:
 
       - name: Abhaengigkeiten installieren
         run: npm ci
+
+      - name: Playwright-Browser installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Material-Heatmap-Screenshot erzeugen
+        continue-on-error: true
+        # Ersetzt manuelles Clarity-Heatmap-Screenshotten fuer die
+        # Material-Auswahl im Shop (siehe reporting/README.md): navigiert per
+        # echtem Headless-Chromium zur Produktseite und markiert das laut
+        # Mixpanel meistgewaehlte Material direkt im DOM. continue-on-error,
+        # da kein Blocker fuer den Rest des Laufs (z.B. noch keine
+        # material_select-Events vorhanden -> Skript beendet sich einfach
+        # ohne Bild, siehe eigene Log-Ausgabe).
+        env:
+          MIXPANEL_PROJECT_ID: ${{ secrets.MIXPANEL_PROJECT_ID }}
+          MIXPANEL_SERVICE_ACCOUNT_USERNAME: ${{ secrets.MIXPANEL_SERVICE_ACCOUNT_USERNAME }}
+          MIXPANEL_SERVICE_ACCOUNT_SECRET: ${{ secrets.MIXPANEL_SERVICE_ACCOUNT_SECRET }}
+          MIXPANEL_REGION: ${{ secrets.MIXPANEL_REGION }}
+        run: node reporting/material-heatmap-screenshot.mjs
 
       - name: Snapshot von Clarity abrufen
         id: clarity_snapshot
@@ -62,7 +81,7 @@ jobs:
         run: |
           git config user.name "clarity-snapshot-bot"
           git config user.email "actions@github.com"
-          git add reporting/data public/ergebnisse.html
+          git add reporting/data reporting/screenshots public/ergebnisse.html
 
           if git diff --cached --quiet; then
             echo "Keine Aenderungen, nichts zu committen."

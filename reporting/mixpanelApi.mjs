@@ -32,6 +32,7 @@ const FUNNEL_EVENTS = [
   "checkout_view",
   "buy_button_click",
   "order_completed",
+  "material_select",
 ];
 
 // Sequenz fuer die Funnel-Berechnung - bewusst eine Teilmenge der
@@ -150,6 +151,8 @@ function parseRawEventLines(text) {
       event: row.event,
       distinctId: row.properties?.distinct_id ?? row.properties?.$device_id ?? "unbekannt",
       time: row.properties?.time ? Number(row.properties.time) * 1000 : null,
+      material: row.properties?.material,
+      context: row.properties?.context,
     }))
     .filter((e) => e.time != null);
 }
@@ -290,6 +293,22 @@ function computeFunnel(events, sequence) {
   return sequence.map((event, i) => ({ path: event, value: stepCounts[i] }));
 }
 
+/**
+ * Zaehlt "material_select"-Klicks pro Kontext ("shop" / "konfigurator") und
+ * Material-ID - Grundlage fuer den automatisch markierten Heatmap-
+ * Screenshot (siehe reporting/material-heatmap-screenshot.mjs).
+ */
+function computeMaterialPopularity(events) {
+  const byContext = {};
+  for (const e of events) {
+    if (e.event !== "material_select" || !e.material) continue;
+    const ctx = e.context ?? "unbekannt";
+    byContext[ctx] = byContext[ctx] ?? {};
+    byContext[ctx][e.material] = (byContext[ctx][e.material] ?? 0) + 1;
+  }
+  return byContext;
+}
+
 export async function fetchMixpanelData(startDate, endDate) {
   const projectId = trimmedEnv("MIXPANEL_PROJECT_ID");
   const username = trimmedEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME");
@@ -307,6 +326,7 @@ export async function fetchMixpanelData(startDate, endDate) {
     eventCounts: computeEventCounts(events),
     retention: computeRetention(events),
     funnel: computeFunnel(events, FUNNEL_SEQUENCE),
+    materialPopularity: computeMaterialPopularity(events),
     totalEvents: events.length,
   };
 }

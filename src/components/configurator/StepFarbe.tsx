@@ -1,6 +1,7 @@
 "use client";
 
 import { SculptureViewer } from "@/components/three/SculptureViewer";
+import { trackEvent } from "@/lib/analytics";
 import { CATALOG, MATERIALS } from "@/lib/catalog";
 
 const PLACEHOLDER_ITEM = CATALOG.find((item) => item.slug === "katze") ?? CATALOG[0];
@@ -38,7 +39,10 @@ export function StepFarbe({ materialId, onMaterialChange, scale, modelUrl }: Ste
               key={m.id}
               type="button"
               aria-pressed={m.id === materialId}
-              onClick={() => onMaterialChange(m.id)}
+              onClick={() => {
+                onMaterialChange(m.id);
+                trackEvent("material_select", { material: m.id, context: "konfigurator" });
+              }}
               className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent-warm ${
                 m.id === materialId
                   ? "border-accent-warm bg-background-elevated"
