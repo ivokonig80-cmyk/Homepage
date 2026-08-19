@@ -25,9 +25,22 @@ declare global {
 
 let mixpanelReady = false;
 
+// Das Mixpanel-Projekt liegt in der EU-Datenregion (bei Projekterstellung
+// gewaehlt, nachtraeglich nicht aenderbar) - ohne api_host schickt der
+// Browser-SDK Events standardmaessig an die US-Server, wo sie fuer ein
+// EU-Projekt nicht ankommen (live beobachtet: "No connection found" trotz
+// korrekt eingebundenem Projekt-Token). Falls das Projekt jemals in einer
+// anderen Region liegt, hier anpassen.
+const MIXPANEL_API_HOST = "https://api-eu.mixpanel.com";
+
 export function initMixpanel(token: string) {
   if (mixpanelReady) return;
-  mixpanel.init(token, { autocapture: false, track_pageview: true, persistence: "localStorage" });
+  mixpanel.init(token, {
+    autocapture: false,
+    track_pageview: true,
+    persistence: "localStorage",
+    api_host: MIXPANEL_API_HOST,
+  });
   mixpanelReady = true;
 }
 
