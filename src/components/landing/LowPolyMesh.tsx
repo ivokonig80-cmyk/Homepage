@@ -54,7 +54,7 @@ const SCATTER_ROTATION_DEG = 340;
 // Deutlich groesser als der normale Streuradius - ab der ersten Sprengung
 // verteilen sich die Teile damit ueber weite Teile des Bildschirms statt
 // nur nahe am Motiv (siehe chaosEnabled-Erklaerung oben).
-const CHAOS_SCATTER_DISTANCE = 95;
+const CHAOS_SCATTER_DISTANCE = 150;
 
 function parsePoints(points: string): [number, number][] {
   return points.split(" ").map((pair) => {
@@ -113,8 +113,15 @@ function Facet({
   const effectiveScatterDistance = chaosEnabled ? CHAOS_SCATTER_DISTANCE : scatterDistance;
   const magnitude = effectiveScatterDistance * (0.65 + seeded(index + 50) * 1.1);
 
-  const scatterX = Math.cos(angle) * magnitude;
-  const scatterY = Math.sin(angle) * magnitude;
+  // Im Chaos-Modus elliptisch statt kreisförmig verstreuen: der Hero ist
+  // breiter als hoch, ein kreisförmiger Streuradius schickt bei größerem
+  // Radius sofort viele Teile senkrecht aus dem Bild statt sie ueber die
+  // vorhandene Breite zu nutzen.
+  const scatterScaleX = chaosEnabled ? 1.5 : 1;
+  const scatterScaleY = chaosEnabled ? 0.62 : 1;
+  const scatterX = Math.cos(angle) * magnitude * scatterScaleX;
+  const scatterY = Math.sin(angle) * magnitude * scatterScaleY;
+  const scatterVectorLength = Math.hypot(scatterX, scatterY) || 1;
   const scatterRotate = (seeded(index + 100) - 0.5) * SCATTER_ROTATION_DEG;
 
   // Eigenes, geseedetes Zeitfenster je Facette innerhalb der Gesamt-Montage
@@ -134,8 +141,8 @@ function Facet({
   // zusaetzliches Trudeln waehrend des Flugs - beides exakt 0 an Start UND
   // Ziel (sin(0)=sin(pi)=0), am staerksten in der Flugmitte. Ergibt den
   // "Blatt im Wind"-Effekt statt einer geraden Linie.
-  const perpUnitX = -scatterY / magnitude;
-  const perpUnitY = scatterX / magnitude;
+  const perpUnitX = -scatterY / scatterVectorLength;
+  const perpUnitY = scatterX / scatterVectorLength;
   const swayAmplitude = (seeded(index + 400) - 0.5) * 70;
   const tumbleAmplitude = (seeded(index + 600) - 0.5) * 90;
   const swayX = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * perpUnitX * swayAmplitude);
@@ -177,40 +184,55 @@ function Facet({
   );
 
   // Dauerhaftes Umhertreiben im Ruhezustand ("Blatt/Feder im Wind") - nur
-  // wenn chaosEnabled (ab der ersten Sprengung). Zwei ueberlagerte,
-  // unterschiedlich schnelle Sinuswellen je Achse (geseedete Frequenz/
-  // Phase) ergeben ein organisches Wandern statt einer simplen Kreisbahn.
-  // driftActive blendet in den ersten 12% eines gezielten Zusammenbaus
-  // (progress steigt ueber 0) zuegig aus, damit sich Treiben und
-  // gerichteter Flug nicht in die Quere kommen.
+  // wenn chaosEnabled (ab der ersten Sprengung). WICHTIG: nicht zwei
+  // unabhaengige Sinuswellen je Achse (das ergibt eine Lissajous-Kurve -
+  // je nach Frequenzverhaeltnis frueher oder spaeter eine erkennbare, sich
+  // wiederholende Linie/Ellipse statt echtem Umherirren). Stattdessen
+  // wandert der RICHTUNGSWINKEL selbst per ueberlagerten Sinuswellen -
+  // Position = Radius * (cos/sin des wandernden Winkels). Da X und Y damit
+  // durch denselben, sich staendig unvorhersehbar drehenden Winkel bestimmt
+  // werden (nicht durch zwei unabhaengige Achsen), ergibt sich ein echt
+  // maeandernder Pfad statt einer klaren Bahn. driftActive blendet in den
+  // ersten 12% eines gezielten Zusammenbaus zuegig aus.
   const driftActive = useTransform(progress, [0, 0.12], [1, 0]);
+  const driftBaseAngle = seeded(index + 880) * Math.PI * 2;
+  const driftAngleFreq1 = 0.00014 + seeded(index + 820) * 0.00022;
+  const driftAngleFreq2 = 0.00014 + seeded(index + 830) * 0.00022;
+  const driftAngleFreq3 = 0.00014 + seeded(index + 840) * 0.00022;
+  const driftAnglePhase1 = seeded(index + 850) * Math.PI * 2;
+  const driftAnglePhase2 = seeded(index + 860) * Math.PI * 2;
+  const driftAnglePhase3 = seeded(index + 870) * Math.PI * 2;
   // In viewBox-Einheiten (wie magnitude/scatterX/Y oben), NICHT Pixel - bei
-  // der ~2.8-fachen Render-Skalierung ergibt das ~45-165px tatsaechliche
+  // der ~2.8-fachen Render-Skalierung ergibt das ~110-280px tatsaechliche
   // Wander-Reichweite je Facette.
-  const driftAmplitude = 16 + seeded(index + 780) * 43;
-  const driftFreqX1 = 0.00025 + seeded(index + 700) * 0.00035;
-  const driftFreqX2 = 0.00025 + seeded(index + 710) * 0.00035;
-  const driftPhaseX1 = seeded(index + 720) * Math.PI * 2;
-  const driftPhaseX2 = seeded(index + 730) * Math.PI * 2;
-  const driftFreqY1 = 0.00025 + seeded(index + 740) * 0.00035;
-  const driftFreqY2 = 0.00025 + seeded(index + 750) * 0.00035;
-  const driftPhaseY1 = seeded(index + 760) * Math.PI * 2;
-  const driftPhaseY2 = seeded(index + 770) * Math.PI * 2;
+  const driftRadiusBase = 40 + seeded(index + 780) * 60;
+  const driftRadiusFreq = 0.0001 + seeded(index + 890) * 0.00015;
+  const driftRadiusPhase = seeded(index + 900) * Math.PI * 2;
   const driftRotAmplitude = 30 + seeded(index + 810) * 50;
   const driftRotFreq = 0.00015 + seeded(index + 790) * 0.0002;
   const driftRotPhase = seeded(index + 800) * Math.PI * 2;
 
-  const driftX = useTransform([time, driftActive], (values: number[]) => {
+  const driftAngle = useTransform(
+    time,
+    (t) =>
+      driftBaseAngle +
+      Math.sin(t * driftAngleFreq1 + driftAnglePhase1) * 1.5 +
+      Math.sin(t * driftAngleFreq2 + driftAnglePhase2) * 0.9 +
+      Math.sin(t * driftAngleFreq3 + driftAnglePhase3) * 0.5
+  );
+  const driftRadius = useTransform(
+    time,
+    (t) => driftRadiusBase * (0.65 + 0.35 * Math.sin(t * driftRadiusFreq + driftRadiusPhase))
+  );
+  const driftX = useTransform([driftAngle, driftRadius, driftActive], (values: number[]) => {
     if (!chaosEnabled) return 0;
-    const [t, active] = values;
-    const wander = 0.6 * Math.sin(t * driftFreqX1 + driftPhaseX1) + 0.4 * Math.sin(t * driftFreqX2 + driftPhaseX2);
-    return wander * driftAmplitude * active;
+    const [ang, rad, active] = values;
+    return Math.cos(ang) * rad * active;
   });
-  const driftY = useTransform([time, driftActive], (values: number[]) => {
+  const driftY = useTransform([driftAngle, driftRadius, driftActive], (values: number[]) => {
     if (!chaosEnabled) return 0;
-    const [t, active] = values;
-    const wander = 0.6 * Math.sin(t * driftFreqY1 + driftPhaseY1) + 0.4 * Math.sin(t * driftFreqY2 + driftPhaseY2);
-    return wander * driftAmplitude * active;
+    const [ang, rad, active] = values;
+    return Math.sin(ang) * rad * active;
   });
   const driftRotate = useTransform([time, driftActive], (values: number[]) => {
     if (!chaosEnabled) return 0;
