@@ -31,6 +31,14 @@ import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
  * unregelmäßig, wie herabfallende Blätter/Federn, die sich nach und nach zur
  * Katze zusammenfügen, statt dass alle Teile synchron geradlinig einfliegen.
  *
+ * Sobald die Montage komplett abgeschlossen ist, passiert zweierlei: (1) die
+ * dunklen Facetten-Umrandungen blenden aus - die Katze wirkt dann wie ein
+ * durchgehend verschweisstes Stueck statt einzelner Dreiecke ("wasserdicht"),
+ * (2) der gesamte Kopf bekommt eine sanfte 3D-Neigung (Perspective-Tilt),
+ * die der Mausposition folgt - wirkt wie ein Blick, der der Maus folgt.
+ * Dieses Muster (Montage -> Verschweissen -> Blick-Tilt) ist die Vorlage fuer
+ * kuenftige Slides mit anderen Motiven.
+ *
  * Montage ist absichtlich EINWEG (Ratchet, siehe `settled` unten): Ein
  * typischer Nutzer bewegt die Maus von der Adressleiste kommend zu einem
  * "Jetzt gestalten"-Button - bis die Maus dort ankommt, soll die Katze
@@ -164,12 +172,34 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
   // Vor-Consent-Phase (siehe LowPolyCat weiter unten) komplett unsichtbar.
   const opacity = useTransform(localArrive, [0, 1], [0.55, 1]);
 
-  // Mausparallaxe: lebt permanent oben drauf, damit sich die Szene auch
-  // nach vollständiger Montage noch "übertrieben" auf Mausbewegung anfühlt.
-  // Facetten, die weiter vom Zentrum entfernt sind, wackeln stärker.
+  // "Wasserdicht"/verschweisst sobald komplett montiert: die dunklen
+  // Facetten-Umrandungen (Stroke) blenden erst ganz am Ende der
+  // GESAMT-Montage aus (nicht pro Facette - sonst waeren manche Nahtstellen
+  // schon nahtlos, andere noch mit Rand, waehrend noch montiert wird). Da
+  // alle Facetten spaetestens bei Gesamt-Fortschritt 1 exakt ihre
+  // Original-Eckpunkte erreichen (kein Versatz/keine Rotation mehr), grenzen
+  // benachbarte Facetten dann exakt aneinander - ohne Rand wirkt es wie ein
+  // durchgehend verschweisstes Stueck statt einzelner Dreiecke.
+  const strokeOpacity = useTransform(assembleProgress, [0.92, 1], [1, 0]);
+
+  // Mausparallaxe pro Facette: waehrend die Katze noch nicht komplett
+  // verschweisst ist, wackelt jedes Teil (je nach Abstand zum Zentrum
+  // unterschiedlich stark) leicht mit der Maus mit - sobald verschweisst,
+  // blendet das aus (parallaxFade), sonst wuerden die unterschiedlichen
+  // Versaetze benachbarter Facetten wieder sichtbare Nahtstellen aufreissen.
+  // Ab dann uebernimmt die einheitliche Kopf-Neigung (siehe LowPolyCat weiter
+  // unten) die "Blick folgt der Maus"-Funktion als EIN zusammenhaengendes
+  // Stueck statt einzeln wackelnder Teile.
+  const parallaxFade = useTransform(assembleProgress, [0.9, 1], [1, 0]);
   const parallaxStrength = 14 + (distFromCenter / 130) * 20;
-  const parallaxX = useTransform(pointerX, (v) => v * parallaxStrength);
-  const parallaxY = useTransform(pointerY, (v) => v * parallaxStrength);
+  const parallaxX = useTransform(
+    [pointerX, parallaxFade],
+    (values: number[]) => values[0] * parallaxStrength * values[1]
+  );
+  const parallaxY = useTransform(
+    [pointerY, parallaxFade],
+    (values: number[]) => values[0] * parallaxStrength * values[1]
+  );
   const x = useTransform(
     [baseX, swayX, parallaxX],
     (values: number[]) => values[0] + values[1] + values[2]
@@ -206,7 +236,7 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
         fill={TONE_FILL[facet.tone]}
         stroke="#0a0a0c"
         strokeWidth={0.75}
-        style={{ x, y, rotate, opacity, transformOrigin: `${cx}px ${cy}px` }}
+        style={{ x, y, rotate, opacity, strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
       />
     </>
   );
@@ -260,6 +290,20 @@ export function LowPolyCat({ className }: { className?: string }) {
     return () => window.removeEventListener("pointermove", handlePointerMove);
   }, [prefersReducedMotion, consentResolved, pointerX, pointerY, mouseTravel]);
 
+  // "Blick folgt der Maus": sanfte 3D-Neigung des GESAMTEN Kopfes Richtung
+  // Zeiger (nicht nur die per-Facette-Mausparallaxe von oben) - wacht erst
+  // gegen Ende der Montage auf (tiltActive 0->1), damit es waehrend des
+  // Zusammenfliegens nicht mit der Flugbewegung konkurriert.
+  const tiltActive = useTransform(settled, [0.88, 1], [0, 1]);
+  const rotateY = useTransform(
+    [pointerX, tiltActive],
+    (values: number[]) => values[0] * 22 * values[1]
+  );
+  const rotateX = useTransform(
+    [pointerY, tiltActive],
+    (values: number[]) => -values[0] * 14 * values[1]
+  );
+
   if (prefersReducedMotion) {
     return (
       <svg
@@ -282,55 +326,30 @@ export function LowPolyCat({ className }: { className?: string }) {
   }
 
   return (
-    <div className="relative">
-      {/* Pulsierender blauer Umgebungs-Glow - "Hightech"-Atmosphäre hinter
-          der Katze, per CSS animiert (siehe .cat-glow-pulse). */}
-      <div
-        aria-hidden
-        className="cat-glow-pulse pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(closest-side, rgba(95,212,255,0.5), rgba(95,212,255,0.12) 55%, transparent 75%)",
-          filter: "blur(28px)",
-        }}
-      />
-
-      <svg
-        viewBox="0 0 240 260"
-        className={className}
-        style={{ overflow: "visible", position: "relative" }}
-        role="img"
-        aria-label="Low-Poly-Illustration eines Katzenkopfs aus facettierten Dreiecken, die sich beim Scrollen oder bei Mausbewegung zusammensetzt"
+    <div className="relative" style={{ perspective: 900 }}>
+      <motion.div
+        className="relative"
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
       >
-        {FACETS.map((facet, i) => (
-          <Facet
-            key={i}
-            facet={facet}
-            index={i}
-            assembleProgress={settled}
-            pointerX={pointerX}
-            pointerY={pointerY}
-            showTether
-          />
-        ))}
-      </svg>
+        {/* Pulsierender blauer Umgebungs-Glow - "Hightech"-Atmosphäre hinter
+            der Katze, per CSS animiert (siehe .cat-glow-pulse). */}
+        <div
+          aria-hidden
+          className="cat-glow-pulse pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(95,212,255,0.5), rgba(95,212,255,0.12) 55%, transparent 75%)",
+            filter: "blur(28px)",
+          }}
+        />
 
-      {/* Spiegelung darunter - klassischer "Produktshot"-Effekt, per
-          Verlaufsmaske ausgeblendet. Nutzt dieselben MotionValues wie oben,
-          bleibt also automatisch synchron. Absolut positioniert (statt im
-          normalen Fluss), damit sie keinen eigenen Layout-Platz beansprucht -
-          sonst verdoppelt sie faktisch die Höhe der Katzen-Spalte, was bei
-          der groß dimensionierten Katze den Vollbild-Hero sprengen würde. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-0 top-full mt-1 w-full opacity-25"
-        style={{
-          transform: "scaleY(-1)",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 65%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 65%)",
-        }}
-      >
-        <svg viewBox="0 0 240 260" style={{ overflow: "visible", display: "block", width: "100%" }}>
+        <svg
+          viewBox="0 0 240 260"
+          className={className}
+          style={{ overflow: "visible", position: "relative" }}
+          role="img"
+          aria-label="Low-Poly-Illustration eines Katzenkopfs aus facettierten Dreiecken, die sich beim Scrollen oder bei Mausbewegung zusammensetzt und dann der Maus folgt"
+        >
           {FACETS.map((facet, i) => (
             <Facet
               key={i}
@@ -339,10 +358,40 @@ export function LowPolyCat({ className }: { className?: string }) {
               assembleProgress={settled}
               pointerX={pointerX}
               pointerY={pointerY}
+              showTether
             />
           ))}
         </svg>
-      </div>
+
+        {/* Spiegelung darunter - klassischer "Produktshot"-Effekt, per
+            Verlaufsmaske ausgeblendet. Nutzt dieselben MotionValues wie oben,
+            bleibt also automatisch synchron. Absolut positioniert (statt im
+            normalen Fluss), damit sie keinen eigenen Layout-Platz beansprucht -
+            sonst verdoppelt sie faktisch die Höhe der Katzen-Spalte, was bei
+            der groß dimensionierten Katze den Vollbild-Hero sprengen würde. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-full mt-1 w-full opacity-25"
+          style={{
+            transform: "scaleY(-1)",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 65%)",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 65%)",
+          }}
+        >
+          <svg viewBox="0 0 240 260" style={{ overflow: "visible", display: "block", width: "100%" }}>
+            {FACETS.map((facet, i) => (
+              <Facet
+                key={i}
+                facet={facet}
+                index={i}
+                assembleProgress={settled}
+                pointerX={pointerX}
+                pointerY={pointerY}
+              />
+            ))}
+          </svg>
+        </div>
+      </motion.div>
     </div>
   );
 }
