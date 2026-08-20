@@ -215,7 +215,7 @@ export function HeroCarousel() {
       }}
     >
       <div className="mx-auto grid w-full max-w-7xl items-stretch gap-8 md:grid-cols-[1fr_1.3fr] md:gap-4">
-        <div className="relative z-10 flex h-full flex-col items-center justify-center text-center md:justify-end md:pb-6">
+        <div className="relative z-10 flex h-full flex-col items-center justify-center text-center md:items-start md:justify-end md:pb-6 md:text-left">
           <AnimatePresence mode="wait">
             <motion.div
               key={slide.id}
@@ -236,7 +236,7 @@ export function HeroCarousel() {
                 ))}
               </h1>
               <p className="mt-6 max-w-md text-lg text-foreground-muted">{slide.paragraph}</p>
-              <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <div className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start">
                 <Link
                   href="/konfigurator"
                   onClick={() => trackEvent("cta_start_configurator", { location: "hero", slide: slide.id })}
