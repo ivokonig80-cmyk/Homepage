@@ -59,6 +59,14 @@ import { motion, useReducedMotion, useTransform, type MotionValue } from "framer
  * WICHTIG: Wenn dieses Muster für andere Kontexte (z.B. HAWK) wiederverwendet
  * wird, sollen laut Absprache die Distanzen/Rotationen deutlich reduziert
  * werden (siehe `scatterDistance`/SCATTER_ROTATION_DEG) - hier bewusst groß.
+ *
+ * Optionaler `imageUrl`-Modus ("Scherben-Foto"): statt jede Facette flach
+ * einzufärben, wird sie zum ausgeschnittenen Fragment eines hochaufgelösten
+ * Fotos (SVG `<clipPath>` je Facette + ein gemeinsames `<image>` dahinter) -
+ * exakt dieselbe Flug-/Treib-/Verschweiß-Physik wie oben, nur die
+ * RENDERING-Ebene ändert sich. Sobald alle Fragmente an ihrer Zielposition
+ * ankommen, ergeben sie wieder das vollständige, scharfe Originalfoto -
+ * löst das Erkennbarkeits-Problem der rein handgezeichneten Facetten.
  */
 
 export type Tone = "steel" | "steelLight" | "bronze";
@@ -90,6 +98,11 @@ function centroid(points: [number, number][]): [number, number] {
   return [sx, sy];
 }
 
+function parseViewBoxSize(viewBox: string): { width: number; height: number } {
+  const parts = viewBox.split(/\s+/).map(Number);
+  return { width: parts[2] ?? 240, height: parts[3] ?? 260 };
+}
+
 /** Deterministischer Pseudo-Zufall - muss zwischen Server- und
  * Client-Render identisch sein (kein Math.random, sonst Hydration-Mismatch
  * bei den statisch vorgerenderten Seiten). */
@@ -109,6 +122,16 @@ interface FacetProps {
   progress: MotionValue<number>;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
+  /** "Scherben-Foto"-Modus (siehe Datei-Kommentar) - wenn gesetzt, wird die
+   * Facette als ausgeschnittenes Bildfragment statt als Flächenfarbe
+   * gerendert. `imageSize` ist die Pixelgröße des Fotos, in der die
+   * Facetten-Koordinaten (dieselbe viewBox wie das Motiv) liegen sollen. */
+  imageUrl?: string;
+  imageSize?: { width: number; height: number };
+  /** Eindeutiger ID-Praefix fuer die SVG-clipPath-IDs - noetig, da
+   * Haupt-Rendering und Spiegelung dieselben Facetten-Indizes doppelt
+   * verwenden und clipPath-IDs sonst kollidieren wuerden. */
+  idPrefix: string;
 }
 
 function Facet({
@@ -122,6 +145,9 @@ function Facet({
   progress,
   pointerX,
   pointerY,
+  imageUrl,
+  imageSize,
+  idPrefix,
 }: FacetProps) {
   const points = parsePoints(facet.points);
   const [cx, cy] = centroid(points);
@@ -324,6 +350,8 @@ function Facet({
     }
   );
 
+  const clipId = `${idPrefix}-clip-${index}`;
+
   return (
     <>
       {chaosEnabled && (
@@ -342,13 +370,46 @@ function Facet({
           }}
         />
       )}
-      <motion.polygon
-        points={facet.points}
-        fill={TONE_FILL[facet.tone]}
-        stroke="#0a0a0c"
-        strokeWidth={0.75}
-        style={{ x, y, rotate, opacity, strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
-      />
+      {imageUrl && imageSize ? (
+        <>
+          <defs>
+            <clipPath id={clipId}>
+              <polygon points={facet.points} />
+            </clipPath>
+          </defs>
+          <motion.g
+            clipPath={`url(#${clipId})`}
+            style={{ x, y, rotate, opacity, transformOrigin: `${cx}px ${cy}px` }}
+          >
+            <image
+              href={imageUrl}
+              x={0}
+              y={0}
+              width={imageSize.width}
+              height={imageSize.height}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </motion.g>
+          {/* Duenne Nahtstellen-Kontur - wie beim Flachfarben-Modus, blendet
+              beim Verschweissen aus (strokeOpacity), damit die Scherben vor
+              dem Zusammenfuegen als einzelne Fragmente erkennbar bleiben. */}
+          <motion.polygon
+            points={facet.points}
+            fill="none"
+            stroke="#0a0a0c"
+            strokeWidth={0.6}
+            style={{ x, y, rotate, opacity: strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
+          />
+        </>
+      ) : (
+        <motion.polygon
+          points={facet.points}
+          fill={TONE_FILL[facet.tone]}
+          stroke="#0a0a0c"
+          strokeWidth={0.75}
+          style={{ x, y, rotate, opacity, strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
+        />
+      )}
     </>
   );
 }
@@ -376,6 +437,10 @@ export interface LowPolyMeshProps {
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   ariaLabel: string;
+  /** "Scherben-Foto"-Modus (siehe Datei-Kommentar oben) - wenn gesetzt,
+   * werden die Facetten als Fragmente dieses Fotos statt als Flächenfarbe
+   * gerendert. Erwartet dieselbe Koordinaten-viewBox wie `viewBox`. */
+  imageUrl?: string;
 }
 
 export function LowPolyMesh({
@@ -391,8 +456,10 @@ export function LowPolyMesh({
   pointerX,
   pointerY,
   ariaLabel,
+  imageUrl,
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
+  const imageSize = imageUrl ? parseViewBoxSize(viewBox) : undefined;
 
   // "Blick folgt der Maus": sanfte 3D-Neigung des GESAMTEN Motivs Richtung
   // Zeiger (nicht nur die per-Facette-Mausparallaxe von oben) - wacht erst
@@ -411,15 +478,19 @@ export function LowPolyMesh({
   if (prefersReducedMotion) {
     return (
       <svg viewBox={viewBox} className={className} role="img" aria-label={ariaLabel}>
-        {facets.map((facet, i) => (
-          <polygon
-            key={i}
-            points={facet.points}
-            fill={TONE_FILL[facet.tone]}
-            stroke="#0a0a0c"
-            strokeWidth={0.75}
-          />
-        ))}
+        {imageUrl && imageSize ? (
+          <image href={imageUrl} x={0} y={0} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid slice" />
+        ) : (
+          facets.map((facet, i) => (
+            <polygon
+              key={i}
+              points={facet.points}
+              fill={TONE_FILL[facet.tone]}
+              stroke="#0a0a0c"
+              strokeWidth={0.75}
+            />
+          ))
+        )}
       </svg>
     );
   }
@@ -459,6 +530,9 @@ export function LowPolyMesh({
               progress={progress}
               pointerX={pointerX}
               pointerY={pointerY}
+              imageUrl={imageUrl}
+              imageSize={imageSize}
+              idPrefix="main"
             />
           ))}
         </svg>
@@ -491,6 +565,9 @@ export function LowPolyMesh({
                 progress={progress}
                 pointerX={pointerX}
                 pointerY={pointerY}
+                imageUrl={imageUrl}
+                imageSize={imageSize}
+                idPrefix="reflection"
               />
             ))}
           </svg>
