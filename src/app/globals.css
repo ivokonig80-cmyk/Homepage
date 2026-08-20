@@ -63,23 +63,10 @@ body {
   outline-offset: 2px;
 }
 
-/* Für die Hero-Katzen-Puzzle-Montage (LowPolyCat.tsx): "elektrische"
-   Energie-Tether zwischen zerstreuten und montierten Facetten, plus ein
-   sanft pulsierender Umgebungs-Glow. Reines CSS (kein Framer-Motion-
-   Overhead pro Frame), respektiert automatisch die
-   prefers-reduced-motion-Regel oben (animation-duration wird dort auf
-   0.01ms erzwungen). */
-@keyframes tether-dash {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-
-.cat-tether {
-  stroke-dasharray: 7 5;
-  animation: tether-dash 0.5s linear infinite;
-}
-
+/* Für die Hero-Montage (LowPolyMesh.tsx): sanft pulsierender Umgebungs-
+   Glow hinter dem Motiv. Reines CSS (kein Framer-Motion-Overhead pro
+   Frame), respektiert automatisch die prefers-reduced-motion-Regel oben
+   (animation-duration wird dort auf 0.01ms erzwungen). */
 @keyframes cat-glow-pulse {
   0%,
   100% {

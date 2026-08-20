@@ -11,6 +11,7 @@ import {
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
+  useTime,
   useTransform,
 } from "framer-motion";
 import { LowPolyMesh } from "./LowPolyMesh";
@@ -80,6 +81,16 @@ export function HeroCarousel() {
   const progress = useMotionValue(0);
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
+  // Gemeinsame Uhr fuer das Umhertreiben in LowPolyMesh - hier oben erzeugt
+  // (statt dort), damit chaosStartTime (siehe unten) denselben Zeitwert
+  // referenzieren kann.
+  const time = useTime();
+  // Zeitpunkt, an dem die letzte Sprengung fertig war (Uhr-Wert, nicht
+  // Kalenderzeit) - LowPolyMesh nutzt das, um das Umhertreiben weich
+  // einzublenden statt es im selben Frame mit voller Staerke zu starten, in
+  // dem die Flugbewegung endet (sonst ein kleiner, aber sichtbarer Knick in
+  // der Bewegungsrichtung genau am Uebergang).
+  const chaosStartTime = useMotionValue(0);
 
   const organicControlActive = useRef(true);
   const isTransitioning = useRef(false);
@@ -141,12 +152,13 @@ export function HeroCarousel() {
       }
 
       await animate(progress, 0, { duration: EXPLODE_DURATION, ease: [0.55, 0, 1, 0.45] });
+      chaosStartTime.set(time.get());
       setActiveIndex(wrapped);
       mouseTravel.set(0);
       organicControlActive.current = true;
       isTransitioning.current = false;
     },
-    [prefersReducedMotion, progress, mouseTravel]
+    [prefersReducedMotion, progress, mouseTravel, time, chaosStartTime]
   );
 
   // --- Auto-Advance: startet erst, sobald der aktive Slide zum ersten Mal
@@ -250,6 +262,8 @@ export function HeroCarousel() {
             center={slide.center}
             scatterDistance={slide.scatterDistance}
             chaosEnabled={chaosEnabled}
+            time={time}
+            chaosStartTime={chaosStartTime}
             progress={progress}
             pointerX={pointerX}
             pointerY={pointerY}
