@@ -21,25 +21,25 @@ import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
 /**
  * Interaktives 4-Slide-Karussell für den Hero-Bereich. Ein einziges
  * `progress`-MotionValue (0 = verstreut, 1 = verschweißt) treibt jeweils das
- * AKTIVE Motiv (`LowPolyMesh`, siehe dort) - beim Slide-Wechsel wird es erst
- * programmatisch auf 0 animiert ("sprengen" - läuft exakt denselben Weg
- * rückwärts, den die Montage genommen hätte, da die Positions-Formeln in
- * LowPolyMesh rein aus dem aktuellen Zahlenwert abgeleitet sind), dann wird
- * das Facetten-Set getauscht und wieder auf 1 animiert ("neu aufbauen").
+ * AKTIVE Motiv (`LowPolyMesh`, siehe dort).
  *
- * Der ALLERERSTE Slide (Katze) behält beim Laden exakt das bisherige,
- * organische Verhalten: Consent-Gate, dann treibt Maus/Scroll `progress`
- * über einen Ratchet (nur-steigend) an. Sobald einmal manuell navigiert oder
- * automatisch weitergeschaltet wurde, ist dieser organische Modus dauerhaft
- * abgeschaltet (`organicControlActive`) - alle weiteren Wechsel laufen nur
- * noch über die programmatische Sprengen/Aufbauen-Animation.
+ * Slide-Wechsel (Pfeil ODER Punkt): das aktuelle Motiv wird automatisch
+ * gesprengt (progress -> 0, animiert - läuft exakt denselben Weg rückwärts,
+ * den die Montage genommen hätte, da die Positions-Formeln in LowPolyMesh
+ * rein aus dem aktuellen Zahlenwert abgeleitet sind), danach wird das
+ * Facetten-Set getauscht - der NEUE Zusammenbau ist dann wieder organisch
+ * per Mausbewegung gesteuert (kein automatisches Wieder-Zusammenfügen).
+ * `mouseTravel` wird beim Wechsel zurückgesetzt, damit jedes Motiv frische
+ * Mausbewegung braucht statt vom bereits verbrauchten Weg des vorherigen
+ * Motivs zu profitieren. Das gilt fuer JEDEN Slide gleich (auch den
+ * allerersten Katzen-Slide) - `organicControlActive` ist praktisch immer
+ * an, ausser waehrend der kurzen automatischen Sprengen-Animation selbst.
  */
 
 const SCROLL_ASSEMBLE_PX = 420;
 const MOUSE_ASSEMBLE_PX = 560;
 const AUTO_ADVANCE_MS = 7000;
 const EXPLODE_DURATION = 0.9;
-const ASSEMBLE_DURATION = 1.1;
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -112,9 +112,12 @@ export function HeroCarousel() {
     return () => window.removeEventListener("pointermove", handlePointerMove);
   }, [prefersReducedMotion, consentResolved, pointerX, pointerY, mouseTravel]);
 
-  // --- Slide-Wechsel: sprengen (progress -> 0), Facetten tauschen, neu
-  // aufbauen (progress -> 0 -> 1). Reduced-Motion: direkter, unanimierter
-  // Sprung zum bereits verschweißten Zielmotiv.
+  // --- Slide-Wechsel: sprengen (progress -> 0, automatisch animiert),
+  // Facetten tauschen, danach den Zusammenbau wieder der Maus überlassen
+  // (organicControlActive wieder an, mouseTravel zurückgesetzt - siehe
+  // Datei-Kommentar oben). Reduced-Motion: direkter, unanimierter Sprung
+  // zum bereits verschweißten Zielmotiv (kein Sprengen, kein Warten auf
+  // Mausbewegung).
   const goToSlide = useCallback(
     async (nextIndex: number) => {
       const wrapped = ((nextIndex % HERO_SLIDES.length) + HERO_SLIDES.length) % HERO_SLIDES.length;
@@ -131,10 +134,11 @@ export function HeroCarousel() {
 
       await animate(progress, 0, { duration: EXPLODE_DURATION, ease: [0.55, 0, 1, 0.45] });
       setActiveIndex(wrapped);
-      await animate(progress, 1, { duration: ASSEMBLE_DURATION, ease: [0.16, 1, 0.3, 1] });
+      mouseTravel.set(0);
+      organicControlActive.current = true;
       isTransitioning.current = false;
     },
-    [prefersReducedMotion, progress]
+    [prefersReducedMotion, progress, mouseTravel]
   );
 
   // --- Auto-Advance: startet erst, sobald der aktive Slide zum ersten Mal
