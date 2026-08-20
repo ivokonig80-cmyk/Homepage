@@ -11,24 +11,54 @@ import type { FacetDef } from "./LowPolyMesh";
 const VIEW_BOX = "0 0 240 260";
 const CENTER = { x: 120, y: 130 };
 
+// Deutlich hoeher aufgeloest als die urspruengliche 17-Dreiecks-Version
+// (~35 Facetten) - eigene Interpretation angelehnt an eine sitzende
+// Referenz-Skulptur (spitze Ohren mit Innenschatten, facettierter
+// Gesichts-Faecher mit Nasen-Akzent, gerundeter Ruecken/Bauch-Faecher,
+// zwei Vorderbeine mit Pfoten, geschwungener Schwanz) - kein 1:1-Abbild,
+// da die Dreiecke weiterhin von Hand als Koordinaten gesetzt sind.
 const CAT_FACETS: FacetDef[] = [
-  { points: "35,5 75,70 10,85", tone: "steel" },
-  { points: "205,5 165,70 230,85", tone: "steel" },
-  { points: "75,70 120,90 10,85", tone: "steelLight" },
-  { points: "165,70 120,90 230,85", tone: "steelLight" },
-  { points: "75,70 120,90 165,70", tone: "bronze" },
-  { points: "10,85 120,90 60,150", tone: "steel" },
-  { points: "10,85 60,150 5,165", tone: "steelLight" },
-  { points: "230,85 120,90 180,150", tone: "steel" },
-  { points: "230,85 180,150 235,165", tone: "steelLight" },
-  { points: "120,90 60,150 120,140", tone: "bronze" },
-  { points: "120,90 180,150 120,140", tone: "steelLight" },
-  { points: "60,150 120,140 55,210", tone: "steel" },
-  { points: "120,140 120,250 55,210", tone: "steelLight" },
-  { points: "180,150 120,140 185,210", tone: "steel" },
-  { points: "120,140 185,210 120,250", tone: "bronze" },
-  { points: "5,165 60,150 55,210", tone: "steelLight" },
-  { points: "235,165 180,150 185,210", tone: "steel" },
+  // Ohren (Aussen + Innenschatten)
+  { points: "58,8 75,35 38,42", tone: "steelLight" },
+  { points: "38,42 75,35 55,50", tone: "steel" },
+  { points: "182,8 165,35 202,42", tone: "steelLight" },
+  { points: "202,42 165,35 185,50", tone: "steel" },
+  // Kopf (Faecher um 120,70)
+  { points: "120,70 75,35 120,20", tone: "steel" },
+  { points: "120,70 120,20 165,35", tone: "steelLight" },
+  { points: "120,70 165,35 195,75", tone: "steel" },
+  { points: "120,70 195,75 180,110", tone: "steelLight" },
+  { points: "120,70 180,110 120,125", tone: "steel" },
+  { points: "120,70 120,125 60,110", tone: "steelLight" },
+  { points: "120,70 60,110 45,75", tone: "steel" },
+  { points: "120,70 45,75 75,35", tone: "steelLight" },
+  { points: "105,115 135,115 120,130", tone: "bronze" },
+  // Hals
+  { points: "60,110 70,155 120,125", tone: "steel" },
+  { points: "120,125 170,155 70,155", tone: "steelLight" },
+  { points: "120,125 180,110 170,155", tone: "steel" },
+  // Koerper (Faecher um 110,190)
+  { points: "110,190 70,155 170,155", tone: "bronze" },
+  { points: "110,190 170,155 195,190", tone: "steelLight" },
+  { points: "110,190 195,190 200,230", tone: "steel" },
+  { points: "110,190 200,230 175,255", tone: "steelLight" },
+  { points: "110,190 175,255 140,250", tone: "steel" },
+  { points: "110,190 140,250 100,250", tone: "steelLight" },
+  { points: "110,190 100,250 55,240", tone: "steel" },
+  { points: "110,190 55,240 45,205", tone: "steelLight" },
+  { points: "110,190 45,205 55,165", tone: "steel" },
+  { points: "110,190 55,165 70,155", tone: "steelLight" },
+  // Vorderbeine + Pfoten
+  { points: "50,170 75,170 72,245", tone: "steel" },
+  { points: "50,170 72,245 45,245", tone: "steelLight" },
+  { points: "45,245 72,245 58,258", tone: "bronze" },
+  { points: "190,170 165,170 168,245", tone: "steel" },
+  { points: "190,170 168,245 195,245", tone: "steelLight" },
+  { points: "195,245 168,245 182,258", tone: "bronze" },
+  // Schwanz (geschwungen)
+  { points: "155,240 190,258 215,245", tone: "steel" },
+  { points: "155,240 215,245 222,215", tone: "steelLight" },
+  { points: "155,240 222,215 205,190", tone: "steel" },
 ];
 
 // Kopf: sechseckige Facettenkuppel (Fan aus einem Mittelpunkt) - Hals als
