@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
+import { motion, useReducedMotion, useTime, useTransform, type MotionValue } from "framer-motion";
 
 /**
  * Low-Poly-Motiv als handgesetztes Dreiecksnetz (Platzhalter-Artwork, bis
@@ -26,6 +26,16 @@ import { motion, useReducedMotion, useTransform, type MotionValue } from "framer
  * läuft eine Rückwärts-Animation (1→0) automatisch wie die Montage
  * rückwärts ab, ganz ohne Sonderfall-Code hier.
  *
+ * `chaosEnabled` (ab der ersten jemals ausgelösten Sprengung dauerhaft an,
+ * siehe HeroCarousel.tsx) schaltet zwei Dinge zusätzlich frei: einen viel
+ * größeren Streuradius (`CHAOS_SCATTER_DISTANCE` statt `scatterDistance`)
+ * UND ein dauerhaftes, zeitbasiertes Umhertreiben im Ruhezustand ("Blatt/
+ * Feder im Wind" statt Stillstand) - blendet sich weich aus, sobald echter,
+ * mausgesteuerter Zusammenbau beginnt. Der Radius-Wechsel passiert bewusst
+ * GENAU beim Start einer Sprengung (progress steht dann noch bei 1, wo die
+ * Radius-Änderung mathematisch wirkungslos ist) - kein sichtbarer Sprung,
+ * die Teile fliegen beim Sprengen selbst schon zur neuen, weiten Position.
+ *
  * WICHTIG: Wenn dieses Muster für andere Kontexte (z.B. HAWK) wiederverwendet
  * wird, sollen laut Absprache die Distanzen/Rotationen deutlich reduziert
  * werden (siehe `scatterDistance`/SCATTER_ROTATION_DEG) - hier bewusst groß.
@@ -41,6 +51,10 @@ const TONE_FILL: Record<Tone, string> = {
 };
 
 const SCATTER_ROTATION_DEG = 340;
+// Deutlich groesser als der normale Streuradius - ab der ersten Sprengung
+// verteilen sich die Teile damit ueber weite Teile des Bildschirms statt
+// nur nahe am Motiv (siehe chaosEnabled-Erklaerung oben).
+const CHAOS_SCATTER_DISTANCE = 95;
 
 function parsePoints(points: string): [number, number][] {
   return points.split(" ").map((pair) => {
@@ -69,6 +83,8 @@ interface FacetProps {
   index: number;
   center: { x: number; y: number };
   scatterDistance: number;
+  chaosEnabled: boolean;
+  time: MotionValue<number>;
   progress: MotionValue<number>;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
@@ -76,14 +92,26 @@ interface FacetProps {
   showTether?: boolean;
 }
 
-function Facet({ facet, index, center, scatterDistance, progress, pointerX, pointerY, showTether }: FacetProps) {
+function Facet({
+  facet,
+  index,
+  center,
+  scatterDistance,
+  chaosEnabled,
+  time,
+  progress,
+  pointerX,
+  pointerY,
+  showTether,
+}: FacetProps) {
   const points = parsePoints(facet.points);
   const [cx, cy] = centroid(points);
   const dx = cx - center.x;
   const dy = cy - center.y;
   const distFromCenter = Math.hypot(dx, dy) || 1;
   const angle = Math.atan2(dy, dx) + (seeded(index) - 0.5) * 1.6;
-  const magnitude = scatterDistance * (0.65 + seeded(index + 50) * 1.1);
+  const effectiveScatterDistance = chaosEnabled ? CHAOS_SCATTER_DISTANCE : scatterDistance;
+  const magnitude = effectiveScatterDistance * (0.65 + seeded(index + 50) * 1.1);
 
   const scatterX = Math.cos(angle) * magnitude;
   const scatterY = Math.sin(angle) * magnitude;
@@ -113,7 +141,6 @@ function Facet({ facet, index, center, scatterDistance, progress, pointerX, poin
   const swayX = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * perpUnitX * swayAmplitude);
   const swayY = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * perpUnitY * swayAmplitude);
   const tumble = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * tumbleAmplitude);
-  const rotate = useTransform([baseRotate, tumble], (values: number[]) => values[0] + values[1]);
 
   // Vor der ersten Montage (noch verstreut) trotzdem sichtbar statt
   // unsichtbar - sonst waere das Motiv waehrend einer eingefrorenen
@@ -148,13 +175,60 @@ function Facet({ facet, index, center, scatterDistance, progress, pointerX, poin
     [pointerY, parallaxFade],
     (values: number[]) => values[0] * parallaxStrength * values[1]
   );
-  const x = useTransform(
-    [baseX, swayX, parallaxX],
+
+  // Dauerhaftes Umhertreiben im Ruhezustand ("Blatt/Feder im Wind") - nur
+  // wenn chaosEnabled (ab der ersten Sprengung). Zwei ueberlagerte,
+  // unterschiedlich schnelle Sinuswellen je Achse (geseedete Frequenz/
+  // Phase) ergeben ein organisches Wandern statt einer simplen Kreisbahn.
+  // driftActive blendet in den ersten 12% eines gezielten Zusammenbaus
+  // (progress steigt ueber 0) zuegig aus, damit sich Treiben und
+  // gerichteter Flug nicht in die Quere kommen.
+  const driftActive = useTransform(progress, [0, 0.12], [1, 0]);
+  // In viewBox-Einheiten (wie magnitude/scatterX/Y oben), NICHT Pixel - bei
+  // der ~2.8-fachen Render-Skalierung ergibt das ~45-165px tatsaechliche
+  // Wander-Reichweite je Facette.
+  const driftAmplitude = 16 + seeded(index + 780) * 43;
+  const driftFreqX1 = 0.00025 + seeded(index + 700) * 0.00035;
+  const driftFreqX2 = 0.00025 + seeded(index + 710) * 0.00035;
+  const driftPhaseX1 = seeded(index + 720) * Math.PI * 2;
+  const driftPhaseX2 = seeded(index + 730) * Math.PI * 2;
+  const driftFreqY1 = 0.00025 + seeded(index + 740) * 0.00035;
+  const driftFreqY2 = 0.00025 + seeded(index + 750) * 0.00035;
+  const driftPhaseY1 = seeded(index + 760) * Math.PI * 2;
+  const driftPhaseY2 = seeded(index + 770) * Math.PI * 2;
+  const driftRotAmplitude = 30 + seeded(index + 810) * 50;
+  const driftRotFreq = 0.00015 + seeded(index + 790) * 0.0002;
+  const driftRotPhase = seeded(index + 800) * Math.PI * 2;
+
+  const driftX = useTransform([time, driftActive], (values: number[]) => {
+    if (!chaosEnabled) return 0;
+    const [t, active] = values;
+    const wander = 0.6 * Math.sin(t * driftFreqX1 + driftPhaseX1) + 0.4 * Math.sin(t * driftFreqX2 + driftPhaseX2);
+    return wander * driftAmplitude * active;
+  });
+  const driftY = useTransform([time, driftActive], (values: number[]) => {
+    if (!chaosEnabled) return 0;
+    const [t, active] = values;
+    const wander = 0.6 * Math.sin(t * driftFreqY1 + driftPhaseY1) + 0.4 * Math.sin(t * driftFreqY2 + driftPhaseY2);
+    return wander * driftAmplitude * active;
+  });
+  const driftRotate = useTransform([time, driftActive], (values: number[]) => {
+    if (!chaosEnabled) return 0;
+    const [t, active] = values;
+    return Math.sin(t * driftRotFreq + driftRotPhase) * driftRotAmplitude * active;
+  });
+  const rotate = useTransform(
+    [baseRotate, tumble, driftRotate],
     (values: number[]) => values[0] + values[1] + values[2]
   );
+
+  const x = useTransform(
+    [baseX, swayX, driftX, parallaxX],
+    (values: number[]) => values[0] + values[1] + values[2] + values[3]
+  );
   const y = useTransform(
-    [baseY, swayY, parallaxY],
-    (values: number[]) => values[0] + values[1] + values[2]
+    [baseY, swayY, driftY, parallaxY],
+    (values: number[]) => values[0] + values[1] + values[2] + values[3]
   );
 
   // "Datentransfer"-Tether: eine leuchtende Linie von der aktuellen
@@ -197,6 +271,10 @@ export interface LowPolyMeshProps {
   /** Streuradius in denselben Einheiten wie die viewBox - Default passt zur
    * Katze (240x260-viewBox, groß dimensionierte Darstellung im Hero). */
   scatterDistance?: number;
+  /** Ab der ersten jemals ausgelösten Sprengung dauerhaft true (siehe
+   * HeroCarousel.tsx) - schaltet den großen Chaos-Streuradius und das
+   * dauerhafte Umhertreiben im Ruhezustand frei. */
+  chaosEnabled?: boolean;
   className?: string;
   progress: MotionValue<number>;
   pointerX: MotionValue<number>;
@@ -209,6 +287,7 @@ export function LowPolyMesh({
   viewBox,
   center,
   scatterDistance = 140,
+  chaosEnabled = false,
   className,
   progress,
   pointerX,
@@ -216,6 +295,7 @@ export function LowPolyMesh({
   ariaLabel,
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
+  const time = useTime();
 
   // "Blick folgt der Maus": sanfte 3D-Neigung des GESAMTEN Motivs Richtung
   // Zeiger (nicht nur die per-Facette-Mausparallaxe von oben) - wacht erst
@@ -276,6 +356,8 @@ export function LowPolyMesh({
               index={i}
               center={center}
               scatterDistance={scatterDistance}
+              chaosEnabled={chaosEnabled}
+              time={time}
               progress={progress}
               pointerX={pointerX}
               pointerY={pointerY}
@@ -306,6 +388,8 @@ export function LowPolyMesh({
                 index={i}
                 center={center}
                 scatterDistance={scatterDistance}
+                chaosEnabled={chaosEnabled}
+                time={time}
                 progress={progress}
                 pointerX={pointerX}
                 pointerY={pointerY}

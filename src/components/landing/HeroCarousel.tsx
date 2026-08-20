@@ -70,6 +70,13 @@ export function HeroCarousel() {
     activeIndexRef.current = activeIndex;
   }, [activeIndex]);
 
+  // Ab der allerersten jemals ausgelösten Sprengung dauerhaft an - schaltet
+  // in LowPolyMesh den großen Chaos-Streuradius + dauerhaftes Umhertreiben
+  // im Ruhezustand frei (siehe dortiger Datei-Kommentar). Wird bewusst
+  // gesetzt, BEVOR die Sprengen-Animation startet (progress steht dann noch
+  // bei 1), damit der Radius-Wechsel keinen sichtbaren Sprung verursacht.
+  const [chaosEnabled, setChaosEnabled] = useState(false);
+
   const progress = useMotionValue(0);
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
@@ -124,6 +131,7 @@ export function HeroCarousel() {
       if (wrapped === activeIndexRef.current || isTransitioning.current) return;
       organicControlActive.current = false;
       isTransitioning.current = true;
+      setChaosEnabled(true);
 
       if (prefersReducedMotion) {
         setActiveIndex(wrapped);
@@ -195,7 +203,7 @@ export function HeroCarousel() {
       }}
     >
       <div className="mx-auto grid w-full max-w-7xl items-stretch gap-8 md:grid-cols-[1fr_1.3fr] md:gap-4">
-        <div className="flex h-full flex-col items-center justify-center text-center md:justify-end md:pb-6">
+        <div className="relative z-10 flex h-full flex-col items-center justify-center text-center md:justify-end md:pb-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={slide.id}
@@ -241,6 +249,7 @@ export function HeroCarousel() {
             viewBox={slide.viewBox}
             center={slide.center}
             scatterDistance={slide.scatterDistance}
+            chaosEnabled={chaosEnabled}
             progress={progress}
             pointerX={pointerX}
             pointerY={pointerY}
