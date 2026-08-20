@@ -1,6 +1,6 @@
 {
   "date": "2026-08-20",
-  "fetchedAt": "2026-08-20T10:31:58.802Z",
+  "fetchedAt": "2026-08-20T10:36:28.232Z",
   "overall": [
     {
       "metricName": "DeadClickCount",
@@ -86,10 +86,10 @@
       "metricName": "Traffic",
       "information": [
         {
-          "totalSessionCount": 23,
-          "totalBotSessionCount": 3,
-          "distinctUserCount": 26,
-          "pagesPerSessionPercentage": 1.0384615384615385
+          "totalSessionCount": "23",
+          "totalBotSessionCount": "4",
+          "distinctUserCount": "27",
+          "pagesPerSessionPercentage": 1.037037037037037
         }
       ]
     },
@@ -97,8 +97,8 @@
       "metricName": "EngagementTime",
       "information": [
         {
-          "totalTime": "65",
-          "activeTime": "15"
+          "totalTime": 65,
+          "activeTime": 15
         }
       ]
     },
@@ -208,12 +208,12 @@
           "visitsCount": "6"
         },
         {
-          "url": "https://polinova.store/shop/fuchs",
+          "url": "http://localhost:3000/",
           "visitsCount": "4"
         },
         {
-          "url": "http://localhost:3000/",
-          "visitsCount": "3"
+          "url": "https://polinova.store/shop/fuchs",
+          "visitsCount": "4"
         },
         {
           "url": "https://polinova.store/shop/baer",
@@ -243,67 +243,67 @@
       "metricName": "DeadClickCount",
       "information": [
         {
-          "sessionsCount": "6",
+          "sessionsCount": 6,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/"
         },
         {
-          "sessionsCount": "8",
+          "sessionsCount": 8,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/baer"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/eule"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": 4,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/fuchs"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 100,
           "sessionsWithoutMetricPercentage": 0,
-          "pagesViews": "1",
-          "subTotal": "1",
+          "pagesViews": 1,
+          "subTotal": 1,
           "Url": "https://polinova.store/datenschutz"
         }
       ]
@@ -381,67 +381,67 @@
       "metricName": "RageClickCount",
       "information": [
         {
-          "sessionsCount": "6",
+          "sessionsCount": 6,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/"
         },
         {
-          "sessionsCount": "8",
+          "sessionsCount": 8,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/baer"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/eule"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/impressum"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "sessionsCount": "4",
+          "sessionsCount": 4,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/shop/fuchs"
         },
         {
-          "sessionsCount": "1",
+          "sessionsCount": 1,
           "sessionsWithMetricPercentage": 0,
           "sessionsWithoutMetricPercentage": 100,
-          "pagesViews": "0",
-          "subTotal": "0",
+          "pagesViews": 0,
+          "subTotal": 0,
           "Url": "https://polinova.store/datenschutz"
         }
       ]
@@ -694,72 +694,72 @@
       "metricName": "Traffic",
       "information": [
         {
-          "totalSessionCount": 0,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "0",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": null
         },
         {
-          "totalSessionCount": 0,
-          "totalBotSessionCount": 3,
-          "distinctUserCount": 3,
+          "totalSessionCount": "0",
+          "totalBotSessionCount": "4",
+          "distinctUserCount": "4",
           "pagesPerSessionPercentage": 1,
           "Url": "http://localhost:3000/"
         },
         {
-          "totalSessionCount": 6,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 6,
+          "totalSessionCount": "6",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "6",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/"
         },
         {
-          "totalSessionCount": 8,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 8,
+          "totalSessionCount": "8",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "8",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/shop"
         },
         {
-          "totalSessionCount": 1,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/shop/baer"
         },
         {
-          "totalSessionCount": 1,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/shop/eule"
         },
         {
-          "totalSessionCount": 1,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/impressum"
         },
         {
-          "totalSessionCount": 1,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/shop/hase"
         },
         {
-          "totalSessionCount": 4,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 4,
+          "totalSessionCount": "4",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "4",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/shop/fuchs"
         },
         {
-          "totalSessionCount": 1,
-          "totalBotSessionCount": 0,
-          "distinctUserCount": 1,
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
           "pagesPerSessionPercentage": 1,
           "Url": "https://polinova.store/datenschutz"
         }
