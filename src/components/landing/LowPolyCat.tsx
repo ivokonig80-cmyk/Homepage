@@ -9,7 +9,8 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
 
 /**
  * Low-Poly-Katzenkopf als handgesetztes Dreiecksnetz (Platzhalter-Artwork,
@@ -19,6 +20,16 @@ import { useEffect } from "react";
  * Facetten starten weit verstreut und rotiert und fügen sich beim
  * Herunterscrollen ODER beim Bewegen der Maus (jeweils allein schon
  * ausreichend) zum soliden Kopf zusammen.
+ *
+ * Montage startet erst NACH der Cookie-Consent-Entscheidung (siehe
+ * src/lib/consent.ts) - vorher bleibt die Katze eingefroren im verstreuten
+ * Ausgangszustand (Grundeinstellung beim Laden), egal wie viel Maus bewegt
+ * wird. Jede Facette hat außerdem ihr eigenes, geseedetes Zeitfenster
+ * innerhalb der Gesamt-Montage (statt dass alle synchron denselben
+ * Fortschritt abbilden) plus einen seitlichen Schwebe-Versatz und
+ * zusätzliches Trudeln während des Flugs - dadurch wirkt die Montage
+ * unregelmäßig, wie herabfallende Blätter/Federn, die sich nach und nach zur
+ * Katze zusammenfügen, statt dass alle Teile synchron geradlinig einfliegen.
  *
  * Montage ist absichtlich EINWEG (Ratchet, siehe `settled` unten): Ein
  * typischer Nutzer bewegt die Maus von der Adressleiste kommend zu einem
@@ -65,10 +76,17 @@ const TONE_FILL: Record<Tone, string> = {
 };
 
 const CENTER = { x: 120, y: 130 };
-const SCATTER_DISTANCE = 340; // deutlich größer als das 240x260-viewBox selbst
+// Bezogen auf die viewBox (240x260), skaliert also mit der gerenderten
+// Größe - bei der jetzt viel größeren Katze (siehe Hero.tsx: max-w-2xl statt
+// vormals max-w-sm) würde der ursprüngliche Wert (340) Facetten weit über
+// den sichtbaren Bereich hinaus verstreuen (vor allem im eingefrorenen
+// Vor-Consent-Zustand jetzt klar sichtbar/ein Problem, siehe LowPolyCat
+// Doku-Kommentar oben - vorher kaum bemerkt, da die Montage meist sofort
+// losging).
+const SCATTER_DISTANCE = 140;
 const SCATTER_ROTATION_DEG = 340;
-const SCROLL_ASSEMBLE_PX = 200; // kurz bemessen: muss VOR dem Wegscrollen fertig sein
-const MOUSE_ASSEMBLE_PX = 220; // kumulierte Mausbewegung bis zur vollständigen Montage
+const SCROLL_ASSEMBLE_PX = 420; // kurz bemessen: muss VOR dem Wegscrollen fertig sein
+const MOUSE_ASSEMBLE_PX = 560; // kumulierte Mausbewegung bis zur vollständigen Montage - bewusst hoch fuer ein langsameres, ruhigeres Zusammensetzen
 
 function parsePoints(points: string): [number, number][] {
   return points.split(" ").map((pair) => {
@@ -115,10 +133,36 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
   const scatterY = Math.sin(angle) * magnitude;
   const scatterRotate = (seeded(index + 100) - 0.5) * SCATTER_ROTATION_DEG;
 
-  const baseX = useTransform(assembleProgress, [0, 1], [scatterX, 0]);
-  const baseY = useTransform(assembleProgress, [0, 1], [scatterY, 0]);
-  const rotate = useTransform(assembleProgress, [0, 1], [scatterRotate, 0]);
-  const opacity = useTransform(assembleProgress, [0, 0.12, 1], [0, 0.35, 1]);
+  // Eigenes, geseedetes Zeitfenster je Facette innerhalb der Gesamt-Montage
+  // (0-1) - manche setzen sich frueh zusammen, andere spaet, alle spaetestens
+  // bei Gesamt-Fortschritt 1 fertig. "localArrive" ist der lokale Fortschritt
+  // (0 = noch verstreut, 1 = angekommen) INNERHALB dieses Fensters.
+  const staggerStart = seeded(index + 200) * 0.5;
+  const staggerWidth = 0.35 + seeded(index + 300) * 0.25;
+  const staggerEnd = Math.min(1, staggerStart + staggerWidth);
+  const localArrive = useTransform(assembleProgress, [staggerStart, staggerEnd], [0, 1]);
+
+  const baseX = useTransform(localArrive, (v) => scatterX * (1 - v));
+  const baseY = useTransform(localArrive, (v) => scatterY * (1 - v));
+  const baseRotate = useTransform(localArrive, (v) => scatterRotate * (1 - v));
+
+  // Seitlicher Schwebe-Versatz (senkrecht zur Flugrichtung, nicht radial) +
+  // zusaetzliches Trudeln waehrend des Flugs - beides exakt 0 an Start UND
+  // Ziel (sin(0)=sin(pi)=0), am staerksten in der Flugmitte. Ergibt den
+  // "Blatt im Wind"-Effekt statt einer geraden Linie.
+  const perpUnitX = -scatterY / magnitude;
+  const perpUnitY = scatterX / magnitude;
+  const swayAmplitude = (seeded(index + 400) - 0.5) * 70;
+  const tumbleAmplitude = (seeded(index + 600) - 0.5) * 90;
+  const swayX = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * perpUnitX * swayAmplitude);
+  const swayY = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * perpUnitY * swayAmplitude);
+  const tumble = useTransform(localArrive, (v) => Math.sin(v * Math.PI) * tumbleAmplitude);
+  const rotate = useTransform([baseRotate, tumble], (values: number[]) => values[0] + values[1]);
+
+  // Vor der ersten Montage (noch verstreut) trotzdem sichtbar statt
+  // unsichtbar - sonst waere die Katze waehrend der eingefrorenen
+  // Vor-Consent-Phase (siehe LowPolyCat weiter unten) komplett unsichtbar.
+  const opacity = useTransform(localArrive, [0, 1], [0.55, 1]);
 
   // Mausparallaxe: lebt permanent oben drauf, damit sich die Szene auch
   // nach vollständiger Montage noch "übertrieben" auf Mausbewegung anfühlt.
@@ -126,8 +170,14 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
   const parallaxStrength = 14 + (distFromCenter / 130) * 20;
   const parallaxX = useTransform(pointerX, (v) => v * parallaxStrength);
   const parallaxY = useTransform(pointerY, (v) => v * parallaxStrength);
-  const x = useTransform([baseX, parallaxX], (values: number[]) => values[0] + values[1]);
-  const y = useTransform([baseY, parallaxY], (values: number[]) => values[0] + values[1]);
+  const x = useTransform(
+    [baseX, swayX, parallaxX],
+    (values: number[]) => values[0] + values[1] + values[2]
+  );
+  const y = useTransform(
+    [baseY, swayY, parallaxY],
+    (values: number[]) => values[0] + values[1] + values[2]
+  );
 
   // "Datentransfer"-Tether: eine leuchtende Linie von der aktuellen
   // Facetten-Position zu ihrem Zielpunkt - sichtbar während der Montage,
@@ -135,7 +185,7 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
   // Strich-Fluss-Animation).
   const x1 = useTransform(x, (v) => cx + v);
   const y1 = useTransform(y, (v) => cy + v);
-  const tetherOpacity = useTransform(assembleProgress, [0, 0.45, 0.85, 1], [0.25, 1, 0.7, 0]);
+  const tetherOpacity = useTransform(localArrive, [0, 0.45, 0.85, 1], [0.25, 1, 0.7, 0]);
 
   return (
     <>
@@ -164,6 +214,11 @@ function Facet({ facet, index, assembleProgress, pointerX, pointerY, showTether 
 
 export function LowPolyCat({ className }: { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
+  // Montage darf erst nach der Cookie-Consent-Entscheidung starten (egal ob
+  // "Zustimmen" oder "Ablehnen") - vorher bleibt die Katze eingefroren im
+  // verstreuten Ausgangszustand, siehe Gating unten.
+  const consent = useSyncExternalStore(subscribe, readConsent, getServerSnapshot);
+  const consentResolved = consent !== "unknown";
 
   const { scrollY } = useScroll();
   // Instantaner Montage-Anteil aus der Scroll-Position (folgt dem Scroll
@@ -182,13 +237,13 @@ export function LowPolyCat({ className }: { className?: string }) {
   // (weder durch Zurückscrollen noch weil sich die Maus nicht mehr bewegt).
   const settled = useMotionValue(0);
   useAnimationFrame(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !consentResolved) return;
     const current = Math.max(scrollAssemble.get(), mouseAssemble.get());
     if (current > settled.get()) settled.set(current);
   });
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !consentResolved) return;
     let last: { x: number; y: number } | null = null;
 
     function handlePointerMove(e: PointerEvent) {
@@ -203,7 +258,7 @@ export function LowPolyCat({ className }: { className?: string }) {
 
     window.addEventListener("pointermove", handlePointerMove);
     return () => window.removeEventListener("pointermove", handlePointerMove);
-  }, [prefersReducedMotion, pointerX, pointerY, mouseTravel]);
+  }, [prefersReducedMotion, consentResolved, pointerX, pointerY, mouseTravel]);
 
   if (prefersReducedMotion) {
     return (
@@ -262,10 +317,13 @@ export function LowPolyCat({ className }: { className?: string }) {
 
       {/* Spiegelung darunter - klassischer "Produktshot"-Effekt, per
           Verlaufsmaske ausgeblendet. Nutzt dieselben MotionValues wie oben,
-          bleibt also automatisch synchron. */}
+          bleibt also automatisch synchron. Absolut positioniert (statt im
+          normalen Fluss), damit sie keinen eigenen Layout-Platz beansprucht -
+          sonst verdoppelt sie faktisch die Höhe der Katzen-Spalte, was bei
+          der groß dimensionierten Katze den Vollbild-Hero sprengen würde. */}
       <div
         aria-hidden
-        className="pointer-events-none mt-1 w-full opacity-25"
+        className="pointer-events-none absolute left-0 top-full mt-1 w-full opacity-25"
         style={{
           transform: "scaleY(-1)",
           maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 65%)",

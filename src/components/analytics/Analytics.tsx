@@ -4,40 +4,11 @@ import Script from "next/script";
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { initMixpanel } from "@/lib/analytics";
+import { getServerSnapshot, readConsent, setConsent, subscribe } from "@/lib/consent";
 
-const STORAGE_KEY = "ds-analytics-consent";
 const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
-
-type ConsentState = "unknown" | "granted" | "denied";
-
-// Kleiner externer Store für die Einwilligung (statt setState in
-// useEffect): liest/schreibt localStorage und benachrichtigt Abonnenten
-// manuell, da `storage`-Events im selben Tab nicht feuern. Über
-// useSyncExternalStore lässt sich das SSR-sicher (kein Hydration-Mismatch)
-// und ohne das "setState synchron im Effect"-Antipattern konsumieren.
-const listeners = new Set<() => void>();
-
-function readConsent(): ConsentState {
-  if (typeof window === "undefined") return "unknown";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "granted" || stored === "denied" ? stored : "unknown";
-}
-
-function getServerSnapshot(): ConsentState {
-  return "unknown";
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function setConsent(value: "granted" | "denied") {
-  window.localStorage.setItem(STORAGE_KEY, value);
-  listeners.forEach((notify) => notify());
-}
 
 /**
  * DSGVO-konforme Einwilligungssteuerung für Microsoft Clarity (Heatmaps +
