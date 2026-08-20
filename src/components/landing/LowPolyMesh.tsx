@@ -196,9 +196,12 @@ function Facet({
   // ersten 12% eines gezielten Zusammenbaus zuegig aus.
   const driftActive = useTransform(progress, [0, 0.12], [1, 0]);
   const driftBaseAngle = seeded(index + 880) * Math.PI * 2;
-  const driftAngleFreq1 = 0.00014 + seeded(index + 820) * 0.00022;
-  const driftAngleFreq2 = 0.00014 + seeded(index + 830) * 0.00022;
-  const driftAngleFreq3 = 0.00014 + seeded(index + 840) * 0.00022;
+  // Volle Richtungsaenderung alle ~3-8s statt vorher ~20-45s - vorher war
+  // die Bewegung zwar technisch vorhanden, aber zu langsam, um beim
+  // Hinschauen als Bewegung wahrgenommen zu werden (wirkte "eingefroren").
+  const driftAngleFreq1 = 0.0008 + seeded(index + 820) * 0.0011;
+  const driftAngleFreq2 = 0.0008 + seeded(index + 830) * 0.0011;
+  const driftAngleFreq3 = 0.0008 + seeded(index + 840) * 0.0011;
   const driftAnglePhase1 = seeded(index + 850) * Math.PI * 2;
   const driftAnglePhase2 = seeded(index + 860) * Math.PI * 2;
   const driftAnglePhase3 = seeded(index + 870) * Math.PI * 2;
@@ -206,10 +209,10 @@ function Facet({
   // der ~2.8-fachen Render-Skalierung ergibt das ~110-280px tatsaechliche
   // Wander-Reichweite je Facette.
   const driftRadiusBase = 40 + seeded(index + 780) * 60;
-  const driftRadiusFreq = 0.0001 + seeded(index + 890) * 0.00015;
+  const driftRadiusFreq = 0.0004 + seeded(index + 890) * 0.0005;
   const driftRadiusPhase = seeded(index + 900) * Math.PI * 2;
   const driftRotAmplitude = 30 + seeded(index + 810) * 50;
-  const driftRotFreq = 0.00015 + seeded(index + 790) * 0.0002;
+  const driftRotFreq = 0.0006 + seeded(index + 790) * 0.0008;
   const driftRotPhase = seeded(index + 800) * Math.PI * 2;
 
   const driftAngle = useTransform(
