@@ -1,11 +1,19 @@
 import { Reveal } from "@/components/motion/Reveal";
+import { MATERIALS } from "@/lib/catalog";
 
-const COLORWAYS = [
-  { name: "Gebürsteter Stahl", hex: "#9aa5b1" },
-  { name: "Warmes Bronze", hex: "#c9a961" },
-  { name: "Mattschwarz", hex: "#2b2b2e" },
-  { name: "Kupfer", hex: "#b56a4a" },
-];
+// Direkt aus dem echten Shop-Katalog (nicht dupliziert/erfunden) - vorher
+// zeigte diese Sektion eine eigene, vom Katalog abweichende Farbliste
+// (u.a. ein "Mattschwarz", das es im Shop gar nicht gibt).
+const COLORWAYS = MATERIALS.map((m) => ({ name: m.label, hex: m.colorHex }));
+
+function lighten(hex: string, amount: number): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const mix = (v: number) => Math.round(v + (255 - v) * amount);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
 
 /**
  * Platzhalter-Galerie bis echte Meshy-Renderings vorliegen - zeigt schon
@@ -29,10 +37,15 @@ export function Gallery() {
           {COLORWAYS.map((c, i) => (
             <Reveal key={c.name} delay={i * 0.08}>
               <div className="group overflow-hidden rounded-2xl border border-border-subtle bg-background-elevated">
+                {/* Verlauf von einem hellen Tint zum eigentlichen Material-
+                    Ton (statt vorher zu Bildschirm-Schwarz) - sorgt fuer
+                    einheitlich helle Kacheln unabhaengig davon, wie dunkel
+                    der Rohton selbst ist (Anthrazit war als
+                    dunkel-zu-schwarz-Verlauf kaum noch zu erkennen). */}
                 <div
                   className="aspect-square w-full transition-transform duration-500 group-hover:scale-105"
                   style={{
-                    background: `radial-gradient(circle at 35% 30%, ${c.hex}, #0a0a0c 75%)`,
+                    background: `radial-gradient(circle at 35% 30%, ${lighten(c.hex, 0.7)}, ${c.hex} 85%)`,
                   }}
                   aria-hidden="true"
                 />
