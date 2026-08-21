@@ -67,6 +67,19 @@ import { motion, useReducedMotion, useTransform, type MotionValue } from "framer
  * RENDERING-Ebene ändert sich. Sobald alle Fragmente an ihrer Zielposition
  * ankommen, ergeben sie wieder das vollständige, scharfe Originalfoto -
  * löst das Erkennbarkeits-Problem der rein handgezeichneten Facetten.
+ *
+ * Treib-Feinschliff ("Blätter im Wind / fallende Federn / Vogel-/
+ * Fischschwarm"): zusätzlich zum individuellen Wander-Winkel und dem
+ * gemeinsamen "Bö"-Puls (beide oben beschrieben) gibt es drei weitere,
+ * additive Schichten - (1) lose "Schwarm"-Grüppchen (3 Gruppen, nur die
+ * dominante Wanderwellen-Phase teilweise geteilt statt komplett individuell
+ * - kleine, gemeinsam schwingende Trupps statt eines uniformen Schwarms),
+ * (2) eine gemeinsame, langsam wandernde "Reise-Richtung" für ALLE Facetten
+ * gleichzeitig (kein Index-Seed - echtes gemeinsames Ziehen wie ein
+ * Vogelschwarm, on top vom individuellen Wandern jeder einzelnen Facette),
+ * (3) ein leichter, meist nach unten gerichteter Sink-Bias ("fallende
+ * Feder") plus an die Wanderrichtung gekoppeltes Trudeln (Rotation "rockt"
+ * sichtbar mit, statt zeitlich unabhängig zu drehen).
  */
 
 export type Tone = "steel" | "steelLight" | "bronze";
@@ -256,14 +269,24 @@ function Facet({
     (values: number[]) => values[0] * values[1]
   );
 
+  // "Schwarm"-Grueppchen: 3 lose Gruppen (kein echtes Boids-Modell - nur
+  // genug, um kleine, gemeinsam schwingende Untergruppen statt eines einzigen
+  // uniformen Schwarms wirken zu lassen, wie mehrere kleine Vogeltrupps statt
+  // eines riesigen). Nur die LANGSAMSTE/dominante Wanderwellen-Phase (1)
+  // wird zur Haelfte mit der Schul-Phase gemischt - die feineren Wellen (2,3)
+  // bleiben rein individuell (gemeinsame Grundtendenz + eigenes Flattern).
+  const schoolId = index % 3;
+  const schoolPhase = seeded(schoolId * 97 + 11) * Math.PI * 2;
+  const schoolFreq = 0.0008 + seeded(schoolId * 53 + 5) * 0.0006;
+
   const driftBaseAngle = seeded(index + 880) * Math.PI * 2;
   // Volle Richtungsaenderung alle ~3-8s - schnell genug, um klar als
   // Bewegung erkennbar zu sein, ohne die Grundgeschwindigkeit weiter zu
   // erhoehen (auf Wunsch: dynamischer statt schneller).
-  const driftAngleFreq1 = 0.0008 + seeded(index + 820) * 0.0011;
+  const driftAngleFreq1 = (0.0008 + seeded(index + 820) * 0.0011) * 0.5 + schoolFreq * 0.5;
   const driftAngleFreq2 = 0.0008 + seeded(index + 830) * 0.0011;
   const driftAngleFreq3 = 0.0008 + seeded(index + 840) * 0.0011;
-  const driftAnglePhase1 = seeded(index + 850) * Math.PI * 2;
+  const driftAnglePhase1 = (seeded(index + 850) * Math.PI * 2) * 0.5 + schoolPhase * 0.5;
   const driftAnglePhase2 = seeded(index + 860) * Math.PI * 2;
   const driftAnglePhase3 = seeded(index + 870) * Math.PI * 2;
   // In viewBox-Einheiten (wie magnitude/scatterX/Y oben), NICHT Pixel - bei
@@ -285,6 +308,36 @@ function Facet({
   const flockPhaseOffset = distFromCenter * 0.006;
   const flockGust = useTransform(time, (t) => 0.75 + 0.35 * Math.sin(t * 0.00022 + flockPhaseOffset));
 
+  // Gemeinsame, langsam wandernde "Reise-Richtung" des GESAMTEN Schwarms -
+  // wie eine Vogelschar, die zusammen ueber den Himmel zieht, waehrend jedes
+  // einzelne Teil trotzdem sein eigenes Wandern/Flattern behaelt. Bewusst
+  // OHNE index-Seed, damit wirklich JEDE Facette exakt denselben Wert
+  // bekommt (echte Gruppenbewegung statt nur synchronem Puls).
+  const flockHeadingAngle = useTransform(
+    time,
+    (t) => Math.sin(t * 0.00015) * 1.3 + Math.sin(t * 0.00007 + 2.1) * 0.9
+  );
+  const flockHeadingMagnitude = useTransform(time, (t) => 16 + 10 * Math.sin(t * 0.00011 + 0.6));
+  const flockHeadingX = useTransform(
+    [flockHeadingAngle, flockHeadingMagnitude],
+    (values: number[]) => Math.cos(values[0]) * values[1]
+  );
+  const flockHeadingY = useTransform(
+    [flockHeadingAngle, flockHeadingMagnitude],
+    (values: number[]) => Math.sin(values[0]) * values[1] * 0.6
+  );
+
+  // "Fallende Feder": leichter, ueberwiegend nach unten gerichteter Bias
+  // (schwingt zwischen -2 und +10 - meistens sinkend, gelegentlich kurz von
+  // einer "Boe" nach oben getragen) statt rein symmetrischem Umherirren.
+  const fallPhase = seeded(index + 950) * Math.PI * 2;
+  const fallBias = useTransform(time, (t) => 4 + 6 * Math.sin(t * 0.00013 + fallPhase));
+
+  // "Blatt im Wind"-Trudeln: Rotation an die aktuelle Wanderrichtung
+  // gekoppelt statt komplett unabhaengig - das Teil "rockt" sichtbar mit,
+  // wenn es die Richtung wechselt, statt nur zeitlich unabhaengig zu drehen.
+  const leafTumbleAmplitude = 18 + seeded(index + 960) * 20;
+
   const driftAngle = useTransform(
     time,
     (t) =>
@@ -300,21 +353,31 @@ function Facet({
       return driftRadiusBase * (0.65 + 0.35 * Math.sin(t * driftRadiusFreq + driftRadiusPhase)) * gust;
     }
   );
-  const driftX = useTransform([driftAngle, driftRadius, driftActive], (values: number[]) => {
-    if (!chaosEnabled) return 0;
-    const [ang, rad, active] = values;
-    return Math.cos(ang) * rad * active;
-  });
-  const driftY = useTransform([driftAngle, driftRadius, driftActive], (values: number[]) => {
-    if (!chaosEnabled) return 0;
-    const [ang, rad, active] = values;
-    return Math.sin(ang) * rad * active;
-  });
-  const driftRotate = useTransform([time, driftActive, flockGust], (values: number[]) => {
-    if (!chaosEnabled) return 0;
-    const [t, active, gust] = values;
-    return Math.sin(t * driftRotFreq + driftRotPhase) * driftRotAmplitude * active * gust;
-  });
+  const leafTumble = useTransform(driftAngle, (ang) => Math.sin(ang * 1.7) * leafTumbleAmplitude);
+  const driftX = useTransform(
+    [driftAngle, driftRadius, driftActive, flockHeadingX],
+    (values: number[]) => {
+      if (!chaosEnabled) return 0;
+      const [ang, rad, active, headX] = values;
+      return Math.cos(ang) * rad * active + headX * active;
+    }
+  );
+  const driftY = useTransform(
+    [driftAngle, driftRadius, driftActive, flockHeadingY, fallBias],
+    (values: number[]) => {
+      if (!chaosEnabled) return 0;
+      const [ang, rad, active, headY, fall] = values;
+      return Math.sin(ang) * rad * active + headY * active + fall * active;
+    }
+  );
+  const driftRotate = useTransform(
+    [time, driftActive, flockGust, leafTumble],
+    (values: number[]) => {
+      if (!chaosEnabled) return 0;
+      const [t, active, gust, tumble] = values;
+      return Math.sin(t * driftRotFreq + driftRotPhase) * driftRotAmplitude * active * gust + tumble * active;
+    }
+  );
   const rotate = useTransform(
     [baseRotate, tumble, driftRotate],
     (values: number[]) => values[0] + values[1] + values[2]

@@ -38,7 +38,10 @@ import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
  */
 
 const SCROLL_ASSEMBLE_PX = 420;
-const MOUSE_ASSEMBLE_PX = 560;
+// Bewusst doppelt so groß wie ein "natürlicher" Wert - der Zusammenbau per
+// Maus soll sich spürbar wie eine eigene Anstrengung anfühlen, nicht wie ein
+// Nebeneffekt normaler Mausbewegung.
+const MOUSE_ASSEMBLE_PX = 1120;
 const AUTO_ADVANCE_MS = 7000;
 const EXPLODE_DURATION = 0.9;
 
