@@ -520,13 +520,22 @@ function Facet({
       : "#ffcf7a"
     : TONE_GRADIENT_STOPS[facet.tone].light;
 
+  // Schimmer-Glanz aus derselben Wunschfarbe abgeleitet statt eines fest
+  // codierten Goldtons - sonst blitzen fliegende/treibende Scherben in einer
+  // ANDEREN Farbfamilie auf als die Wunschfarbe selbst und wirken dadurch
+  // uneinheitlich gefaerbt (Ziel: Chaos-Zustand UND Zusammenbau zeigen
+  // durchgehend denselben Farbton).
+  const shimmerStroke = tintColor ? `rgb(${shadeHex(tintColor, 0.55).join(",")})` : "#ffe3ad";
+  const shimmerGlowInner = tintColor ? `rgb(${shadeHex(tintColor, 0.32).join(",")})` : "#ffcf7a";
+  const shimmerGlowOuter = tintColor ? `rgb(${shadeHex(tintColor, 0.05).join(",")})` : "#ff9d3d";
+
   return (
     <>
       {chaosEnabled && (
         <motion.polygon
           points={facet.points}
           fill="none"
-          stroke="#ffe3ad"
+          stroke={shimmerStroke}
           strokeWidth={1.1}
           style={{
             x,
@@ -534,7 +543,7 @@ function Facet({
             rotate,
             opacity: edgeShimmerOpacity,
             transformOrigin: `${cx}px ${cy}px`,
-            filter: "drop-shadow(0 0 3px #ffcf7a) drop-shadow(0 0 7px #ff9d3d)",
+            filter: `drop-shadow(0 0 3px ${shimmerGlowInner}) drop-shadow(0 0 7px ${shimmerGlowOuter})`,
           }}
         />
       )}
