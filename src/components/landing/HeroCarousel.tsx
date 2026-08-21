@@ -44,6 +44,17 @@ const SCROLL_ASSEMBLE_PX = 420;
 const MOUSE_ASSEMBLE_PX = 1120;
 const AUTO_ADVANCE_MS = 7000;
 const EXPLODE_DURATION = 0.9;
+// Sobald die maus-/scroll-getriebene Montage diese Schwelle erreicht,
+// uebernimmt eine garantiert weiche, fest getimte Animation den letzten
+// Rest bis progress=1 (siehe weldTakeover unten) - der rohe Mauswert
+// selbst kann in einem einzigen Frame ueber das ganze Nahtausblenden-/
+// Vollbild-Fenster hinwegspringen (abhaengig von Mausgeschwindigkeit),
+// was den finalen "Verschweissen"-Moment als abrupten Sprung statt als
+// Uebergang wirken liess. Schwelle knapp vor dem Nahtstellen-Ausblenden
+// (0.92), damit die komplette Schluss-Sequenz (Naht aus, Vollbild ein)
+// innerhalb dieser einen garantiert fluessigen Animation liegt.
+const WELD_TAKEOVER_THRESHOLD = 0.9;
+const WELD_TAKEOVER_DURATION = 0.6;
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -112,6 +123,13 @@ export function HeroCarousel() {
   useAnimationFrame(() => {
     if (!organicControlActive.current || prefersReducedMotion || !consentResolved) return;
     const current = Math.max(scrollAssemble.get(), mouseAssemble.get());
+    if (current >= WELD_TAKEOVER_THRESHOLD && progress.get() < 1) {
+      organicControlActive.current = false;
+      animate(progress, 1, { duration: WELD_TAKEOVER_DURATION, ease: [0.22, 1, 0.36, 1] }).then(() => {
+        organicControlActive.current = true;
+      });
+      return;
+    }
     if (current > progress.get()) progress.set(current);
   });
 
@@ -258,7 +276,17 @@ export function HeroCarousel() {
           </AnimatePresence>
         </div>
 
-        <div className="relative mx-auto w-full max-w-2xl">
+        {/* Feste Seitenverhaeltnis-Box statt der frueheren, vom jeweiligen
+            Foto-Seitenverhaeltnis abhaengigen Hoehe (240x255 bei der Katze
+            vs. 827x1300 beim Hocker) - sonst aenderte sich die Hoehe der
+            gesamten Hero-Section pro Slide, und Text/CTA-Buttons konnten je
+            nach Motiv unter die Falz rutschen. Das Foto/Mesh wird darin
+            zentriert eingepasst (SVG-Default "meet", KEIN Zuschneiden/
+            Verzerren) - je nach eigenem Seitenverhaeltnis mit etwas
+            Leerraum oben/unten oder links/rechts, aber die Box selbst ist
+            bei jedem Slide exakt gleich gross. Der Chaos-Streu-/Treib-
+            Bereich ignoriert diese Box ohnehin (overflow: visible). */}
+        <div className="relative mx-auto aspect-[4/5] max-h-[65vh] w-full max-w-2xl">
           <LowPolyMesh
             facets={slide.facets}
             viewBox={slide.viewBox}
@@ -273,7 +301,7 @@ export function HeroCarousel() {
             ariaLabel={slide.ariaLabel}
             imageUrl={slide.imageUrl}
             tintColor={slide.tintColor}
-            className="w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+            className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
           />
         </div>
       </div>

@@ -147,9 +147,17 @@ function ToneGradients() {
  * Hex-Farbe zur Laufzeit berechnet (shadeHex), nicht hart codiert, damit jedes
  * Motiv seine eigene Wunschfarbe bekommen kann. */
 function PhotoTintFilter({ color }: { color: string }) {
-  const dark = shadeHex(color, -0.68);
+  // Duoton-Endpunkte bewusst nicht zu weit Richtung Schwarz/Weiss gemischt -
+  // bei dunklen/kuehlen Toenen (Anthrazit, Rohstahl) hat ein zu aggressiver
+  // Schwarz-Anteil Schattenbereiche des Fotos fast auf Bildschirm-Schwarz
+  // gedrueckt und das Motiv vor dem dunklen Hero-Hintergrund kaum noch
+  // erkennbar gemacht. -0.28/+0.78 (statt urspruenglich -0.68/+0.62) haelt
+  // auch bei ohnehin schon dunklen Wunschfarben einen klar sichtbaren
+  // Hell-Dunkel-Kontrast - der dunkelste Punkt bleibt nah an der Basisfarbe
+  // selbst statt zusaetzlich Richtung Schwarz gedrueckt zu werden.
+  const dark = shadeHex(color, -0.28);
   const mid = hexToRgb(color);
-  const light = shadeHex(color, 0.62);
+  const light = shadeHex(color, 0.78);
   const table = (i: 0 | 1 | 2) =>
     [dark[i] / 255, mid[i] / 255, light[i] / 255].join(" ");
   return (
@@ -734,8 +742,11 @@ export function LowPolyMesh({
   }
 
   return (
-    <div className="relative" style={{ perspective: 900 }}>
-      <motion.div className="relative" style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}>
+    <div className="relative h-full w-full" style={{ perspective: 900 }}>
+      <motion.div
+        className="relative h-full w-full"
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      >
         {/* Pulsierender blauer Umgebungs-Glow - "Hightech"-Atmosphäre hinter
             dem Motiv, per CSS animiert (siehe .cat-glow-pulse). */}
         <div
@@ -751,6 +762,7 @@ export function LowPolyMesh({
         <svg
           viewBox={viewBox}
           className={className}
+          preserveAspectRatio="xMidYMid meet"
           style={{ overflow: "visible", position: "relative" }}
           role="img"
           aria-label={ariaLabel}
