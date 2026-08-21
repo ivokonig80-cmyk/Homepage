@@ -6,6 +6,7 @@ import { MATERIALS } from "@/lib/catalog";
 // Konfigurator/Shop tatsaechlich waehlbar ist.
 const KUPFER_HEX = MATERIALS.find((m) => m.id === "kupfer")!.colorHex;
 const MESSING_HEX = MATERIALS.find((m) => m.id === "messing")!.colorHex;
+const ROHSTAHL_HEX = MATERIALS.find((m) => m.id === "rohstahl")!.colorHex;
 
 /**
  * Daten für die 4 Hero-Slides (Text + Dreiecks-Facetten je Motiv, siehe
@@ -149,26 +150,44 @@ const PERSON_FACETS: FacetDef[] = [
   { points: "190,440 260,420 120,420", tone: "messing" },
 ];
 
-// Einfacher Platzhalter-Nachttisch (bewusst schlicht - Feinschliff der
-// "kreativen Ausbauweise" ist ein späteres, eigenes Thema): Deckplatte,
-// Front mit Schublade, Seitenfläche, zwei Beine, kleiner Knauf.
-const NIGHTSTAND_FACETS: FacetDef[] = [
-  // Deckplatte (leicht schräg für Tiefenwirkung)
-  { points: "60,60 190,60 210,40", tone: "steelLight" },
-  { points: "60,60 210,40 80,40", tone: "steelLight" },
-  // Korpus oben (über der Schublade)
-  { points: "60,60 190,60 190,130", tone: "steel" },
-  { points: "60,60 190,130 60,130", tone: "steel" },
-  // Schublade (unten, mit kleinem Knauf-Akzent)
-  { points: "60,130 190,130 190,200", tone: "bronze" },
-  { points: "60,130 190,200 60,200", tone: "bronze" },
-  { points: "118,158 132,158 125,172", tone: "steelLight" },
-  // Seitenfläche rechts
-  { points: "190,60 210,40 210,180", tone: "steelLight" },
-  { points: "190,60 210,180 190,200", tone: "steel" },
-  // Beine
-  { points: "65,200 80,200 70,240", tone: "steel" },
-  { points: "170,200 185,200 178,240", tone: "steel" },
+// Objekt-Motiv: echtes Foto ("Scherben-Foto"-Modus, wie Katze/Person) -
+// Quelle ist ein handverlesener, verschweisster Low-Poly-Stahlhocker
+// (kein Nachttisch mit Schublade mehr - das war explizit verworfen: zu
+// funktional/moebelhaft statt Skulptur). Von drei bereitgestellten
+// Fotowinkeln ist dieser der symmetrischste/frontalste (am wenigsten
+// Perspektivverzerrung -> praezisere Kanten-Nachzeichnung, siehe
+// public/hero-source/ChatGPT Image ... 16_18_15.png), zusaetzlich per
+// Vermassungs-/Liniengrafik-Beiblatt (16_18_20.png) gegengeprueft.
+// Freigestellt und exakt zugeschnitten (827x1300, PERSON_VIEW_BOX-Analogon
+// STOOL_VIEW_BOX). Facetten per Koordinatengitter-Overlay direkt am Foto
+// abgelesen: Tischplatten-Facher oben, darunter ein Konsolen-/Uebergangs-
+// Facher zu den beiden sichtbaren Vorderbeinen, jedes Bein als zwei lange
+// Dreiecke (die im Foto sichtbare Knick-/Faltlinie) bis zur Spitze.
+const STOOL_VIEW_BOX = "0 0 827 1300";
+const STOOL_CENTER = { x: 410, y: 500 };
+const STOOL_IMAGE_URL = "/hero-source/stool.webp";
+const STOOL_FACETS: FacetDef[] = [
+  // Tischplatte (Fan um Hub 410,70)
+  { points: "410,70 400,5 805,148", tone: "messing" },
+  { points: "410,70 805,148 410,175", tone: "messing" },
+  { points: "410,70 410,175 45,148", tone: "messing" },
+  { points: "410,70 45,148 400,5", tone: "messing" },
+  // Konsole/Uebergang zu den Beinen (Fan um Hub 410,255)
+  { points: "410,255 45,148 55,195", tone: "messing" },
+  { points: "410,255 55,195 255,355", tone: "messing" },
+  { points: "410,255 255,355 410,350", tone: "messing" },
+  { points: "410,255 410,350 565,355", tone: "messing" },
+  { points: "410,255 565,355 795,195", tone: "messing" },
+  { points: "410,255 795,195 805,148", tone: "messing" },
+  { points: "410,255 805,148 410,175", tone: "messing" },
+  { points: "410,255 410,175 45,148", tone: "messing" },
+  // Linkes Vorderbein (zwei lange Dreiecke, geteilt durch die im Foto
+  // sichtbare Knicklinie, spitz zulaufend)
+  { points: "55,195 140,270 155,1245", tone: "messing" },
+  { points: "140,270 255,355 155,1245", tone: "messing" },
+  // Rechtes Vorderbein (Spiegelung)
+  { points: "795,195 690,270 672,1245", tone: "messing" },
+  { points: "690,270 565,355 672,1245", tone: "messing" },
 ];
 
 // Saguaro-Kaktus: Mittelsäule aus 4 gestapelten Segmenten + zwei schmale,
@@ -250,11 +269,13 @@ export const HERO_SLIDES: HeroSlide[] = [
     headingLines: ["Definiere Kunstobjekte."],
     paragraph:
       "Nicht nur Lebewesen — auch Möbel und Alltagsobjekte lassen sich als facettierte Metallkunst neu denken. Ein erstes Beispiel, mehr Motive folgen.",
-    facets: NIGHTSTAND_FACETS,
-    viewBox: VIEW_BOX,
-    center: CENTER,
+    facets: STOOL_FACETS,
+    viewBox: STOOL_VIEW_BOX,
+    center: STOOL_CENTER,
+    imageUrl: STOOL_IMAGE_URL,
+    tintColor: ROHSTAHL_HEX,
     ariaLabel:
-      "Low-Poly-Illustration eines Nachttischs aus facettierten Dreiecken, die sich zusammensetzt und dann der Maus folgt",
+      "Foto eines Low-Poly-Stahlhockers in Rohstahl-Finish, dessen Fragmente sich zusammensetzen und dann der Maus folgen",
   },
   {
     id: "kaktus",
