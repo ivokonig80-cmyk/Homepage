@@ -85,11 +85,51 @@ import { motion, useReducedMotion, useTransform, type MotionValue } from "framer
 export type Tone = "steel" | "steelLight" | "bronze";
 export type FacetDef = { points: string; tone: Tone };
 
+// Warme Gunmetal-/Bronze-Palette, aus dem echten Katzen-Foto (Pixel-Cluster-
+// Analyse der freigestellten Skulptur) abgeleitet statt einer generischen
+// CG-Platzhalterfarbe - ersetzt die frühere, kühlere Blaugrau-Palette, damit
+// die noch flach eingefärbten Motive (Person/Nachttisch/Kaktus) zum selben
+// Material wie das fotobasierte Katzenmotiv passen.
 const TONE_FILL: Record<Tone, string> = {
-  steel: "#7d8894",
-  steelLight: "#aab4bf",
-  bronze: "#c9a961",
+  steel: "#5f574e",
+  steelLight: "#cfd0d6",
+  bronze: "#a68a63",
 };
+
+// Hell-/Dunkel-Randwerte je Ton für einen dezenten Verlauf pro Facette (siehe
+// ToneGradients weiter unten) - simuliert die reflektierende Oberfläche von
+// echtem geschweisstem Stahl statt einer komplett flachen Farbfläche.
+const TONE_GRADIENT_STOPS: Record<Tone, { light: string; dark: string }> = {
+  steel: { light: "#928d87", dark: "#3f3933" },
+  steelLight: { light: "#dedfe3", dark: "#89898d" },
+  bronze: { light: "#c2af95", dark: "#6e5b41" },
+};
+
+// Warmer, dunkler Nahtstellen-Ton statt neutralem Schwarz - aus den
+// dunkelsten Schattenbereichen desselben Fotos abgeleitet, wirkt zusammen
+// mit der neuen Palette stimmiger als reines #0a0a0c.
+const SEAM_STROKE = "#1c1512";
+
+/** Gemeinsame Verlaufs-Definitionen für alle drei Toene - einmal im Dokument
+ * gerendert (SVG-Gradient-IDs sind dokumentweit eindeutig referenzierbar,
+ * auch aus einem anderen <svg>-Geschwisterelement wie der Spiegelung
+ * darunter), von jeder Facette per `fill="url(#grad-<tone>)"` genutzt. Ohne
+ * `gradientUnits` (Default: objectBoundingBox) bekommt JEDE Facette
+ * automatisch ihren eigenen 0-100%-Verlauf ueber die eigene Bounding-Box,
+ * ganz ohne facettenspezifische Koordinaten. */
+function ToneGradients() {
+  return (
+    <defs>
+      {(Object.keys(TONE_FILL) as Tone[]).map((tone) => (
+        <linearGradient key={tone} id={`grad-${tone}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={TONE_GRADIENT_STOPS[tone].light} />
+          <stop offset="55%" stopColor={TONE_FILL[tone]} />
+          <stop offset="100%" stopColor={TONE_GRADIENT_STOPS[tone].dark} />
+        </linearGradient>
+      ))}
+    </defs>
+  );
+}
 
 const SCATTER_ROTATION_DEG = 340;
 // Deutlich groesser als der normale Streuradius - ab der ersten Sprengung
@@ -459,7 +499,7 @@ function Facet({
           <motion.polygon
             points={facet.points}
             fill="none"
-            stroke="#0a0a0c"
+            stroke={SEAM_STROKE}
             strokeWidth={0.6}
             style={{ x, y, rotate, opacity: strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
           />
@@ -467,8 +507,8 @@ function Facet({
       ) : (
         <motion.polygon
           points={facet.points}
-          fill={TONE_FILL[facet.tone]}
-          stroke="#0a0a0c"
+          fill={`url(#grad-${facet.tone})`}
+          stroke={SEAM_STROKE}
           strokeWidth={0.75}
           style={{ x, y, rotate, opacity, strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
         />
@@ -551,15 +591,18 @@ export function LowPolyMesh({
         {imageUrl && imageSize ? (
           <image href={imageUrl} x={0} y={0} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid slice" />
         ) : (
-          facets.map((facet, i) => (
-            <polygon
-              key={i}
-              points={facet.points}
-              fill={TONE_FILL[facet.tone]}
-              stroke="#0a0a0c"
-              strokeWidth={0.75}
-            />
-          ))
+          <>
+            <ToneGradients />
+            {facets.map((facet, i) => (
+              <polygon
+                key={i}
+                points={facet.points}
+                fill={`url(#grad-${facet.tone})`}
+                stroke={SEAM_STROKE}
+                strokeWidth={0.75}
+              />
+            ))}
+          </>
         )}
       </svg>
     );
@@ -587,6 +630,7 @@ export function LowPolyMesh({
           role="img"
           aria-label={ariaLabel}
         >
+          <ToneGradients />
           {facets.map((facet, i) => (
             <Facet
               key={i}
