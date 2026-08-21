@@ -82,18 +82,23 @@ import { motion, useReducedMotion, useTransform, type MotionValue } from "framer
  * sichtbar mit, statt zeitlich unabhängig zu drehen).
  */
 
-export type Tone = "steel" | "steelLight" | "bronze";
+export type Tone = "steel" | "steelLight" | "bronze" | "messing";
 export type FacetDef = { points: string; tone: Tone };
 
 // Warme Gunmetal-/Bronze-Palette, aus dem echten Katzen-Foto (Pixel-Cluster-
 // Analyse der freigestellten Skulptur) abgeleitet statt einer generischen
 // CG-Platzhalterfarbe - ersetzt die frühere, kühlere Blaugrau-Palette, damit
 // die noch flach eingefärbten Motive (Person/Nachttisch/Kaktus) zum selben
-// Material wie das fotobasierte Katzenmotiv passen.
+// Material wie das fotobasierte Katzenmotiv passen. `messing` entspricht
+// exakt dem echten Shop-Katalog-Wert (src/lib/catalog.ts, MATERIALS
+// "messing", #c9a961) - fuer Motive, die komplett EINFARBIG (eine einzige
+// Wunschfarbe fuer alle Facetten) statt in der gemischten Steel/Bronze-
+// Platzhalterpalette gezeigt werden sollen.
 const TONE_FILL: Record<Tone, string> = {
   steel: "#5f574e",
   steelLight: "#cfd0d6",
   bronze: "#a68a63",
+  messing: "#c9a961",
 };
 
 // Hell-/Dunkel-Randwerte je Ton für einen dezenten Verlauf pro Facette (siehe
@@ -103,6 +108,7 @@ const TONE_GRADIENT_STOPS: Record<Tone, { light: string; dark: string }> = {
   steel: { light: "#928d87", dark: "#3f3933" },
   steelLight: { light: "#dedfe3", dark: "#89898d" },
   bronze: { light: "#c2af95", dark: "#6e5b41" },
+  messing: { light: "#dac594", dark: "#857040" },
 };
 
 // Warmer, dunkler Nahtstellen-Ton statt neutralem Schwarz - aus den

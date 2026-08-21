@@ -75,28 +75,75 @@ const CAT_FACETS: FacetDef[] = [
   { points: "184.4,215.4 240,255 172.4,255", tone: "steelLight" },
 ];
 
-// Kopf: sechseckige Facettenkuppel (Fan aus einem Mittelpunkt) - Hals als
-// schmaler Steg, Torso als sechseckiger Facetten-Faecher (Fan aus einem
-// Mittelpunkt, wie der Kopf) mit breiter Schulterlinie, die dann leicht zur
-// Taille zulaeuft - liest sich als Buerste/Oberkoerper statt als spitzer
-// Anhaenger.
+// Gesichts-Buste, informiert durch Analyse mehrerer hochdetaillierter
+// Referenz-Low-Poly-Buesten (siehe public/hero-source/ - Lady-Gaga-Bust,
+// head-man-polygon, image_baX2uOzZ): dort ist die Facettendichte NICHT
+// gleichmaessig verteilt, sondern folgt der Anatomie - dicht an Augen, Nase
+// und Mund, grossflaechig/ruhig an Stirn, Wangen, Kiefer und Hals. Statt
+// eines einzelnen Fachers wird das hier nachgebildet, indem der glatte
+// Kopf-Facher (ein Hub, ruhige Aussenkontur inkl. Ohr-Ausbuchtungen) als
+// Basis dient, auf den drei KLEINE, eigene Mini-Facher (jeweils eigener,
+// naher Hub) fuer Augen, Nase und Mund aufgesetzt sind - vermeidet die
+// duennen "Pizzaschnitten"-Dreiecke, die entstehen wuerden, wenn man
+// Augen-/Nasen-Konturpunkte in EINEN einzigen, weit entfernten Kopf-Facher
+// zwingt (Punkte nah beieinander im Winkel vom Hub aus gesehen, obwohl
+// raeumlich getrennt).
+//
+// Wunschfarbe: komplett einfarbig in Messing-Finish (exakter Shop-Katalog-
+// Ton, siehe TONE_FILL.messing in LowPolyMesh.tsx) - jede einzelne Facette
+// traegt denselben Ton, die Tiefenwirkung kommt rein aus dem
+// Hell-Dunkel-Verlauf pro Facette (Spiegelung), nicht aus gemischten Toenen.
 const PERSON_FACETS: FacetDef[] = [
-  // Kopf (Fan um G=120,65)
-  { points: "120,65 120,10 168,35", tone: "steelLight" },
-  { points: "120,65 168,35 185,85", tone: "steel" },
-  { points: "120,65 185,85 120,115", tone: "steelLight" },
-  { points: "120,65 120,115 55,85", tone: "bronze" },
-  { points: "120,65 55,85 72,35", tone: "steel" },
-  { points: "120,65 72,35 120,10", tone: "steelLight" },
+  // Kopf-Grundform (Fan um Hub 120,95 - glatte Aussenkontur inkl. Ohr-Buckel,
+  // OHNE Augen/Nase/Mund-Zickzack, das wuerde in diesem grossen Facher zu
+  // duennen Splittern fuehren)
+  { points: "120,95 120,14 160,20", tone: "messing" },
+  { points: "120,95 160,20 182,55", tone: "messing" },
+  { points: "120,95 182,55 192,88", tone: "messing" },
+  { points: "120,95 192,88 183,105", tone: "messing" },
+  { points: "120,95 183,105 172,130", tone: "messing" },
+  { points: "120,95 172,130 138,160", tone: "messing" },
+  { points: "120,95 138,160 120,168", tone: "messing" },
+  { points: "120,95 120,168 102,160", tone: "messing" },
+  { points: "120,95 102,160 68,130", tone: "messing" },
+  { points: "120,95 68,130 57,105", tone: "messing" },
+  { points: "120,95 57,105 48,88", tone: "messing" },
+  { points: "120,95 48,88 58,55", tone: "messing" },
+  { points: "120,95 58,55 80,20", tone: "messing" },
+  { points: "120,95 80,20 120,14", tone: "messing" },
+  // Linkes Auge (eigener Mini-Facher, Hub 90,88)
+  { points: "90,88 75,80 102,84", tone: "messing" },
+  { points: "90,88 102,84 100,94", tone: "messing" },
+  { points: "90,88 100,94 78,96", tone: "messing" },
+  { points: "90,88 78,96 75,80", tone: "messing" },
+  // Rechtes Auge (Spiegelung, Hub 150,88)
+  { points: "150,88 165,80 138,84", tone: "messing" },
+  { points: "150,88 138,84 140,94", tone: "messing" },
+  { points: "150,88 140,94 162,96", tone: "messing" },
+  { points: "150,88 162,96 165,80", tone: "messing" },
+  // Nase (Mini-Facher, Hub 120,118 - Nasenruecken bis Spitze/Nasenfluegel)
+  { points: "120,118 114,95 126,95", tone: "messing" },
+  { points: "120,118 126,95 133,122", tone: "messing" },
+  { points: "120,118 133,122 120,133", tone: "messing" },
+  { points: "120,118 120,133 107,122", tone: "messing" },
+  { points: "120,118 107,122 114,95", tone: "messing" },
+  // Mund (Mini-Facher, Hub 120,148)
+  { points: "120,148 98,144 120,140", tone: "messing" },
+  { points: "120,148 120,140 142,144", tone: "messing" },
+  { points: "120,148 142,144 140,154", tone: "messing" },
+  { points: "120,148 140,154 120,158", tone: "messing" },
+  { points: "120,148 120,158 100,154", tone: "messing" },
+  { points: "120,148 100,154 98,144", tone: "messing" },
   // Hals
-  { points: "120,115 100,155 140,155", tone: "steel" },
-  // Torso (Fan um C=120,205): Hals -> breite Schulter -> leicht schmalere Taille
-  { points: "120,205 100,155 35,185", tone: "steelLight" },
-  { points: "120,205 35,185 60,250", tone: "bronze" },
-  { points: "120,205 60,250 180,250", tone: "steel" },
-  { points: "120,205 180,250 205,185", tone: "bronze" },
-  { points: "120,205 205,185 140,155", tone: "steelLight" },
-  { points: "120,205 140,155 100,155", tone: "steel" },
+  { points: "102,160 138,160 145,205", tone: "messing" },
+  { points: "102,160 145,205 95,205", tone: "messing" },
+  // Schultern/Buste (Fan um Hub 120,225)
+  { points: "120,225 95,205 30,225", tone: "messing" },
+  { points: "120,225 30,225 55,260", tone: "messing" },
+  { points: "120,225 55,260 185,260", tone: "messing" },
+  { points: "120,225 185,260 210,225", tone: "messing" },
+  { points: "120,225 210,225 145,205", tone: "messing" },
+  { points: "120,225 145,205 95,205", tone: "messing" },
 ];
 
 // Einfacher Platzhalter-Nachttisch (bewusst schlicht - Feinschliff der
@@ -190,7 +237,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     viewBox: VIEW_BOX,
     center: CENTER,
     ariaLabel:
-      "Low-Poly-Illustration eines Porträtbüste aus facettierten Dreiecken, die sich zusammensetzt und dann der Maus folgt",
+      "Low-Poly-Illustration einer Porträtbüste in Messing-Finish aus facettierten Dreiecken, die sich zusammensetzt und dann der Maus folgt",
   },
   {
     id: "objekt",
