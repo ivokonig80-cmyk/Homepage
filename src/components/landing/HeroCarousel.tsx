@@ -50,11 +50,17 @@ const EXPLODE_DURATION = 0.9;
 // selbst kann in einem einzigen Frame ueber das ganze Nahtausblenden-/
 // Vollbild-Fenster hinwegspringen (abhaengig von Mausgeschwindigkeit),
 // was den finalen "Verschweissen"-Moment als abrupten Sprung statt als
-// Uebergang wirken liess. Schwelle knapp vor dem Nahtstellen-Ausblenden
-// (0.92), damit die komplette Schluss-Sequenz (Naht aus, Vollbild ein)
-// innerhalb dieser einen garantiert fluessigen Animation liegt.
-const WELD_TAKEOVER_THRESHOLD = 0.9;
-const WELD_TAKEOVER_DURATION = 0.6;
+// Uebergang wirken liess. Schwelle deutlich VOR dem Nahtstellen-Ausblenden
+// (0.92) gesetzt, nicht knapp davor - bei einer knappen Schwelle war die
+// Montage oft schon 98%+ fertig, wenn die Uebernahme startete, wodurch die
+// "garantiert weiche" Animation kaum noch sichtbare Strecke zum Gleiten
+// hatte und der Effekt trotzdem wie ein Sprung wirkte. Mit 0.75 bleibt
+// genug Weg fuer ein spuerbares, absichtliches Eingleiten. easeInOut statt
+// eines am Start steilen Easings, damit der UEBERGANG selbst (roher
+// Mauswert -> Animation) keinen Ruck erzeugt, da die Animation sanft statt
+// mit hoher Anfangsgeschwindigkeit einsetzt.
+const WELD_TAKEOVER_THRESHOLD = 0.75;
+const WELD_TAKEOVER_DURATION = 0.75;
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -125,7 +131,7 @@ export function HeroCarousel() {
     const current = Math.max(scrollAssemble.get(), mouseAssemble.get());
     if (current >= WELD_TAKEOVER_THRESHOLD && progress.get() < 1) {
       organicControlActive.current = false;
-      animate(progress, 1, { duration: WELD_TAKEOVER_DURATION, ease: [0.22, 1, 0.36, 1] }).then(() => {
+      animate(progress, 1, { duration: WELD_TAKEOVER_DURATION, ease: "easeInOut" }).then(() => {
         organicControlActive.current = true;
       });
       return;

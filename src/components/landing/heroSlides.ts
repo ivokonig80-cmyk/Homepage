@@ -189,55 +189,46 @@ const STOOL_FACETS: FacetDef[] = [
 ];
 
 // Kaktus-Motiv: echtes Foto ("Scherben-Foto"-Modus, wie Katze/Person/
-// Objekt) - Quelle ist ein verschweisster Low-Poly-Stahlkaktus (Wueste,
-// siehe public/hero-source/ChatGPT Image ... 16_38_20.png), gegenueber
-// einer zweiten, ebenfalls gepruesten Chrom-Variante gewaehlt, weil das
-// matte, genahte Stahlblech zum "massive Stahlskulptur"-Material von
-// Katze/Person/Objekt passt statt einer polierten Spiegel-Optik. Trotz
-// unruhigem Wuesten-Hintergrund liess sich die Freistellung sauber
-// durchfuehren (per Kantenglaettungs-Test verifiziert); der unterste,
-// etwas unsauberere Bodenkontakt-Bereich wurde vor dem Zuschnitt entfernt.
-// Facetten per Koordinatengitter-Overlay direkt am Foto abgelesen: Kristall-
-// Kuppen-Facher oben, darunter ein langer Stamm-Facher, an den die drei
-// sichtbaren Arme (zwei kompakte Kristall-Facher + ein langer gebogener
-// Arm als zweigeteilte Klinge) an ihren jeweiligen Ansatzpunkten andocken.
-const CACTUS_VIEW_BOX = "0 0 691 1001";
-const CACTUS_CENTER = { x: 345, y: 500 };
+// Objekt) - zweite Runde: das erste (Wuesten-)Foto war zu dunkel/zu sehr
+// im 3/4-Winkel fotografiert. Ersetzt durch ein echt frontales, gleichmaessig
+// hell studio-beleuchtetes Foto (siehe public/hero-source/Gemini_Generated_
+// Image_gdhywzgdhywzgdhy.jpg) - loest beide Probleme direkt: symmetrische
+// Frontalansicht statt Perspektive, kein dramatisches Gegenlicht mehr.
+// Freigestellt, die eigene Sockelplatte des Fotos abgeschnitten (Konsistenz
+// mit Katze/Person/Objekt, die ebenfalls ohne eigenen Sockel schweben).
+// Facetten wieder per Koordinatengitter-Overlay direkt am Foto abgelesen:
+// Kristall-Kuppen-Facher oben, darunter ein langer Stamm-Facher (mit den
+// Arm-Ansatzpunkten als Ring-Punkte), an den die beiden gebogenen Arme
+// (je zwei lange Dreiecke, geteilt entlang der sichtbaren Ellenbogen-Kante)
+// andocken.
+const CACTUS_VIEW_BOX = "0 0 998 1560";
+const CACTUS_CENTER = { x: 500, y: 780 };
 const CACTUS_IMAGE_URL = "/hero-source/cactus.webp";
 const CACTUS_FACETS: FacetDef[] = [
-  // Kristall-Kuppe des Stamms (Fan um Hub 365,45)
-  { points: "365,45 365,5 440,60", tone: "steel" },
-  { points: "365,45 440,60 400,110", tone: "steel" },
-  { points: "365,45 400,110 330,110", tone: "steel" },
-  { points: "365,45 330,110 285,55", tone: "steel" },
-  { points: "365,45 285,55 365,5", tone: "steel" },
-  // Stamm (Fan um Hub 345,600 - Aussenkontur inkl. Arm-Ansatzpunkte)
-  { points: "345,600 285,55 255,320", tone: "steel" },
-  { points: "345,600 255,320 215,460", tone: "steel" },
-  { points: "345,600 215,460 210,600", tone: "steel" },
-  { points: "345,600 210,600 210,750", tone: "steel" },
-  { points: "345,600 210,750 200,950", tone: "steel" },
-  { points: "345,600 200,950 430,950", tone: "steel" },
-  { points: "345,600 430,950 455,600", tone: "steel" },
-  { points: "345,600 455,600 460,420", tone: "steel" },
-  { points: "345,600 460,420 440,60", tone: "steel" },
-  { points: "345,600 440,60 285,55", tone: "steel" },
-  // Oberer linker Arm, kurz mit eigener Kristallspitze (Fan um Hub 160,290)
-  { points: "160,290 135,215 185,235", tone: "steel" },
-  { points: "160,290 185,235 255,320", tone: "steel" },
-  { points: "160,290 255,320 95,320", tone: "steel" },
-  { points: "160,290 95,320 105,260", tone: "steel" },
-  { points: "160,290 105,260 135,215", tone: "steel" },
-  // Rechter Arm, eigene Kristallspitze (Fan um Hub 520,280)
-  { points: "520,280 605,140 650,190", tone: "steel" },
-  { points: "520,280 650,190 590,420", tone: "steel" },
-  { points: "520,280 590,420 460,420", tone: "steel" },
-  { points: "520,280 460,420 500,220", tone: "steel" },
-  { points: "520,280 500,220 605,140", tone: "steel" },
-  // Unterer linker Arm, lang mit Ellenbogen-Biegung (zwei lange Dreiecke,
-  // geteilt entlang der im Foto sichtbaren Aussen-/Innenkante)
-  { points: "215,750 60,655 35,440", tone: "steel" },
-  { points: "215,750 35,440 140,600", tone: "steel" },
+  // Kristall-Kuppe des Stamms (Fan um Hub 500,110)
+  { points: "500,110 500,5 545,15", tone: "steel" },
+  { points: "500,110 545,15 600,95", tone: "steel" },
+  { points: "500,110 600,95 598,225", tone: "steel" },
+  { points: "500,110 598,225 402,225", tone: "steel" },
+  { points: "500,110 402,225 405,95", tone: "steel" },
+  { points: "500,110 405,95 460,15", tone: "steel" },
+  { points: "500,110 460,15 500,5", tone: "steel" },
+  // Stamm (Fan um Hub 500,900 - Aussenkontur inkl. Arm-Ansatzpunkte)
+  { points: "500,900 402,225 355,905", tone: "steel" },
+  { points: "500,900 355,905 350,1030", tone: "steel" },
+  { points: "500,900 350,1030 375,1560", tone: "steel" },
+  { points: "500,900 375,1560 630,1560", tone: "steel" },
+  { points: "500,900 630,1560 650,920", tone: "steel" },
+  { points: "500,900 650,920 650,760", tone: "steel" },
+  { points: "500,900 650,760 598,225", tone: "steel" },
+  { points: "500,900 598,225 402,225", tone: "steel" },
+  // Linker Arm, lang mit Ellenbogen-Biegung (zwei lange Dreiecke, geteilt
+  // entlang der im Foto sichtbaren Aussen-/Innenkante)
+  { points: "125,300 60,930 350,1030", tone: "steel" },
+  { points: "125,300 170,970 355,905", tone: "steel" },
+  // Rechter Arm (gespiegelt)
+  { points: "880,140 960,700 650,900", tone: "steel" },
+  { points: "880,140 650,900 650,760", tone: "steel" },
 ];
 
 export interface HeroSlide {
