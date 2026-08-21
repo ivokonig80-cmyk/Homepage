@@ -7,17 +7,15 @@ import { MATERIALS } from "@/lib/catalog";
 const KUPFER_HEX = MATERIALS.find((m) => m.id === "kupfer")!.colorHex;
 const MESSING_HEX = MATERIALS.find((m) => m.id === "messing")!.colorHex;
 const ROHSTAHL_HEX = MATERIALS.find((m) => m.id === "rohstahl")!.colorHex;
+const ANTHRAZIT_HEX = MATERIALS.find((m) => m.id === "anthrazit")!.colorHex;
 
 /**
  * Daten für die 4 Hero-Slides (Text + Dreiecks-Facetten je Motiv, siehe
- * HeroCarousel.tsx). Alle Motive teilen dieselbe viewBox/dasselbe
- * Zentrum, damit sie sich innerhalb desselben Hero-Layouts konsistent
- * verhalten - Facetten je Motiv sind bewusst im selben handgesetzten
- * Platzhalter-Stil wie das ursprüngliche Katzenmotiv (siehe LowPolyMesh.tsx).
+ * HeroCarousel.tsx). Alle vier Motive laufen inzwischen im "Scherben-Foto"-
+ * Modus (echtes Foto statt Handzeichnung, siehe LowPolyMesh.tsx) - jedes
+ * Motiv hat dadurch seine eigene, an sein Quellfoto angepasste viewBox/
+ * Zentrum statt einer geteilten Platzhalter-Box.
  */
-
-const VIEW_BOX = "0 0 240 260";
-const CENTER = { x: 120, y: 130 };
 
 // Katzen-Motiv: echtes Foto ("Scherben-Foto"-Modus, siehe LowPolyMesh.tsx)
 // statt handgezeichneter Facetten - die Skulptur ist detailreich genug, um
@@ -190,29 +188,56 @@ const STOOL_FACETS: FacetDef[] = [
   { points: "690,270 565,355 672,1245", tone: "messing" },
 ];
 
-// Saguaro-Kaktus: Mittelsäule aus 4 gestapelten Segmenten + zwei schmale,
-// AUFRECHTE Arme, die parallel zur Säule nach oben wachsen (nicht als breite
-// Flossen an der Basis - sonst liest es sich wie eine Rakete statt Kaktus).
+// Kaktus-Motiv: echtes Foto ("Scherben-Foto"-Modus, wie Katze/Person/
+// Objekt) - Quelle ist ein verschweisster Low-Poly-Stahlkaktus (Wueste,
+// siehe public/hero-source/ChatGPT Image ... 16_38_20.png), gegenueber
+// einer zweiten, ebenfalls gepruesten Chrom-Variante gewaehlt, weil das
+// matte, genahte Stahlblech zum "massive Stahlskulptur"-Material von
+// Katze/Person/Objekt passt statt einer polierten Spiegel-Optik. Trotz
+// unruhigem Wuesten-Hintergrund liess sich die Freistellung sauber
+// durchfuehren (per Kantenglaettungs-Test verifiziert); der unterste,
+// etwas unsauberere Bodenkontakt-Bereich wurde vor dem Zuschnitt entfernt.
+// Facetten per Koordinatengitter-Overlay direkt am Foto abgelesen: Kristall-
+// Kuppen-Facher oben, darunter ein langer Stamm-Facher, an den die drei
+// sichtbaren Arme (zwei kompakte Kristall-Facher + ein langer gebogener
+// Arm als zweigeteilte Klinge) an ihren jeweiligen Ansatzpunkten andocken.
+const CACTUS_VIEW_BOX = "0 0 691 1001";
+const CACTUS_CENTER = { x: 345, y: 500 };
+const CACTUS_IMAGE_URL = "/hero-source/cactus.webp";
 const CACTUS_FACETS: FacetDef[] = [
-  // Kuppe
-  { points: "120,15 100,40 140,40", tone: "steelLight" },
-  // Mittelsäule (4 Segmente, abwechselnde Tönung)
-  { points: "100,40 140,40 140,90", tone: "steel" },
-  { points: "100,40 140,90 100,90", tone: "steel" },
-  { points: "100,90 140,90 140,150", tone: "steelLight" },
-  { points: "100,90 140,150 100,150", tone: "steelLight" },
-  { points: "100,150 140,150 140,200", tone: "steel" },
-  { points: "100,150 140,200 100,200", tone: "steel" },
-  { points: "100,200 140,200 140,250", tone: "steelLight" },
-  { points: "100,200 140,250 100,250", tone: "steelLight" },
-  // Linker Arm: schmale, hochragende Säule dicht neben dem Stamm
-  { points: "100,210 68,200 68,110", tone: "bronze" },
-  { points: "100,210 68,110 100,150", tone: "bronze" },
-  { points: "68,110 58,90 100,150", tone: "steel" },
-  // Rechter Arm (gespiegelt)
-  { points: "140,210 172,200 172,110", tone: "bronze" },
-  { points: "140,210 172,110 140,150", tone: "bronze" },
-  { points: "172,110 182,90 140,150", tone: "steel" },
+  // Kristall-Kuppe des Stamms (Fan um Hub 365,45)
+  { points: "365,45 365,5 440,60", tone: "steel" },
+  { points: "365,45 440,60 400,110", tone: "steel" },
+  { points: "365,45 400,110 330,110", tone: "steel" },
+  { points: "365,45 330,110 285,55", tone: "steel" },
+  { points: "365,45 285,55 365,5", tone: "steel" },
+  // Stamm (Fan um Hub 345,600 - Aussenkontur inkl. Arm-Ansatzpunkte)
+  { points: "345,600 285,55 255,320", tone: "steel" },
+  { points: "345,600 255,320 215,460", tone: "steel" },
+  { points: "345,600 215,460 210,600", tone: "steel" },
+  { points: "345,600 210,600 210,750", tone: "steel" },
+  { points: "345,600 210,750 200,950", tone: "steel" },
+  { points: "345,600 200,950 430,950", tone: "steel" },
+  { points: "345,600 430,950 455,600", tone: "steel" },
+  { points: "345,600 455,600 460,420", tone: "steel" },
+  { points: "345,600 460,420 440,60", tone: "steel" },
+  { points: "345,600 440,60 285,55", tone: "steel" },
+  // Oberer linker Arm, kurz mit eigener Kristallspitze (Fan um Hub 160,290)
+  { points: "160,290 135,215 185,235", tone: "steel" },
+  { points: "160,290 185,235 255,320", tone: "steel" },
+  { points: "160,290 255,320 95,320", tone: "steel" },
+  { points: "160,290 95,320 105,260", tone: "steel" },
+  { points: "160,290 105,260 135,215", tone: "steel" },
+  // Rechter Arm, eigene Kristallspitze (Fan um Hub 520,280)
+  { points: "520,280 605,140 650,190", tone: "steel" },
+  { points: "520,280 650,190 590,420", tone: "steel" },
+  { points: "520,280 590,420 460,420", tone: "steel" },
+  { points: "520,280 460,420 500,220", tone: "steel" },
+  { points: "520,280 500,220 605,140", tone: "steel" },
+  // Unterer linker Arm, lang mit Ellenbogen-Biegung (zwei lange Dreiecke,
+  // geteilt entlang der im Foto sichtbaren Aussen-/Innenkante)
+  { points: "215,750 60,655 35,440", tone: "steel" },
+  { points: "215,750 35,440 140,600", tone: "steel" },
 ];
 
 export interface HeroSlide {
@@ -284,9 +309,11 @@ export const HERO_SLIDES: HeroSlide[] = [
     paragraph:
       "Auch Pflanzen wirken als Low-Poly-Metallkunst überraschend lebendig — pflegeleicht im Wortsinn, und garantiert stachelfrei beim Anfassen.",
     facets: CACTUS_FACETS,
-    viewBox: VIEW_BOX,
-    center: CENTER,
+    viewBox: CACTUS_VIEW_BOX,
+    center: CACTUS_CENTER,
+    imageUrl: CACTUS_IMAGE_URL,
+    tintColor: ANTHRAZIT_HEX,
     ariaLabel:
-      "Low-Poly-Illustration eines Kaktus aus facettierten Dreiecken, die sich zusammensetzt und dann der Maus folgt",
+      "Foto eines Low-Poly-Stahlkaktus in Anthrazit-Finish, dessen Fragmente sich zusammensetzen und dann der Maus folgen",
   },
 ];
