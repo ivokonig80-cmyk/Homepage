@@ -131,6 +131,33 @@ function ToneGradients() {
   );
 }
 
+/** Foto-Einfaerbe-Filter ("Wunschfarbe live am Foto"): entsaettigt das Foto
+ * zu reiner Helligkeit und faerbt es per Duoton (dunkler/heller Endpunkt UND
+ * exakter Mittelpunkt der `tintColor`, 3-Punkt-Tabelle statt nur 2, damit der
+ * Mittelton wirklich exakt der gewaehlten Farbe entspricht) neu ein - Fotodetail
+ * (Facetten-Schattierung, Textur) bleibt dabei vollstaendig erhalten, nur der
+ * Farbton wechselt. Einmal im Dokument gerendert, dokumentweit referenzierbar
+ * (siehe ToneGradients-Kommentar) - Endpunkte werden aus der uebergebenen
+ * Hex-Farbe zur Laufzeit berechnet (shadeHex), nicht hart codiert, damit jedes
+ * Motiv seine eigene Wunschfarbe bekommen kann. */
+function PhotoTintFilter({ color }: { color: string }) {
+  const dark = shadeHex(color, -0.68);
+  const mid = hexToRgb(color);
+  const light = shadeHex(color, 0.62);
+  const table = (i: 0 | 1 | 2) =>
+    [dark[i] / 255, mid[i] / 255, light[i] / 255].join(" ");
+  return (
+    <filter id="photo-tint" colorInterpolationFilters="sRGB">
+      <feColorMatrix type="saturate" values="0" />
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues={table(0)} />
+        <feFuncG type="table" tableValues={table(1)} />
+        <feFuncB type="table" tableValues={table(2)} />
+      </feComponentTransfer>
+    </filter>
+  );
+}
+
 const SCATTER_ROTATION_DEG = 340;
 // Deutlich groesser als der normale Streuradius - ab der ersten Sprengung
 // verteilen sich die Teile damit ueber weite Teile des Bildschirms statt
@@ -164,6 +191,25 @@ function seeded(n: number): number {
   return x - Math.floor(x);
 }
 
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace("#", "");
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16),
+  ];
+}
+
+/** Mischt eine Hex-Farbe Richtung Schwarz (amount<0) oder Weiß (amount>0) -
+ * fuer den Foto-Einfaerbe-Filter (Duoton-Endpunkte) und die helle
+ * Nahtstellen-Schein-Farbe (siehe `tintColor`-Prop unten). */
+function shadeHex(hex: string, amount: number): [number, number, number] {
+  const [r, g, b] = hexToRgb(hex);
+  const target = amount < 0 ? 0 : 255;
+  const t = Math.abs(amount);
+  return [r + (target - r) * t, g + (target - g) * t, b + (target - b) * t];
+}
+
 interface FacetProps {
   facet: FacetDef;
   index: number;
@@ -181,6 +227,10 @@ interface FacetProps {
    * Facetten-Koordinaten (dieselbe viewBox wie das Motiv) liegen sollen. */
   imageUrl?: string;
   imageSize?: { width: number; height: number };
+  /** Hex-Wunschfarbe (z.B. aus dem echten Shop-Katalog) - faerbt im
+   * Scherben-Foto-Modus das Foto per Duoton-Filter ein (siehe
+   * `PhotoTintFilter`) und bestimmt den warmen Nahtstellen-Schein. */
+  tintColor?: string;
   /** Eindeutiger ID-Praefix fuer die SVG-clipPath-IDs - noetig, da
    * Haupt-Rendering und Spiegelung dieselben Facetten-Indizes doppelt
    * verwenden und clipPath-IDs sonst kollidieren wuerden. */
@@ -199,6 +249,7 @@ function Facet({
   pointerX,
   pointerY,
   imageUrl,
+  tintColor,
   imageSize,
   idPrefix,
 }: FacetProps) {
@@ -261,6 +312,11 @@ function Facet({
   // benachbarte Facetten dann exakt aneinander - ohne Rand wirkt es wie ein
   // durchgehend verschweisstes Stueck statt einzelner Dreiecke.
   const strokeOpacity = useTransform(progress, [0.92, 1], [1, 0]);
+  // Weicherer, breiterer Warmton-Schein UNTER der dunklen Nahtstellen-Linie
+  // (siehe Analyse des echten Foto-Schweißnaht-Profils im Datei-Kommentar) -
+  // simuliert die Waerme-Verfaerbung, die echte Schweissnaehte im Foto neben
+  // der eigentlichen dunklen Rille zeigen, statt einer rein flachen Kontur.
+  const seamHaloOpacity = useTransform(strokeOpacity, (v) => v * 0.4);
 
   // Mausparallaxe pro Facette: waehrend das Motiv noch nicht komplett
   // verschweisst ist, wackelt jedes Teil (je nach Abstand zum Zentrum
@@ -454,6 +510,15 @@ function Facet({
   );
 
   const clipId = `${idPrefix}-clip-${index}`;
+  // Heller Nahtstellen-Schein: bei Foto-Motiven aus der Wunschfarbe selbst
+  // abgeleitet (passt sich automatisch an, egal welche Farbe gewaehlt ist),
+  // bei Flachfarben-Motiven aus dem hellen Verlaufs-Endpunkt des jeweiligen
+  // Tons (siehe TONE_GRADIENT_STOPS) - immer farblich passend zur Facette.
+  const seamHaloColor = imageUrl
+    ? tintColor
+      ? `rgb(${shadeHex(tintColor, 0.45).join(",")})`
+      : "#ffcf7a"
+    : TONE_GRADIENT_STOPS[facet.tone].light;
 
   return (
     <>
@@ -491,11 +556,24 @@ function Facet({
               width={imageSize.width}
               height={imageSize.height}
               preserveAspectRatio="xMidYMid slice"
+              filter={tintColor ? "url(#photo-tint)" : undefined}
             />
           </motion.g>
-          {/* Duenne Nahtstellen-Kontur - wie beim Flachfarben-Modus, blendet
-              beim Verschweissen aus (strokeOpacity), damit die Scherben vor
-              dem Zusammenfuegen als einzelne Fragmente erkennbar bleiben. */}
+          {/* Warmer Schein UNTER der dunklen Nahtstellen-Linie (siehe
+              seamHaloColor oben) - simuliert die Waerme-Verfaerbung, die
+              echte Schweissnaehte im Referenzfoto neben der eigentlichen
+              dunklen Rille zeigen, statt einer rein flachen Kontur. */}
+          <motion.polygon
+            points={facet.points}
+            fill="none"
+            stroke={seamHaloColor}
+            strokeWidth={1.5}
+            style={{ x, y, rotate, opacity: seamHaloOpacity, transformOrigin: `${cx}px ${cy}px` }}
+          />
+          {/* Duenne dunkle Nahtstellen-Kontur obendrauf - wie beim
+              Flachfarben-Modus, blendet beim Verschweissen aus
+              (strokeOpacity), damit die Scherben vor dem Zusammenfuegen als
+              einzelne Fragmente erkennbar bleiben. */}
           <motion.polygon
             points={facet.points}
             fill="none"
@@ -505,13 +583,29 @@ function Facet({
           />
         </>
       ) : (
-        <motion.polygon
-          points={facet.points}
-          fill={`url(#grad-${facet.tone})`}
-          stroke={SEAM_STROKE}
-          strokeWidth={0.75}
-          style={{ x, y, rotate, opacity, strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
-        />
+        <>
+          <motion.polygon
+            points={facet.points}
+            fill={`url(#grad-${facet.tone})`}
+            style={{ x, y, rotate, opacity, transformOrigin: `${cx}px ${cy}px` }}
+          />
+          {/* Gleiches zweischichtiges Nahtstellen-Profil wie im Foto-Modus -
+              warmer Schein unter der dunklen Kontur. */}
+          <motion.polygon
+            points={facet.points}
+            fill="none"
+            stroke={seamHaloColor}
+            strokeWidth={1.4}
+            style={{ x, y, rotate, opacity: seamHaloOpacity, transformOrigin: `${cx}px ${cy}px` }}
+          />
+          <motion.polygon
+            points={facet.points}
+            fill="none"
+            stroke={SEAM_STROKE}
+            strokeWidth={0.75}
+            style={{ x, y, rotate, opacity: strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
+          />
+        </>
       )}
     </>
   );
@@ -544,6 +638,10 @@ export interface LowPolyMeshProps {
    * werden die Facetten als Fragmente dieses Fotos statt als Flächenfarbe
    * gerendert. Erwartet dieselbe Koordinaten-viewBox wie `viewBox`. */
   imageUrl?: string;
+  /** Hex-Wunschfarbe (idealerweise aus dem echten Shop-Katalog, siehe
+   * heroSlides.ts) - faerbt das Foto per Duoton-Filter ein, nur wirksam
+   * zusammen mit `imageUrl`. */
+  tintColor?: string;
 }
 
 export function LowPolyMesh({
@@ -560,6 +658,7 @@ export function LowPolyMesh({
   pointerY,
   ariaLabel,
   imageUrl,
+  tintColor,
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
   const imageSize = imageUrl ? parseViewBoxSize(viewBox) : undefined;
@@ -589,7 +688,18 @@ export function LowPolyMesh({
     return (
       <svg viewBox={viewBox} className={className} role="img" aria-label={ariaLabel}>
         {imageUrl && imageSize ? (
-          <image href={imageUrl} x={0} y={0} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid slice" />
+          <>
+            {tintColor && <defs><PhotoTintFilter color={tintColor} /></defs>}
+            <image
+              href={imageUrl}
+              x={0}
+              y={0}
+              width={imageSize.width}
+              height={imageSize.height}
+              preserveAspectRatio="xMidYMid slice"
+              filter={tintColor ? "url(#photo-tint)" : undefined}
+            />
+          </>
         ) : (
           <>
             <ToneGradients />
@@ -631,6 +741,7 @@ export function LowPolyMesh({
           aria-label={ariaLabel}
         >
           <ToneGradients />
+          {tintColor && <defs><PhotoTintFilter color={tintColor} /></defs>}
           {facets.map((facet, i) => (
             <Facet
               key={i}
@@ -646,6 +757,7 @@ export function LowPolyMesh({
               pointerY={pointerY}
               imageUrl={imageUrl}
               imageSize={imageSize}
+              tintColor={tintColor}
               idPrefix="main"
             />
           ))}
@@ -658,6 +770,7 @@ export function LowPolyMesh({
               height={imageSize.height}
               preserveAspectRatio="xMidYMid slice"
               pointerEvents="none"
+              filter={tintColor ? "url(#photo-tint)" : undefined}
               style={{ opacity: weldImageOpacity }}
             />
           )}
@@ -693,6 +806,7 @@ export function LowPolyMesh({
                 pointerY={pointerY}
                 imageUrl={imageUrl}
                 imageSize={imageSize}
+                tintColor={tintColor}
                 idPrefix="reflection"
               />
             ))}
@@ -705,6 +819,7 @@ export function LowPolyMesh({
                 height={imageSize.height}
                 preserveAspectRatio="xMidYMid slice"
                 pointerEvents="none"
+                filter={tintColor ? "url(#photo-tint)" : undefined}
                 style={{ opacity: weldImageOpacity }}
               />
             )}

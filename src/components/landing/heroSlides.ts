@@ -1,4 +1,10 @@
 import type { FacetDef } from "./LowPolyMesh";
+import { MATERIALS } from "@/lib/catalog";
+
+// Wunschfarbe fuer das Katzen-Foto direkt aus dem echten Shop-Katalog
+// (nicht dupliziert) - zeigt am Hero-Motiv genau die Farboption, die im
+// Konfigurator/Shop tatsaechlich waehlbar ist.
+const KUPFER_HEX = MATERIALS.find((m) => m.id === "kupfer")!.colorHex;
 
 /**
  * Daten für die 4 Hero-Slides (Text + Dreiecks-Facetten je Motiv, siehe
@@ -154,6 +160,9 @@ export interface HeroSlide {
    * die Facetten als Fragmente dieses echten Fotos gerendert statt flach
    * eingefaerbt. */
   imageUrl?: string;
+  /** Hex-Wunschfarbe fuer den Foto-Einfaerbe-Filter (nur mit `imageUrl`
+   * wirksam) - siehe LowPolyMesh.tsx `PhotoTintFilter`. */
+  tintColor?: string;
 }
 
 export const HERO_SLIDES: HeroSlide[] = [
@@ -167,8 +176,9 @@ export const HERO_SLIDES: HeroSlide[] = [
     viewBox: CAT_VIEW_BOX,
     center: CAT_CENTER,
     imageUrl: CAT_IMAGE_URL,
+    tintColor: KUPFER_HEX,
     ariaLabel:
-      "Foto einer Low-Poly-Stahlskulptur eines Katzenkopfs, deren Fragmente sich zusammensetzen und dann der Maus folgt",
+      "Foto einer Low-Poly-Stahlskulptur eines Katzenkopfs in Kupfer-Finish, deren Fragmente sich zusammensetzen und dann der Maus folgt",
   },
   {
     id: "mensch",
