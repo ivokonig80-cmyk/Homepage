@@ -257,6 +257,10 @@ export interface HeroSlide {
   /** Hex-Wunschfarbe fuer den Foto-Einfaerbe-Filter (nur mit `imageUrl`
    * wirksam) - siehe LowPolyMesh.tsx `PhotoTintFilter`. */
   tintColor?: string;
+  /** Optionale Overrides fuer die Duoton-Kontrastbreite des Foto-
+   * Einfaerbe-Filters (siehe LowPolyMesh.tsx `PhotoTintFilter`). */
+  tintDarkMix?: number;
+  tintLightMix?: number;
 }
 
 export const HERO_SLIDES: HeroSlide[] = [
@@ -271,6 +275,11 @@ export const HERO_SLIDES: HeroSlide[] = [
     center: CAT_CENTER,
     imageUrl: CAT_IMAGE_URL,
     tintColor: KUPFER_HEX,
+    // Die generelle Aufhellung (siehe PhotoTintFilter-Defaults) war fuer
+    // die Katze nicht noetig - Kupfer war beim urspruenglichen, staerkeren
+    // Kontrast schon gut lesbar. Alte Werte bewusst nur hier beibehalten.
+    tintDarkMix: 0.68,
+    tintLightMix: 0.62,
     ariaLabel:
       "Foto einer Low-Poly-Stahlskulptur eines Katzenkopfs in Kupfer-Finish, deren Fragmente sich zusammensetzen und dann der Maus folgt",
   },

@@ -301,6 +301,8 @@ export function HeroCarousel() {
             ariaLabel={slide.ariaLabel}
             imageUrl={slide.imageUrl}
             tintColor={slide.tintColor}
+            tintDarkMix={slide.tintDarkMix}
+            tintLightMix={slide.tintLightMix}
             className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
           />
         </div>

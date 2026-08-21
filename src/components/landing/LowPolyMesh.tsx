@@ -146,18 +146,27 @@ function ToneGradients() {
  * (siehe ToneGradients-Kommentar) - Endpunkte werden aus der uebergebenen
  * Hex-Farbe zur Laufzeit berechnet (shadeHex), nicht hart codiert, damit jedes
  * Motiv seine eigene Wunschfarbe bekommen kann. */
-function PhotoTintFilter({ color }: { color: string }) {
-  // Duoton-Endpunkte bewusst nicht zu weit Richtung Schwarz/Weiss gemischt -
-  // bei dunklen/kuehlen Toenen (Anthrazit, Rohstahl) hat ein zu aggressiver
-  // Schwarz-Anteil Schattenbereiche des Fotos fast auf Bildschirm-Schwarz
-  // gedrueckt und das Motiv vor dem dunklen Hero-Hintergrund kaum noch
-  // erkennbar gemacht. -0.28/+0.78 (statt urspruenglich -0.68/+0.62) haelt
-  // auch bei ohnehin schon dunklen Wunschfarben einen klar sichtbaren
-  // Hell-Dunkel-Kontrast - der dunkelste Punkt bleibt nah an der Basisfarbe
-  // selbst statt zusaetzlich Richtung Schwarz gedrueckt zu werden.
-  const dark = shadeHex(color, -0.28);
+function PhotoTintFilter({
+  color,
+  darkMix = 0.28,
+  lightMix = 0.78,
+}: {
+  color: string;
+  /** Wie weit der dunkle/helle Duoton-Endpunkt Richtung Schwarz/Weiss
+   * gemischt wird (0-1). Defaults 0.28/0.78 - gelockert gegenueber den
+   * urspruenglichen 0.68/0.62, weil das bei dunklen/kuehlen Wunschfarben
+   * (Anthrazit, Rohstahl) Schattenbereiche fast auf Bildschirm-Schwarz
+   * gedrueckt und das Motiv vor dem dunklen Hero-Hintergrund kaum noch
+   * erkennbar gemacht hat. Die Katze (Kupfer) nutzt bewusst wieder die
+   * alten, kontrastreicheren Werte (siehe heroSlides.ts) - das war beim
+   * urspruenglichen Kontrast schon gut lesbar, die Aufhellung war fuer
+   * sie nicht noetig. */
+  darkMix?: number;
+  lightMix?: number;
+}) {
+  const dark = shadeHex(color, -darkMix);
   const mid = hexToRgb(color);
-  const light = shadeHex(color, 0.78);
+  const light = shadeHex(color, lightMix);
   const table = (i: 0 | 1 | 2) =>
     [dark[i] / 255, mid[i] / 255, light[i] / 255].join(" ");
   return (
@@ -665,6 +674,11 @@ export interface LowPolyMeshProps {
    * heroSlides.ts) - faerbt das Foto per Duoton-Filter ein, nur wirksam
    * zusammen mit `imageUrl`. */
   tintColor?: string;
+  /** Optionale Overrides fuer die Duoton-Kontrastbreite (siehe
+   * PhotoTintFilter) - je Motiv einstellbar, da nicht jede Wunschfarbe die
+   * gelockerten Defaults braucht (siehe heroSlides.ts). */
+  tintDarkMix?: number;
+  tintLightMix?: number;
 }
 
 export function LowPolyMesh({
@@ -682,6 +696,8 @@ export function LowPolyMesh({
   ariaLabel,
   imageUrl,
   tintColor,
+  tintDarkMix,
+  tintLightMix,
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
   const imageSize = imageUrl ? parseViewBoxSize(viewBox) : undefined;
@@ -712,7 +728,11 @@ export function LowPolyMesh({
       <svg viewBox={viewBox} className={className} role="img" aria-label={ariaLabel}>
         {imageUrl && imageSize ? (
           <>
-            {tintColor && <defs><PhotoTintFilter color={tintColor} /></defs>}
+            {tintColor && (
+              <defs>
+                <PhotoTintFilter color={tintColor} darkMix={tintDarkMix} lightMix={tintLightMix} />
+              </defs>
+            )}
             <image
               href={imageUrl}
               x={0}
