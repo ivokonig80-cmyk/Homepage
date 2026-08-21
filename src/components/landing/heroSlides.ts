@@ -11,54 +11,62 @@ import type { FacetDef } from "./LowPolyMesh";
 const VIEW_BOX = "0 0 240 260";
 const CENTER = { x: 120, y: 130 };
 
-// Deutlich hoeher aufgeloest als die urspruengliche 17-Dreiecks-Version
-// (~35 Facetten) - eigene Interpretation angelehnt an eine sitzende
-// Referenz-Skulptur (spitze Ohren mit Innenschatten, facettierter
-// Gesichts-Faecher mit Nasen-Akzent, gerundeter Ruecken/Bauch-Faecher,
-// zwei Vorderbeine mit Pfoten, geschwungener Schwanz) - kein 1:1-Abbild,
-// da die Dreiecke weiterhin von Hand als Koordinaten gesetzt sind.
+// Katzen-Motiv: echtes Foto ("Scherben-Foto"-Modus, siehe LowPolyMesh.tsx)
+// statt handgezeichneter Facetten - die Skulptur ist detailreich genug, um
+// sie direkt erkennbar zu machen. Zugeschnitten auf den Kopf (Ohren bis
+// Schnurrhaare), Basisplatte/Sockel bewusst weggeschnitten. Eigene, engere
+// viewBox/Zentrum passend zum Bildausschnitt (886x940px, ~240x255 Ratio).
+const CAT_VIEW_BOX = "0 0 240 255";
+const CAT_CENTER = { x: 120, y: 127.5 };
+const CAT_IMAGE_URL = "/hero-source/cat-head.webp";
+
+// Da die Facetten nur noch als Ausschnitts-Fenster auf das Foto dienen
+// (keine anatomische Bedeutung mehr - siehe Datei-Kommentar in
+// LowPolyMesh.tsx), reicht ein generisches "Glasscherben"-Raster: leicht
+// jitteriges 4x5-Gitter, pro Zelle in 2 Dreiecke geteilt (Diagonale
+// schachbrettartig alterniert), Rand exakt auf die Bildkanten gelegt, damit
+// das Foto beim Verschweissen lueckenlos rekonstruiert wird.
 const CAT_FACETS: FacetDef[] = [
-  // Ohren (Aussen + Innenschatten)
-  { points: "58,8 75,35 38,42", tone: "steelLight" },
-  { points: "38,42 75,35 55,50", tone: "steel" },
-  { points: "182,8 165,35 202,42", tone: "steelLight" },
-  { points: "202,42 165,35 185,50", tone: "steel" },
-  // Kopf (Faecher um 120,70)
-  { points: "120,70 75,35 120,20", tone: "steel" },
-  { points: "120,70 120,20 165,35", tone: "steelLight" },
-  { points: "120,70 165,35 195,75", tone: "steel" },
-  { points: "120,70 195,75 180,110", tone: "steelLight" },
-  { points: "120,70 180,110 120,125", tone: "steel" },
-  { points: "120,70 120,125 60,110", tone: "steelLight" },
-  { points: "120,70 60,110 45,75", tone: "steel" },
-  { points: "120,70 45,75 75,35", tone: "steelLight" },
-  { points: "105,115 135,115 120,130", tone: "bronze" },
-  // Hals
-  { points: "60,110 70,155 120,125", tone: "steel" },
-  { points: "120,125 170,155 70,155", tone: "steelLight" },
-  { points: "120,125 180,110 170,155", tone: "steel" },
-  // Koerper (Faecher um 110,190)
-  { points: "110,190 70,155 170,155", tone: "bronze" },
-  { points: "110,190 170,155 195,190", tone: "steelLight" },
-  { points: "110,190 195,190 200,230", tone: "steel" },
-  { points: "110,190 200,230 175,255", tone: "steelLight" },
-  { points: "110,190 175,255 140,250", tone: "steel" },
-  { points: "110,190 140,250 100,250", tone: "steelLight" },
-  { points: "110,190 100,250 55,240", tone: "steel" },
-  { points: "110,190 55,240 45,205", tone: "steelLight" },
-  { points: "110,190 45,205 55,165", tone: "steel" },
-  { points: "110,190 55,165 70,155", tone: "steelLight" },
-  // Vorderbeine + Pfoten
-  { points: "50,170 75,170 72,245", tone: "steel" },
-  { points: "50,170 72,245 45,245", tone: "steelLight" },
-  { points: "45,245 72,245 58,258", tone: "bronze" },
-  { points: "190,170 165,170 168,245", tone: "steel" },
-  { points: "190,170 168,245 195,245", tone: "steelLight" },
-  { points: "195,245 168,245 182,258", tone: "bronze" },
-  // Schwanz (geschwungen)
-  { points: "155,240 190,258 215,245", tone: "steel" },
-  { points: "155,240 215,245 222,215", tone: "steelLight" },
-  { points: "155,240 222,215 205,190", tone: "steel" },
+  { points: "0,0 57.8,0 0,49.7", tone: "bronze" },
+  { points: "57.8,0 48.2,41.9 0,49.7", tone: "steel" },
+  { points: "57.8,0 110.1,0 106.1,41.3", tone: "steel" },
+  { points: "57.8,0 106.1,41.3 48.2,41.9", tone: "steelLight" },
+  { points: "110.1,0 167.3,0 106.1,41.3", tone: "steelLight" },
+  { points: "167.3,0 166.5,57.7 106.1,41.3", tone: "bronze" },
+  { points: "167.3,0 240,0 240,42.8", tone: "steelLight" },
+  { points: "167.3,0 240,42.8 166.5,57.7", tone: "steelLight" },
+  { points: "0,49.7 48.2,41.9 45,110.8", tone: "bronze" },
+  { points: "0,49.7 45,110.8 0,88.8", tone: "steelLight" },
+  { points: "48.2,41.9 106.1,41.3 45,110.8", tone: "steelLight" },
+  { points: "106.1,41.3 134.1,104 45,110.8", tone: "steelLight" },
+  { points: "106.1,41.3 166.5,57.7 164.5,88", tone: "steel" },
+  { points: "106.1,41.3 164.5,88 134.1,104", tone: "steelLight" },
+  { points: "166.5,57.7 240,42.8 164.5,88", tone: "steelLight" },
+  { points: "240,42.8 240,109.7 164.5,88", tone: "bronze" },
+  { points: "0,88.8 45,110.8 0,152.9", tone: "steel" },
+  { points: "45,110.8 50.4,160.4 0,152.9", tone: "steel" },
+  { points: "45,110.8 134.1,104 110.4,162.1", tone: "steel" },
+  { points: "45,110.8 110.4,162.1 50.4,160.4", tone: "steelLight" },
+  { points: "134.1,104 164.5,88 110.4,162.1", tone: "bronze" },
+  { points: "164.5,88 166.2,164 110.4,162.1", tone: "steelLight" },
+  { points: "164.5,88 240,109.7 240,163.2", tone: "steel" },
+  { points: "164.5,88 240,163.2 166.2,164", tone: "steel" },
+  { points: "0,152.9 50.4,160.4 69,192.3", tone: "steelLight" },
+  { points: "0,152.9 69,192.3 0,212.9", tone: "bronze" },
+  { points: "50.4,160.4 110.4,162.1 69,192.3", tone: "steelLight" },
+  { points: "110.4,162.1 111.8,208.9 69,192.3", tone: "steel" },
+  { points: "110.4,162.1 166.2,164 184.4,215.4", tone: "steelLight" },
+  { points: "110.4,162.1 184.4,215.4 111.8,208.9", tone: "bronze" },
+  { points: "166.2,164 240,163.2 184.4,215.4", tone: "steel" },
+  { points: "240,163.2 240,200.4 184.4,215.4", tone: "bronze" },
+  { points: "0,212.9 69,192.3 0,255", tone: "steelLight" },
+  { points: "69,192.3 71.9,255 0,255", tone: "steelLight" },
+  { points: "69,192.3 111.8,208.9 108,255", tone: "steel" },
+  { points: "69,192.3 108,255 71.9,255", tone: "steel" },
+  { points: "111.8,208.9 184.4,215.4 108,255", tone: "steel" },
+  { points: "184.4,215.4 172.4,255 108,255", tone: "steelLight" },
+  { points: "184.4,215.4 240,200.4 240,255", tone: "steel" },
+  { points: "184.4,215.4 240,255 172.4,255", tone: "steelLight" },
 ];
 
 // Kopf: sechseckige Facettenkuppel (Fan aus einem Mittelpunkt) - Hals als
@@ -142,6 +150,10 @@ export interface HeroSlide {
   center: { x: number; y: number };
   scatterDistance?: number;
   ariaLabel: string;
+  /** "Scherben-Foto"-Modus (siehe LowPolyMesh.tsx) - wenn gesetzt, werden
+   * die Facetten als Fragmente dieses echten Fotos gerendert statt flach
+   * eingefaerbt. */
+  imageUrl?: string;
 }
 
 export const HERO_SLIDES: HeroSlide[] = [
@@ -152,10 +164,11 @@ export const HERO_SLIDES: HeroSlide[] = [
     paragraph:
       "Ein Foto genügt. Unsere KI verwandelt es in ein facettiertes 3D-Kunstwerk — als massive Stahlskulptur gefertigt, in deiner Wunschfarbe, in wenigen Minuten vorab zu sehen.",
     facets: CAT_FACETS,
-    viewBox: VIEW_BOX,
-    center: CENTER,
+    viewBox: CAT_VIEW_BOX,
+    center: CAT_CENTER,
+    imageUrl: CAT_IMAGE_URL,
     ariaLabel:
-      "Low-Poly-Illustration eines Katzenkopfs aus facettierten Dreiecken, die sich zusammensetzen und dann der Maus folgt",
+      "Foto einer Low-Poly-Stahlskulptur eines Katzenkopfs, deren Fragmente sich zusammensetzen und dann der Maus folgt",
   },
   {
     id: "mensch",

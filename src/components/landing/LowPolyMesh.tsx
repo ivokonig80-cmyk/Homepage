@@ -475,6 +475,13 @@ export function LowPolyMesh({
     (values: number[]) => -values[0] * 14 * values[1]
   );
 
+  // Scherben-Foto-Modus: knapp vor Vollmontage blendet ein unclipptes,
+  // scharfes Voll-Bild ueber die Fragment-Mosaik ein - versteckt jede
+  // Sub-Pixel-Naht, die SVG-clipPath an aneinanderstossenden Kanten durch
+  // Anti-Aliasing erzeugen kann, sodass der verschweisste Endzustand
+  // garantiert das scharfe Originalfoto zeigt statt einer Fragment-Collage.
+  const weldImageOpacity = useTransform(progress, [0.985, 1], [0, 1]);
+
   if (prefersReducedMotion) {
     return (
       <svg viewBox={viewBox} className={className} role="img" aria-label={ariaLabel}>
@@ -535,6 +542,18 @@ export function LowPolyMesh({
               idPrefix="main"
             />
           ))}
+          {imageUrl && imageSize && (
+            <motion.image
+              href={imageUrl}
+              x={0}
+              y={0}
+              width={imageSize.width}
+              height={imageSize.height}
+              preserveAspectRatio="xMidYMid slice"
+              pointerEvents="none"
+              style={{ opacity: weldImageOpacity }}
+            />
+          )}
         </svg>
 
         {/* Spiegelung darunter - klassischer "Produktshot"-Effekt, per
@@ -570,6 +589,18 @@ export function LowPolyMesh({
                 idPrefix="reflection"
               />
             ))}
+            {imageUrl && imageSize && (
+              <motion.image
+                href={imageUrl}
+                x={0}
+                y={0}
+                width={imageSize.width}
+                height={imageSize.height}
+                preserveAspectRatio="xMidYMid slice"
+                pointerEvents="none"
+                style={{ opacity: weldImageOpacity }}
+              />
+            )}
           </svg>
         </div>
       </motion.div>
