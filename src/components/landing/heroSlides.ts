@@ -5,6 +5,7 @@ import { MATERIALS } from "@/lib/catalog";
 // (nicht dupliziert) - zeigt am Hero-Motiv genau die Farboption, die im
 // Konfigurator/Shop tatsaechlich waehlbar ist.
 const KUPFER_HEX = MATERIALS.find((m) => m.id === "kupfer")!.colorHex;
+const MESSING_HEX = MATERIALS.find((m) => m.id === "messing")!.colorHex;
 
 /**
  * Daten für die 4 Hero-Slides (Text + Dreiecks-Facetten je Motiv, siehe
@@ -75,75 +76,77 @@ const CAT_FACETS: FacetDef[] = [
   { points: "184.4,215.4 240,255 172.4,255", tone: "steelLight" },
 ];
 
-// Gesichts-Buste, informiert durch Analyse mehrerer hochdetaillierter
-// Referenz-Low-Poly-Buesten (siehe public/hero-source/ - Lady-Gaga-Bust,
-// head-man-polygon, image_baX2uOzZ): dort ist die Facettendichte NICHT
-// gleichmaessig verteilt, sondern folgt der Anatomie - dicht an Augen, Nase
-// und Mund, grossflaechig/ruhig an Stirn, Wangen, Kiefer und Hals. Statt
-// eines einzelnen Fachers wird das hier nachgebildet, indem der glatte
-// Kopf-Facher (ein Hub, ruhige Aussenkontur inkl. Ohr-Ausbuchtungen) als
-// Basis dient, auf den drei KLEINE, eigene Mini-Facher (jeweils eigener,
-// naher Hub) fuer Augen, Nase und Mund aufgesetzt sind - vermeidet die
-// duennen "Pizzaschnitten"-Dreiecke, die entstehen wuerden, wenn man
-// Augen-/Nasen-Konturpunkte in EINEN einzigen, weit entfernten Kopf-Facher
-// zwingt (Punkte nah beieinander im Winkel vom Hub aus gesehen, obwohl
-// raeumlich getrennt).
-//
-// Wunschfarbe: komplett einfarbig in Messing-Finish (exakter Shop-Katalog-
-// Ton, siehe TONE_FILL.messing in LowPolyMesh.tsx) - jede einzelne Facette
-// traegt denselben Ton, die Tiefenwirkung kommt rein aus dem
-// Hell-Dunkel-Verlauf pro Facette (Spiegelung), nicht aus gemischten Toenen.
+// Person-Motiv: echtes Foto ("Scherben-Foto"-Modus, wie die Katze) - Quelle
+// ist Referenz.jpg (siehe public/hero-source/), freigestellt und auf
+// 377x480 zugeschnitten (identisch zu PERSON_VIEW_BOX). Die Facetten unten
+// sind NICHT generisch, sondern an den echten, im Foto sichtbaren
+// Trennlinien abgelesen (Kopfumriss, Augen-/Nasen-/Mund-Kanten, Hals,
+// Schultern) - per Koordinatengitter-Overlay am Referenzfoto vermessen.
+// Technik wie beim vorherigen handgesetzten Versuch: ein ruhiger
+// Kopf-Grundfacher (ein Hub, glatte Aussenkontur) traegt drei kleine,
+// eigene Mini-Facher fuer Augen/Nase/Mund (vermeidet duenne
+// "Pizzaschnitten"-Dreiecke bei Detailpunkten in einem einzigen, weit
+// entfernten Facher). Hub liegt auf der im Foto tatsaechlich sichtbaren
+// Hell-Dunkel-Trennlinie der Beleuchtung (~Bildmitte) - dadurch fallen die
+// Facetten schon von selbst ueberwiegend auf die "richtige" Licht-/
+// Schattenseite. Wunschfarbe (Messing) wird wie bei der Katze per
+// Foto-Einfaerbe-Filter (tintColor) gesetzt, nicht ueber `tone`.
+const PERSON_VIEW_BOX = "0 0 377 480";
+const PERSON_CENTER = { x: 188, y: 240 };
+const PERSON_IMAGE_URL = "/hero-source/person-head.webp";
 const PERSON_FACETS: FacetDef[] = [
-  // Kopf-Grundform (Fan um Hub 120,95 - glatte Aussenkontur inkl. Ohr-Buckel,
-  // OHNE Augen/Nase/Mund-Zickzack, das wuerde in diesem grossen Facher zu
-  // duennen Splittern fuehren)
-  { points: "120,95 120,14 160,20", tone: "messing" },
-  { points: "120,95 160,20 182,55", tone: "messing" },
-  { points: "120,95 182,55 192,88", tone: "messing" },
-  { points: "120,95 192,88 183,105", tone: "messing" },
-  { points: "120,95 183,105 172,130", tone: "messing" },
-  { points: "120,95 172,130 138,160", tone: "messing" },
-  { points: "120,95 138,160 120,168", tone: "messing" },
-  { points: "120,95 120,168 102,160", tone: "messing" },
-  { points: "120,95 102,160 68,130", tone: "messing" },
-  { points: "120,95 68,130 57,105", tone: "messing" },
-  { points: "120,95 57,105 48,88", tone: "messing" },
-  { points: "120,95 48,88 58,55", tone: "messing" },
-  { points: "120,95 58,55 80,20", tone: "messing" },
-  { points: "120,95 80,20 120,14", tone: "messing" },
-  // Linkes Auge (eigener Mini-Facher, Hub 90,88)
-  { points: "90,88 75,80 102,84", tone: "messing" },
-  { points: "90,88 102,84 100,94", tone: "messing" },
-  { points: "90,88 100,94 78,96", tone: "messing" },
-  { points: "90,88 78,96 75,80", tone: "messing" },
-  // Rechtes Auge (Spiegelung, Hub 150,88)
-  { points: "150,88 165,80 138,84", tone: "messing" },
-  { points: "150,88 138,84 140,94", tone: "messing" },
-  { points: "150,88 140,94 162,96", tone: "messing" },
-  { points: "150,88 162,96 165,80", tone: "messing" },
-  // Nase (Mini-Facher, Hub 120,118 - Nasenruecken bis Spitze/Nasenfluegel)
-  { points: "120,118 114,95 126,95", tone: "messing" },
-  { points: "120,118 126,95 133,122", tone: "messing" },
-  { points: "120,118 133,122 120,133", tone: "messing" },
-  { points: "120,118 120,133 107,122", tone: "messing" },
-  { points: "120,118 107,122 114,95", tone: "messing" },
-  // Mund (Mini-Facher, Hub 120,148)
-  { points: "120,148 98,144 120,140", tone: "messing" },
-  { points: "120,148 120,140 142,144", tone: "messing" },
-  { points: "120,148 142,144 140,154", tone: "messing" },
-  { points: "120,148 140,154 120,158", tone: "messing" },
-  { points: "120,148 120,158 100,154", tone: "messing" },
-  { points: "120,148 100,154 98,144", tone: "messing" },
+  // Kopf-Grundform (Fan um Hub 188,200 - glatte Aussenkontur inkl.
+  // Ohr-/Schlaefen-Buckel, OHNE Augen/Nase/Mund-Zickzack)
+  { points: "188,200 133,4 215,6", tone: "messing" },
+  { points: "188,200 215,6 290,17", tone: "messing" },
+  { points: "188,200 290,17 335,78", tone: "messing" },
+  { points: "188,200 335,78 350,145", tone: "messing" },
+  { points: "188,200 350,145 325,210", tone: "messing" },
+  { points: "188,200 325,210 300,260", tone: "messing" },
+  { points: "188,200 300,260 250,300", tone: "messing" },
+  { points: "188,200 250,300 195,345", tone: "messing" },
+  { points: "188,200 195,345 140,300", tone: "messing" },
+  { points: "188,200 140,300 110,260", tone: "messing" },
+  { points: "188,200 110,260 95,210", tone: "messing" },
+  { points: "188,200 95,210 80,145", tone: "messing" },
+  { points: "188,200 80,145 85,78", tone: "messing" },
+  { points: "188,200 85,78 133,4", tone: "messing" },
+  // Linkes Auge (Mini-Facher, Hub 150,205 - Schattenseite)
+  { points: "150,205 125,168 95,182", tone: "messing" },
+  { points: "150,205 95,182 115,212", tone: "messing" },
+  { points: "150,205 115,212 160,208", tone: "messing" },
+  { points: "150,205 160,208 168,182", tone: "messing" },
+  { points: "150,205 168,182 125,168", tone: "messing" },
+  // Rechtes Auge (Mini-Facher, Hub 232,197 - Lichtseite)
+  { points: "232,197 255,165 285,178", tone: "messing" },
+  { points: "232,197 285,178 265,207", tone: "messing" },
+  { points: "232,197 265,207 220,205", tone: "messing" },
+  { points: "232,197 220,205 212,180", tone: "messing" },
+  { points: "232,197 212,180 255,165", tone: "messing" },
+  // Nase (Mini-Facher, Hub 190,255 - Bruecke bis Spitze/Nasenfluegel)
+  { points: "190,255 188,190 210,232", tone: "messing" },
+  { points: "190,255 210,232 205,260", tone: "messing" },
+  { points: "190,255 205,260 190,272", tone: "messing" },
+  { points: "190,255 190,272 175,262", tone: "messing" },
+  { points: "190,255 175,262 165,235", tone: "messing" },
+  { points: "190,255 165,235 188,190", tone: "messing" },
+  // Mund (Mini-Facher, Hub 190,300)
+  { points: "190,300 270,288 195,278", tone: "messing" },
+  { points: "190,300 195,278 120,290", tone: "messing" },
+  { points: "190,300 120,290 150,320", tone: "messing" },
+  { points: "190,300 150,320 195,332", tone: "messing" },
+  { points: "190,300 195,332 240,318", tone: "messing" },
+  { points: "190,300 240,318 270,288", tone: "messing" },
   // Hals
-  { points: "102,160 138,160 145,205", tone: "messing" },
-  { points: "102,160 145,205 95,205", tone: "messing" },
-  // Schultern/Buste (Fan um Hub 120,225)
-  { points: "120,225 95,205 30,225", tone: "messing" },
-  { points: "120,225 30,225 55,260", tone: "messing" },
-  { points: "120,225 55,260 185,260", tone: "messing" },
-  { points: "120,225 185,260 210,225", tone: "messing" },
-  { points: "120,225 210,225 145,205", tone: "messing" },
-  { points: "120,225 145,205 95,205", tone: "messing" },
+  { points: "150,340 230,335 260,420", tone: "messing" },
+  { points: "150,340 260,420 120,420", tone: "messing" },
+  // Schultern/Buste (Fan um Hub 190,440)
+  { points: "190,440 120,420 20,455", tone: "messing" },
+  { points: "190,440 20,455 60,480", tone: "messing" },
+  { points: "190,440 60,480 320,480", tone: "messing" },
+  { points: "190,440 320,480 355,455", tone: "messing" },
+  { points: "190,440 355,455 260,420", tone: "messing" },
+  { points: "190,440 260,420 120,420", tone: "messing" },
 ];
 
 // Einfacher Platzhalter-Nachttisch (bewusst schlicht - Feinschliff der
@@ -234,10 +237,12 @@ export const HERO_SLIDES: HeroSlide[] = [
     paragraph:
       "Nicht nur dein Haustier — auch dein eigenes Porträt wird zum facettierten 3D-Kunstwerk. Ein Foto genügt, der Rest ist Handwerk aus massivem Stahl.",
     facets: PERSON_FACETS,
-    viewBox: VIEW_BOX,
-    center: CENTER,
+    viewBox: PERSON_VIEW_BOX,
+    center: PERSON_CENTER,
+    imageUrl: PERSON_IMAGE_URL,
+    tintColor: MESSING_HEX,
     ariaLabel:
-      "Low-Poly-Illustration einer Porträtbüste in Messing-Finish aus facettierten Dreiecken, die sich zusammensetzt und dann der Maus folgt",
+      "Foto einer Low-Poly-Porträtbüste in Messing-Finish, deren Fragmente sich zusammensetzen und dann der Maus folgen",
   },
   {
     id: "objekt",
