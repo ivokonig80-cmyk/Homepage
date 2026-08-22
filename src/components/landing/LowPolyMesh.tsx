@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
   motion,
   useMotionValue,
@@ -9,6 +9,10 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
+
+const subscribeHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 /**
  * Low-Poly-Motiv als handgesetztes Dreiecksnetz (Platzhalter-Artwork, bis
@@ -425,12 +429,12 @@ function weldArcStrength(value: number, event: WeldingEvent): number {
 }
 
 function weldLightStrength(value: number, event: WeldingEvent): number {
-  if (value < event.startProgress - 0.006 || value > event.endProgress + 0.012) return 0;
+  if (value < event.startProgress - 0.004 || value > event.endProgress + 0.018) return 0;
   const local = clamp01(
-    (value - (event.startProgress - 0.006)) /
-      (event.endProgress - event.startProgress + 0.018)
+    (value - (event.startProgress - 0.004)) /
+      (event.endProgress - event.startProgress + 0.022)
   );
-  return Math.sin(local * Math.PI) ** 0.72 * event.intensity;
+  return Math.sin(local * Math.PI) ** 0.82 * event.intensity;
 }
 
 function dominantWeldingEvent(value: number, events: WeldingEvent[]): WeldingEvent | undefined {
@@ -691,7 +695,15 @@ function WeldSpark({
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const depthScale = event.depthLayer === "back" ? 0.76 : event.depthLayer === "mid" ? 0.9 : 1;
-  const pathScale = unitScale * (0.64 + event.intensity * 0.36) * depthScale;
+  // Die meisten Tropfen bleiben kurz am Kontakt. Nur der letzte Funke eines
+  // starken Verschlusses darf gelegentlich weiter auslaufen - mehr
+  // physikalische Spannweite ohne einen groesseren Partikelsatz.
+  const longSpark = event.intensity >= 0.8 && sparkIndex === event.sparkCount - 1;
+  const trajectoryScale = longSpark
+    ? 1.12
+    : 0.68 + seeded(event.id * 17 + sparkIndex + 4400) * 0.2;
+  const pathScale =
+    unitScale * (0.64 + event.intensity * 0.36) * depthScale * trajectoryScale;
   const rotatePoint = (x: number, y: number) => ({
     x: (x * cos - y * sin) * pathScale,
     y: (x * sin + y * cos) * pathScale,
@@ -711,12 +723,15 @@ function WeldSpark({
       if (value < sparkStart || value > sparkEnd || direction <= 0) return 0;
       const local = (value - sparkStart) / (sparkEnd - sparkStart);
       const envelope = smoothStep(local / 0.16) * smoothStep((1 - local) / 0.2);
-      return envelope * (0.55 + event.intensity * 0.45) * direction;
+      const sparkEnergy = (0.38 + event.intensity * 0.5) * (longSpark ? 1 : 0.88);
+      return envelope * sparkEnergy * direction;
     }
   );
   const dashOffset = useTransform(progress, (value) => {
     const local = clamp01((value - sparkStart) / (sparkEnd - sparkStart));
-    return -0.84 * local;
+    // Schneller Auswurf, danach optisch langsameres Fallen entlang der
+    // gekruemmten Bahn statt gleichfoermigem SVG-Dash-Lauf.
+    return -0.88 * Math.pow(local, 0.68);
   });
 
   return (
@@ -726,9 +741,9 @@ function WeldSpark({
       pathLength={1}
       fill="none"
       stroke={`url(#${gradientId})`}
-      strokeWidth={0.78 * unitScale}
+      strokeWidth={(longSpark ? 0.7 : 0.62) * unitScale}
       strokeLinecap="round"
-      strokeDasharray="0.16 0.84"
+      strokeDasharray={longSpark ? "0.18 0.82" : "0.11 0.89"}
       pointerEvents="none"
       style={{ opacity, strokeDashoffset: dashOffset }}
     />
@@ -748,9 +763,11 @@ function WeldAmbient({
   assemblyDirection: MotionValue<number>;
   gradientId: string;
 }) {
+  const depthStrength =
+    event.depthLayer === "back" ? 0.68 : event.depthLayer === "mid" ? 0.5 : 0.42;
   const opacity = useTransform(
     [progress, assemblyDirection],
-    (values: number[]) => weldLightStrength(values[0], event) * values[1] * 0.78
+    (values: number[]) => weldLightStrength(values[0], event) * values[1] * depthStrength
   );
 
   return (
@@ -759,7 +776,7 @@ function WeldAmbient({
       aria-hidden="true"
       cx={event.junction.x}
       cy={event.junction.y}
-      r={(49 + event.intensity * 15) * unitScale}
+      r={(42 + event.intensity * 12) * unitScale}
       fill={`url(#${gradientId})`}
       pointerEvents="none"
       style={{ opacity }}
@@ -782,12 +799,12 @@ function WeldArc({
   coreFilterId: string;
   sparkGradientId: string;
 }) {
-  const depthOpacity = event.depthLayer === "back" ? 0.72 : event.depthLayer === "mid" ? 0.88 : 1;
+  const depthOpacity = event.depthLayer === "back" ? 0.6 : event.depthLayer === "mid" ? 0.82 : 1;
   const opacity = useTransform(
     [progress, assemblyDirection],
     (values: number[]) => weldArcStrength(values[0], event) * values[1] * depthOpacity
   );
-  const coreRadius = (5.2 + event.intensity * 1.25) * unitScale;
+  const coreRadius = (4.5 + event.intensity * 0.95) * unitScale;
   const arcRotation = (seeded(event.id + 3100) - 0.5) * 76;
 
   return (
@@ -804,8 +821,8 @@ function WeldArc({
           cx={event.junction.x}
           cy={event.junction.y}
           r={coreRadius}
-          fill="#62ddff"
-          fillOpacity="0.26"
+          fill="#a6edf6"
+          fillOpacity="0.22"
         />
         <g transform={`rotate(${arcRotation} ${event.junction.x} ${event.junction.y})`}>
           <path
@@ -892,14 +909,14 @@ function WeldSmoke({
   gradientId: string;
   filterId: string;
 }) {
-  const duration = 1950 + event.heatStrength * 950 + event.id * 55;
+  const duration = 2200 + event.heatStrength * 1100 + event.id * 65;
   const age = useWeldResidueAge(event, duration, progress, assemblyDirection, time);
-  const depthOpacity = event.depthLayer === "back" ? 0.74 : event.depthLayer === "mid" ? 0.92 : 0.78;
+  const depthOpacity = event.depthLayer === "back" ? 0.74 : event.depthLayer === "mid" ? 0.92 : 1;
   const opacity = useTransform(age, (value) => {
     if (value < 0 || value >= 1) return 0;
-    const fadeIn = smoothStep(value / 0.12);
-    const fadeOut = 1 - smoothStep((value - 0.36) / 0.64);
-    return fadeIn * fadeOut * (0.16 + event.heatStrength * 0.13) * depthOpacity;
+    const fadeIn = smoothStep(value / 0.09);
+    const fadeOut = 1 - smoothStep((value - 0.44) / 0.56);
+    return fadeIn * fadeOut * (0.155 + event.heatStrength * 0.125) * depthOpacity;
   });
   const driftX = useTransform([time, age], (values: number[]) => {
     const [now, value] = values;
@@ -909,17 +926,25 @@ function WeldSmoke({
     // Strecke ist kleiner und wird mit dem Rauchalter aufgebaut.
     const heading = Math.sin(now * 0.00015) * 1.3 + Math.sin(now * 0.00007 + 2.1) * 0.9;
     const wind = (10 + 6 * Math.sin(now * 0.00011 + 0.6)) * unitScale;
-    const curl = Math.sin(visibleAge * Math.PI * 2.1 + event.id * 1.37) * 7 * unitScale;
+    const curl = Math.sin(visibleAge * Math.PI * 2.1 + event.id * 1.37) * 8.5 * unitScale;
     return Math.cos(heading) * wind * visibleAge + curl * visibleAge;
   });
   const riseY = useTransform(age, (value) => {
     const visibleAge = clamp01(value);
-    return -(7 + 54 * visibleAge) * unitScale;
+    return -(7 + 62 * visibleAge) * unitScale;
   });
   const cx = useTransform(driftX, (value) => event.junction.x + value);
   const cy = useTransform(riseY, (value) => event.junction.y + value);
-  const radiusX = useTransform(age, (value) => (5.5 + clamp01(value) * 18) * unitScale);
-  const radiusY = useTransform(age, (value) => (8 + clamp01(value) * 28) * unitScale);
+  const shapeWidth = 0.9 + seeded(event.id + 5200) * 0.22;
+  const shapeHeight = 0.92 + seeded(event.id + 5300) * 0.2;
+  const radiusX = useTransform(
+    age,
+    (value) => (5.5 + clamp01(value) * 22) * unitScale * shapeWidth
+  );
+  const radiusY = useTransform(
+    age,
+    (value) => (8 + clamp01(value) * 35) * unitScale * shapeHeight
+  );
   const secondaryCx = useTransform(
     [driftX, age],
     (values: number[]) => event.junction.x + values[0] - Math.sin(clamp01(values[1]) * 5 + event.id) * 6 * unitScale
@@ -928,6 +953,72 @@ function WeldSmoke({
     riseY,
     (value) => event.junction.y + value + 8 * unitScale
   );
+  const secondaryRadiusX = useTransform(
+    age,
+    (value) => (3.8 + clamp01(value) * 13) * unitScale
+  );
+  const secondaryRadiusY = useTransform(
+    age,
+    (value) => (6 + clamp01(value) * 23) * unitScale
+  );
+  const coolCatchOpacity = useTransform(age, (value) => {
+    if (value < 0 || value >= 0.34) return 0;
+    return (1 - smoothStep(value / 0.34)) * (0.3 + event.heatStrength * 0.12);
+  });
+  const coolCx = useTransform(
+    driftX,
+    (value) => event.junction.x + value * 0.42
+  );
+  const coolCy = useTransform(
+    riseY,
+    (value) => event.junction.y + value * 0.36
+  );
+  const coolRadiusX = useTransform(
+    age,
+    (value) => (3.8 + clamp01(value) * 7) * unitScale
+  );
+  const coolRadiusY = useTransform(
+    age,
+    (value) => (6 + clamp01(value) * 13) * unitScale
+  );
+  const finalCloudOpacity = useTransform(age, (value) => {
+    if (event.id !== 5 || value < 0.12 || value >= 0.92) return 0;
+    const reveal = smoothStep((value - 0.12) / 0.2);
+    const disperse = 1 - smoothStep((value - 0.58) / 0.34);
+    return reveal * disperse * 0.68;
+  });
+  const finalCloudCx = useTransform(
+    [driftX, age],
+    (values: number[]) =>
+      event.junction.x + values[0] * 0.78 - Math.sin(clamp01(values[1]) * 3.4) * 9 * unitScale
+  );
+  const finalCloudCy = useTransform(
+    riseY,
+    (value) => event.junction.y + value - 12 * unitScale
+  );
+  const finalCloudRadiusX = useTransform(
+    age,
+    (value) => (7 + clamp01(value) * 24) * unitScale
+  );
+  const finalCloudRadiusY = useTransform(
+    age,
+    (value) => (15 + clamp01(value) * 52) * unitScale
+  );
+  const wispOpacity = useTransform(age, (value) => {
+    if (value < 0.04 || value >= 0.78) return 0;
+    const reveal = smoothStep((value - 0.04) / 0.14);
+    const disperse = 1 - smoothStep((value - 0.44) / 0.34);
+    return reveal * disperse * 0.62;
+  });
+  const wispX = useTransform(driftX, (value) => value * 0.52);
+  const wispY = useTransform(riseY, (value) => value * 0.42);
+  const wispDirection = seeded(event.id + 5700) > 0.5 ? 1 : -1;
+  const wispPath = [
+    `M ${event.junction.x} ${event.junction.y}`,
+    `C ${event.junction.x + wispDirection * 6 * unitScale} ${event.junction.y - 12 * unitScale}`,
+    `${event.junction.x - wispDirection * 11 * unitScale} ${event.junction.y - 29 * unitScale}`,
+    `${event.junction.x + wispDirection * 4 * unitScale} ${event.junction.y - 48 * unitScale}`,
+  ].join(" ");
 
   return (
     <motion.g
@@ -945,14 +1036,38 @@ function WeldSmoke({
         ry={radiusY}
         fill={`url(#${gradientId})`}
       />
-      {event.depthLayer !== "front" && (
+      <motion.ellipse
+        cx={secondaryCx}
+        cy={secondaryCy}
+        rx={secondaryRadiusX}
+        ry={secondaryRadiusY}
+        fill={event.depthLayer === "front" ? "#4c585b" : "#778487"}
+        fillOpacity={event.depthLayer === "front" ? 0.52 : 0.38}
+      />
+      <motion.ellipse
+        cx={coolCx}
+        cy={coolCy}
+        rx={coolRadiusX}
+        ry={coolRadiusY}
+        fill="#d9f8ff"
+        style={{ opacity: coolCatchOpacity }}
+      />
+      <motion.path
+        d={wispPath}
+        fill="none"
+        stroke="#8b989b"
+        strokeWidth={1.35 * unitScale}
+        strokeLinecap="round"
+        style={{ x: wispX, y: wispY, opacity: wispOpacity }}
+      />
+      {event.id === 5 && (
         <motion.ellipse
-          cx={secondaryCx}
-          cy={secondaryCy}
-          rx={radiusX}
-          ry={radiusY}
-          fill="#7f8c91"
-          fillOpacity="0.34"
+          cx={finalCloudCx}
+          cy={finalCloudCy}
+          rx={finalCloudRadiusX}
+          ry={finalCloudRadiusY}
+          fill="#4c585b"
+          style={{ opacity: finalCloudOpacity }}
         />
       )}
     </motion.g>
@@ -974,7 +1089,7 @@ function WeldAfterglow({
 }) {
   const age = useWeldResidueAge(
     event,
-    720 + event.heatStrength * 720,
+    700 + event.heatStrength * 680 + (event.id === 5 ? 320 : 0),
     progress,
     assemblyDirection,
     time
@@ -987,10 +1102,10 @@ function WeldAfterglow({
       return (1 - smoothStep(value)) * event.heatStrength * direction;
     }
   );
-  const haloOpacity = useTransform(opacity, (value) => value * 0.42);
+  const haloOpacity = useTransform(opacity, (value) => value * 0.3);
   const heatColor = useTransform(
     age,
-    [0, 0.1, 0.34, 0.68, 1],
+    [0, 0.07, 0.26, 0.62, 1],
     ["#f7feff", "#fff1a8", "#ffb43f", "#a94022", "#321817"]
   );
   const seamPath = `M ${event.junction.x} ${event.junction.y} L ${event.junction.seamEnd.x} ${event.junction.seamEnd.y}`;
@@ -1006,7 +1121,7 @@ function WeldAfterglow({
         d={seamPath}
         fill="none"
         stroke="#ff702a"
-        strokeWidth={(2.5 + event.heatStrength) * unitScale}
+        strokeWidth={(2.15 + event.heatStrength * 0.8) * unitScale}
         strokeLinecap="round"
         style={{ opacity: haloOpacity }}
       />
@@ -1656,6 +1771,16 @@ export function LowPolyMesh({
   clipIdPrefix = "low-poly",
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
+  // useReducedMotion liest matchMedia bereits im ersten Client-Render. Ohne
+  // diesen hydration-sicheren Snapshot wuerde der Server das animierte Mesh,
+  // ein Reduced-Motion-Browser beim Hydrieren aber sofort das statische Bild
+  // rendern - unterschiedliche SVG-Baeume und damit React-Hydration-Fehler.
+  const hasHydrated = useSyncExternalStore(
+    subscribeHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
+  const shouldReduceMotion = hasHydrated && prefersReducedMotion;
   const imageSize = imageUrl ? parseViewBoxSize(viewBox) : undefined;
   const viewBoxSize = parseViewBoxSize(viewBox);
   // Screen-Space-Skalierung auf der festen 4:5-Hero-Buehne: Bei breiten
@@ -1690,7 +1815,7 @@ export function LowPolyMesh({
         (best, event) => Math.max(best, weldLightStrength(value, event)),
         0
       );
-      return strongest * direction * 0.82;
+      return strongest * direction * 0.98;
     }
   );
   const weldMetalX = useTransform(progress, (value) =>
@@ -1702,7 +1827,7 @@ export function LowPolyMesh({
   const weldMetalRadius = useTransform(
     progress,
     (value) =>
-      (42 + (dominantWeldingEvent(value, weldingEvents)?.intensity ?? 0.5) * 9) *
+      (36 + (dominantWeldingEvent(value, weldingEvents)?.intensity ?? 0.5) * 10) *
       chaosUnitScale
   );
 
@@ -1727,7 +1852,7 @@ export function LowPolyMesh({
   // garantiert das scharfe Originalfoto zeigt statt einer Fragment-Collage.
   const weldImageOpacity = useTransform(progress, [0.985, 1], [0, 1]);
 
-  if (prefersReducedMotion) {
+  if (shouldReduceMotion) {
     return (
       <svg viewBox={viewBox} className={className} role="img" aria-label={ariaLabel}>
         {imageUrl && imageSize ? (
@@ -1788,11 +1913,11 @@ export function LowPolyMesh({
           <ToneGradients />
           <defs>
             <radialGradient id={weldAmbientGradientId} cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#f7feff" stopOpacity="0.68" />
-              <stop offset="10%" stopColor="#a9efff" stopOpacity="0.5" />
-              <stop offset="38%" stopColor="#31cfff" stopOpacity="0.2" />
-              <stop offset="72%" stopColor="#147cab" stopOpacity="0.07" />
-              <stop offset="100%" stopColor="#147cab" stopOpacity="0" />
+              <stop offset="0%" stopColor="#fbffff" stopOpacity="0.7" />
+              <stop offset="12%" stopColor="#d6f5f8" stopOpacity="0.42" />
+              <stop offset="40%" stopColor="#83bdc5" stopOpacity="0.15" />
+              <stop offset="72%" stopColor="#4f747c" stopOpacity="0.045" />
+              <stop offset="100%" stopColor="#3d5e65" stopOpacity="0" />
             </radialGradient>
             <motion.radialGradient
               id={weldMetalGradientId}
@@ -1801,11 +1926,11 @@ export function LowPolyMesh({
               cy={weldMetalY}
               r={weldMetalRadius}
             >
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.96" />
-              <stop offset="12%" stopColor="#dcfaff" stopOpacity="0.88" />
-              <stop offset="42%" stopColor="#66ddff" stopOpacity="0.46" />
-              <stop offset="78%" stopColor="#2189b7" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#2189b7" stopOpacity="0" />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="15%" stopColor="#f4feff" stopOpacity="0.96" />
+              <stop offset="34%" stopColor="#c5edf1" stopOpacity="0.72" />
+              <stop offset="62%" stopColor="#70aeb8" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#416f78" stopOpacity="0" />
             </motion.radialGradient>
             <linearGradient id={weldSparkGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fffdf0" />
@@ -1813,10 +1938,10 @@ export function LowPolyMesh({
               <stop offset="100%" stopColor="#ff792c" />
             </linearGradient>
             <radialGradient id={weldSmokeGradientId} cx="42%" cy="35%" r="68%">
-              <stop offset="0%" stopColor="#dff8ff" stopOpacity="0.72" />
-              <stop offset="28%" stopColor="#91aeb6" stopOpacity="0.48" />
-              <stop offset="72%" stopColor="#4d585c" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#343a3c" stopOpacity="0" />
+              <stop offset="0%" stopColor="#cad8da" stopOpacity="0.7" />
+              <stop offset="28%" stopColor="#8b9a9d" stopOpacity="0.5" />
+              <stop offset="72%" stopColor="#50595b" stopOpacity="0.24" />
+              <stop offset="100%" stopColor="#2d3233" stopOpacity="0" />
             </radialGradient>
             <filter
               id={weldCoreFilterId}
@@ -1838,7 +1963,7 @@ export function LowPolyMesh({
               width="260%"
               height="260%"
             >
-              <feGaussianBlur stdDeviation={3.2 * chaosUnitScale} />
+              <feGaussianBlur stdDeviation={2.15 * chaosUnitScale} />
             </filter>
           </defs>
           {tintColor && (
