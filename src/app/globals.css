@@ -62,23 +62,3 @@ body {
   outline: 2px solid var(--accent-warm);
   outline-offset: 2px;
 }
-
-/* Für die Hero-Montage (LowPolyMesh.tsx): sanft pulsierender Umgebungs-
-   Glow hinter dem Motiv. Reines CSS (kein Framer-Motion-Overhead pro
-   Frame), respektiert automatisch die prefers-reduced-motion-Regel oben
-   (animation-duration wird dort auf 0.01ms erzwungen). */
-@keyframes cat-glow-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.08);
-  }
-}
-
-.cat-glow-pulse {
-  animation: cat-glow-pulse 2.6s ease-in-out infinite;
-}

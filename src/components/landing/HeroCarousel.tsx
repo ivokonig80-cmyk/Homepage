@@ -44,6 +44,14 @@ const SCROLL_ASSEMBLE_PX = 420;
 const MOUSE_ASSEMBLE_PX = 1120;
 const AUTO_ADVANCE_MS = 7000;
 const EXPLODE_DURATION = 0.9;
+// Weicher Motivwechsel (gemeinsame Quelle): Nach dem Sprengen bleibt das
+// AUSGEHENDE Motiv noch kurz als verstreutes Overlay stehen und blendet aus,
+// waehrend das neue Motiv an denselben Slot-Positionen (siehe
+// SHARED_CHAOS_REFERENCE_WIDTH in LowPolyMesh.tsx) einfadet. Der Nutzer
+// sieht dadurch beim reinen Durchklicken kein "Pop" eines fremden
+// Teile-Sets, sondern EIN durchgehendes Chaos, dessen Materialfarbe weich
+// ueberblendet - den Zusammenbau steuert weiterhin allein die Mausbewegung.
+const CROSSFADE_DURATION = 0.35;
 // Sobald die maus-/scroll-getriebene Montage diese Schwelle erreicht,
 // uebernimmt eine garantiert weiche, fest getimte Animation den letzten
 // Rest bis progress=1 (siehe weldTakeover unten) - der rohe Mauswert
@@ -98,6 +106,12 @@ export function HeroCarousel() {
   // bei 1), damit der Radius-Wechsel keinen sichtbaren Sprung verursacht.
   const [chaosEnabled, setChaosEnabled] = useState(false);
 
+  // Slide, der gerade beim Motivwechsel ausblendet (Crossfade der gemeinsamen
+  // Quelle, siehe CROSSFADE_DURATION) - null = kein Overlay aktiv.
+  const [leavingSlideIndex, setLeavingSlideIndex] = useState<number | null>(null);
+  // Deckkraft dieses Overlays; wird im Effect unten von 1 -> 0 animiert.
+  const leavingOpacity = useMotionValue(1);
+
   const progress = useMotionValue(0);
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
@@ -111,6 +125,10 @@ export function HeroCarousel() {
   // dem die Flugbewegung endet (sonst ein kleiner, aber sichtbarer Knick in
   // der Bewegungsrichtung genau am Uebergang).
   const chaosStartTime = useMotionValue(0);
+  // 1 = echter Zusammenbau, 0 = Rueckwaerts-Sprengen. `progress` allein
+  // enthaelt keine Richtungsinformation; diese MotionValue verhindert,
+  // dass der Welding-Prototyp beim Explodieren rueckwaerts aufblitzt.
+  const assemblyDirection = useMotionValue(1);
 
   const organicControlActive = useRef(true);
   const isTransitioning = useRef(false);
@@ -169,6 +187,7 @@ export function HeroCarousel() {
       if (wrapped === activeIndexRef.current || isTransitioning.current) return;
       organicControlActive.current = false;
       isTransitioning.current = true;
+      assemblyDirection.set(0);
       setChaosEnabled(true);
 
       if (prefersReducedMotion) {
@@ -178,15 +197,43 @@ export function HeroCarousel() {
         return;
       }
 
+      // Laeuft noch ein Crossfade-Overlay vom VORHERIGEN Wechsel, hart
+      // entfernen - ein neuer Uebergang startet immer sauber (sonst koennten
+      // bei schnellen Klicks zwei Overlays uebereinander liegen).
+      setLeavingSlideIndex(null);
+
       await animate(progress, 0, { duration: EXPLODE_DURATION, ease: [0.55, 0, 1, 0.45] });
       chaosStartTime.set(time.get());
+      // Weicher Motivwechsel (gemeinsame Quelle): das ausgehende Motiv bleibt
+      // als verstreutes Overlay stehen und blendet weich aus (Effect unten),
+      // waehrend das neue an denselben Slot-Positionen erscheint. Nur der
+      // bisher harte Facetten-Tausch wird dadurch ersetzt - Sprengen, Drift
+      // und mausgetriebener Zusammenbau bleiben exakt wie bisher.
+      setLeavingSlideIndex(activeIndexRef.current);
       setActiveIndex(wrapped);
       mouseTravel.set(0);
+      assemblyDirection.set(1);
       organicControlActive.current = true;
       isTransitioning.current = false;
     },
-    [prefersReducedMotion, progress, mouseTravel, time, chaosStartTime]
+    [prefersReducedMotion, progress, mouseTravel, time, chaosStartTime, assemblyDirection]
   );
+
+  // --- Crossfade des ausgehenden Motivs (gemeinsame Quelle): Overlay von 1
+  // nach 0 animieren und danach komplett entfernen. Abbruch (neuer Wechsel)
+  // stoppt die Animation sauber; das Overlay selbst wird in goToSlide
+  // vor jedem neuen Uebergang entfernt.
+  useEffect(() => {
+    if (leavingSlideIndex === null) return;
+    leavingOpacity.set(1);
+    let cancelled = false;
+    animate(leavingOpacity, 0, { duration: CROSSFADE_DURATION, ease: "easeOut" }).then(() => {
+      if (!cancelled) setLeavingSlideIndex(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [leavingSlideIndex, leavingOpacity]);
 
   // --- Auto-Advance: startet erst, sobald der aktive Slide zum ersten Mal
   // fertig verschweißt ist (nicht vorher - sonst würde es die Consent-Gate-
@@ -243,7 +290,7 @@ export function HeroCarousel() {
     >
       <div className="mx-auto grid w-full max-w-7xl items-stretch gap-8 md:grid-cols-[1fr_1.3fr] md:gap-4">
         <div className="relative z-10 flex h-full flex-col items-center justify-center text-center md:items-start md:justify-end md:pb-6 md:text-left">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="sync">
             <motion.div
               key={slide.id}
               initial={textInitial}
@@ -292,7 +339,50 @@ export function HeroCarousel() {
             Leerraum oben/unten oder links/rechts, aber die Box selbst ist
             bei jedem Slide exakt gleich gross. Der Chaos-Streu-/Treib-
             Bereich ignoriert diese Box ohnehin (overflow: visible). */}
-        <div className="relative mx-auto aspect-[4/5] max-h-[65vh] w-full max-w-2xl">
+        <div
+          className="relative mx-auto aspect-[4/5]"
+          // 65svh Hoehe * 4/5 = 52svh Breite. Nur die Breite festlegen,
+          // damit `aspect-ratio` die Hoehe wirklich ableitet; die fruehere
+          // Kombination aus w-full + max-height stauchte die Box auf grossen
+          // Screens fast quadratisch und brach die Chaos-Screen-Normalisierung.
+          style={{ width: "min(100%, 52svh, 42rem)" }}
+        >
+          {/* Ausblendendes Vormotiv (Crossfade der gemeinsamen Quelle):
+              haengt UNTER dem aktiven Mesh, teilt dessen progress/Zeit/Zeiger
+              (steht beim Start des Fades bei 0 = verstreut) und zeigt dadurch
+              dasselbe Chaos an denselben Slot-Positionen - nur die
+              Materialfarbe weicht weich ueberblendet. Eigenen Filter-ID-Praefix,
+              damit beide gleichzeitig gerenderten Duoton-Filter nicht
+              kollidieren (siehe tintFilterId in LowPolyMesh). */}
+          {leavingSlideIndex !== null && (
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ opacity: leavingOpacity }}
+            >
+              <LowPolyMesh
+                facets={HERO_SLIDES[leavingSlideIndex].facets}
+                viewBox={HERO_SLIDES[leavingSlideIndex].viewBox}
+                center={HERO_SLIDES[leavingSlideIndex].center}
+                scatterDistance={HERO_SLIDES[leavingSlideIndex].scatterDistance}
+                chaosEnabled={chaosEnabled}
+                time={time}
+                chaosStartTime={chaosStartTime}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                pointerX={pointerX}
+                pointerY={pointerY}
+                ariaLabel={HERO_SLIDES[leavingSlideIndex].ariaLabel}
+                imageUrl={HERO_SLIDES[leavingSlideIndex].imageUrl}
+                tintColor={HERO_SLIDES[leavingSlideIndex].tintColor}
+                tintDarkMix={HERO_SLIDES[leavingSlideIndex].tintDarkMix}
+                tintLightMix={HERO_SLIDES[leavingSlideIndex].tintLightMix}
+                tintFilterId="photo-tint-leaving"
+                clipIdPrefix="hero-leaving"
+                className="h-full w-full"
+              />
+            </motion.div>
+          )}
           <LowPolyMesh
             facets={slide.facets}
             viewBox={slide.viewBox}
@@ -302,6 +392,7 @@ export function HeroCarousel() {
             time={time}
             chaosStartTime={chaosStartTime}
             progress={progress}
+            assemblyDirection={assemblyDirection}
             pointerX={pointerX}
             pointerY={pointerY}
             ariaLabel={slide.ariaLabel}
@@ -309,6 +400,7 @@ export function HeroCarousel() {
             tintColor={slide.tintColor}
             tintDarkMix={slide.tintDarkMix}
             tintLightMix={slide.tintLightMix}
+            clipIdPrefix="hero-active"
             className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
           />
         </div>

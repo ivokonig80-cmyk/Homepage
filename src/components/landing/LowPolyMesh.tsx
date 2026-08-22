@@ -1,6 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
+import { useRef } from "react";
+import {
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 
 /**
  * Low-Poly-Motiv als handgesetztes Dreiecksnetz (Platzhalter-Artwork, bis
@@ -150,6 +158,7 @@ function PhotoTintFilter({
   color,
   darkMix = 0.28,
   lightMix = 0.78,
+  id = "photo-tint",
 }: {
   color: string;
   /** Wie weit der dunkle/helle Duoton-Endpunkt Richtung Schwarz/Weiss
@@ -163,6 +172,9 @@ function PhotoTintFilter({
    * sie nicht noetig. */
   darkMix?: number;
   lightMix?: number;
+  /** SVG-ID des Filters (dokumentweit eindeutig, siehe LowPolyMeshProps) -
+   * noetig, wenn zwei Instanzen gleichzeitig im Dokument haengen. */
+  id?: string;
 }) {
   const dark = shadeHex(color, -darkMix);
   const mid = hexToRgb(color);
@@ -170,7 +182,7 @@ function PhotoTintFilter({
   const table = (i: 0 | 1 | 2) =>
     [dark[i] / 255, mid[i] / 255, light[i] / 255].join(" ");
   return (
-    <filter id="photo-tint" colorInterpolationFilters="sRGB">
+    <filter id={id} colorInterpolationFilters="sRGB">
       <feColorMatrix type="saturate" values="0" />
       <feComponentTransfer>
         <feFuncR type="table" tableValues={table(0)} />
@@ -187,6 +199,32 @@ const SCATTER_ROTATION_DEG = 340;
 // nur nahe am Motiv (siehe chaosEnabled-Erklaerung oben).
 const CHAOS_SCATTER_DISTANCE = 195;
 
+// Referenz-Breite fuer die GEMEINSAME Chaos-Quelle: Der Chaos-Streuradius
+// oben ist in viewBox-Einheiten gerechnet, und jede Slide hat eine andere
+// viewBox (Katze 240 breit vs. Hocker ~880) - derselbe Radius bedeutet pro
+// Motiv einen voellig anderen Abstand am Bildschirm, weshalb jeder
+// Slide-Wechsel bislang wie ein NEUES, fremdes Teile-Chaos wirkte. Die
+// Loesung: der Radius wird pro Motiv mit dem Faktor viewBoxBreite/240
+// skaliert - kalibriert auf die Katze, d.h. die Katze behaelt EXAKT ihre
+// bisherige Streuung (Faktor 1), alle anderen Motive streuen ab jetzt
+// genauso weit WIE DIE KATZE. Alle vier Slides teilen sich damit dieselben
+// Slot-Positionen (die Seeds sind ohnehin slide-unabhaengig) - es gibt nur
+// noch EINE Quelle, aus der sich jedes Motiv zusammenbaut. Bewusst werden
+// NUR Wolken-Groessenwerte skaliert (Streuradius, Drift-Radius,
+// Schwarm-Versatz, Fall-Bias) - ssaemtliche Flugbahn-Formeln (Winkel,
+// Stagger, Sway, Tumble, Rotationen) bleiben unangetastet.
+const SHARED_CHAOS_REFERENCE_WIDTH = 240;
+// Die Hero-Buehne ist in HeroCarousel.tsx fest 4:5. Bei hohen Motiven wird
+// die SVG deshalb ueber ihre Hoehe statt ihre Breite in die Buehne
+// eingepasst. Diese Ratio macht die Chaos-Einheit zu einer echten
+// Screen-Space-Einheit fuer beide Aspect-Ratio-Faelle.
+const HERO_STAGE_ASPECT_RATIO = 4 / 5;
+// Sanfte Referenzen fuer visuelle Masse und Dichte. Die realen Facetten
+// bleiben primaer; Scale/Opacity daempfen nur die groessten Unterschiede.
+const SHARED_CHAOS_CORE_SLOT_COUNT = 20;
+const SHARED_CHAOS_REFERENCE_FACET_AREA = 1400;
+const SHARED_CHAOS_REFERENCE_FACET_EXTENT = 110;
+
 function parsePoints(points: string): [number, number][] {
   return points.split(" ").map((pair) => {
     const [x, y] = pair.split(",").map(Number);
@@ -201,6 +239,15 @@ function centroid(points: [number, number][]): [number, number] {
   return [sx, sy];
 }
 
+function polygonArea(points: [number, number][]): number {
+  return Math.abs(
+    points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point[0] * next[1] - next[0] * point[1];
+    }, 0) / 2
+  );
+}
+
 function parseViewBoxSize(viewBox: string): { width: number; height: number } {
   const parts = viewBox.split(/\s+/).map(Number);
   return { width: parts[2] ?? 240, height: parts[3] ?? 260 };
@@ -212,6 +259,766 @@ function parseViewBoxSize(viewBox: string): { width: number; height: number } {
 function seeded(n: number): number {
   const x = Math.sin(n * 12.9898) * 43758.5453;
   return x - Math.floor(x);
+}
+
+function facetArrivalWindow(index: number): { start: number; end: number } {
+  const start = seeded(index + 200) * 0.5;
+  const width = 0.35 + seeded(index + 300) * 0.25;
+  return { start, end: Math.min(1, start + width) };
+}
+
+function sharedChaosSlot(index: number): { x: number; y: number; depth: number } {
+  const angle = seeded(index + 1020) * Math.PI * 2;
+  const depth = 0.84 + seeded(index + 970) * 0.32;
+  const magnitude = (0.65 + seeded(index + 50) * 1.1) * (0.94 + depth * 0.06);
+  return {
+    x: Math.cos(angle) * magnitude * 1.65,
+    y: Math.sin(angle) * magnitude * 0.7,
+    depth,
+  };
+}
+
+// Der Mittelwert der 20 primaeren Slots wird einmal motivunabhaengig
+// entfernt. So liegt das gemeinsame KERNFELD wirklich auf der Buehnenmitte,
+// statt durch eine zufaellige endliche Seed-Stichprobe leicht zu driften.
+const SHARED_CHAOS_CORE_BIAS = Array.from(
+  { length: SHARED_CHAOS_CORE_SLOT_COUNT },
+  (_, index) => sharedChaosSlot(index)
+).reduce(
+  (sum, slot) => ({
+    x: sum.x + slot.x / SHARED_CHAOS_CORE_SLOT_COUNT,
+    y: sum.y + slot.y / SHARED_CHAOS_CORE_SLOT_COUNT,
+  }),
+  { x: 0, y: 0 }
+);
+
+type WeldDepthLayer = "back" | "mid" | "front";
+
+interface WeldJunctionCandidate {
+  x: number;
+  y: number;
+  count: number;
+  connectionProgress: number;
+  neighbors: { x: number; y: number; count: number }[];
+}
+
+interface WeldJunction {
+  x: number;
+  y: number;
+  count: number;
+  connectionProgress: number;
+  seamEnd: { x: number; y: number };
+}
+
+interface WeldingEventBlueprint {
+  startProgress: number;
+  endProgress: number;
+  intensity: number;
+  depthLayer: WeldDepthLayer;
+  sparkCount: number;
+  heatStrength: number;
+  anchor: { x: number; y: number };
+}
+
+interface WeldingEvent extends WeldingEventBlueprint {
+  id: number;
+  junction: WeldJunction;
+}
+
+interface WeldSparkGeometry {
+  dx: number;
+  dy: number;
+  curveX: number;
+  curveY: number;
+}
+
+// Eine gemeinsame Bibliothek kurzer Funkenbahnen. Ein Event waehlt nur die
+// benoetigte Anzahl und dreht/skaliert sie deterministisch - kleine
+// Strukturkontakte erzeugen dadurch nicht denselben vollen Fuenfer-Satz wie
+// der finale Verschluss.
+const WELD_SPARK_PATHS: WeldSparkGeometry[] = [
+  { dx: -38, dy: 31, curveX: -8, curveY: -30 },
+  { dx: 29, dy: 42, curveX: 9, curveY: -25 },
+  { dx: -24, dy: 49, curveX: -13, curveY: -20 },
+  { dx: 44, dy: 25, curveX: 16, curveY: -35 },
+  { dx: 14, dy: 57, curveX: 4, curveY: -27 },
+  { dx: -49, dy: 18, curveX: -18, curveY: -31 },
+  { dx: 37, dy: 52, curveX: 12, curveY: -20 },
+];
+
+// Die Zeitachse bleibt progress-getrieben. Die Luecken zwischen den
+// Fenstern sind bewusst: Ausrichtung und Setzen der Platten bleibt sichtbar,
+// statt dass das Motiv dauerhaft flackert. Nicht jedes Motiv nutzt alle
+// sechs Blueprints (siehe buildWeldingEvents).
+const WELD_EVENT_BLUEPRINTS: WeldingEventBlueprint[] = [
+  {
+    startProgress: 0.67,
+    endProgress: 0.73,
+    intensity: 0.46,
+    depthLayer: "back",
+    sparkCount: 1,
+    heatStrength: 0.38,
+    anchor: { x: 0.28, y: 0.72 },
+  },
+  {
+    startProgress: 0.755,
+    endProgress: 0.803,
+    intensity: 0.72,
+    depthLayer: "mid",
+    sparkCount: 3,
+    heatStrength: 0.62,
+    anchor: { x: 0.72, y: 0.68 },
+  },
+  {
+    startProgress: 0.812,
+    endProgress: 0.85,
+    intensity: 0.5,
+    depthLayer: "back",
+    sparkCount: 2,
+    heatStrength: 0.46,
+    anchor: { x: 0.25, y: 0.4 },
+  },
+  {
+    startProgress: 0.858,
+    endProgress: 0.895,
+    intensity: 0.68,
+    depthLayer: "mid",
+    sparkCount: 3,
+    heatStrength: 0.58,
+    anchor: { x: 0.74, y: 0.36 },
+  },
+  {
+    startProgress: 0.903,
+    endProgress: 0.938,
+    intensity: 0.82,
+    depthLayer: "front",
+    sparkCount: 4,
+    heatStrength: 0.78,
+    anchor: { x: 0.45, y: 0.54 },
+  },
+  {
+    startProgress: 0.947,
+    endProgress: 0.98,
+    intensity: 1,
+    depthLayer: "front",
+    sparkCount: 5,
+    heatStrength: 1,
+    anchor: { x: 0.56, y: 0.48 },
+  },
+];
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+function smoothStep(value: number): number {
+  const clamped = clamp01(value);
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
+function weldArcStrength(value: number, event: WeldingEvent): number {
+  if (value < event.startProgress || value > event.endProgress) return 0;
+  const local = (value - event.startProgress) / (event.endProgress - event.startProgress);
+  const envelope = smoothStep(local / 0.16) * smoothStep((1 - local) / 0.22);
+  const flicker = 0.68 + 0.32 * Math.abs(Math.sin((local * 4.4 + event.id * 0.37) * Math.PI));
+  return envelope * flicker * event.intensity;
+}
+
+function weldLightStrength(value: number, event: WeldingEvent): number {
+  if (value < event.startProgress - 0.006 || value > event.endProgress + 0.012) return 0;
+  const local = clamp01(
+    (value - (event.startProgress - 0.006)) /
+      (event.endProgress - event.startProgress + 0.018)
+  );
+  return Math.sin(local * Math.PI) ** 0.72 * event.intensity;
+}
+
+function dominantWeldingEvent(value: number, events: WeldingEvent[]): WeldingEvent | undefined {
+  return events.reduce<{ event?: WeldingEvent; strength: number }>(
+    (best, event) => {
+      const strength = weldLightStrength(value, event);
+      return strength > best.strength ? { event, strength } : best;
+    },
+    { strength: 0 }
+  ).event;
+}
+
+/** Sammelt reale gemeinsame Polygonknoten samt echter Nachbarkanten und
+ * waehlt daraus per Farthest-Point-Sampling eine kleine, ueber die sichtbare
+ * Skulptur verteilte Menge. Dreifach oder staerker geteilte Knoten werden
+ * bevorzugt; bei den grob getraceten Hocker-/Kaktusnetzen duerfen zusaetzlich
+ * echte, von zwei Facetten geteilte Kantenenden die raeumliche Verteilung
+ * sichern. */
+function findWeldJunctions(
+  facets: FacetDef[],
+  center: { x: number; y: number },
+  viewBoxSize: { width: number; height: number }
+): WeldJunctionCandidate[] {
+  const nodes = new Map<
+    string,
+    {
+      x: number;
+      y: number;
+      count: number;
+      facetIndices: Set<number>;
+      neighbors: Map<string, { x: number; y: number; count: number }>;
+    }
+  >();
+
+  facets.forEach((facet, facetIndex) => {
+    const points = parsePoints(facet.points);
+    points.forEach(([x, y], index) => {
+      const key = `${x},${y}`;
+      const node = nodes.get(key) ?? {
+        x,
+        y,
+        count: 0,
+        facetIndices: new Set<number>(),
+        neighbors: new Map(),
+      };
+      node.count += 1;
+      node.facetIndices.add(facetIndex);
+      const adjacent = [points[(index + points.length - 1) % points.length], points[(index + 1) % points.length]];
+      adjacent.forEach(([neighborX, neighborY]) => {
+        const neighborKey = `${neighborX},${neighborY}`;
+        const previous = node.neighbors.get(neighborKey);
+        node.neighbors.set(neighborKey, {
+          x: neighborX,
+          y: neighborY,
+          count: (previous?.count ?? 0) + 1,
+        });
+      });
+      nodes.set(key, node);
+    });
+  });
+
+  const shared = [...nodes.values()]
+    .filter((node) => node.count >= 2)
+    .map((node) => {
+      const arrivalEnds = [...node.facetIndices]
+        .map((index) => facetArrivalWindow(index).end)
+        .sort((a, b) => a - b);
+      return {
+        x: node.x,
+        y: node.y,
+        count: node.count,
+        // Der zweite Ankunftswert ist der frueheste reale Kontakt zweier
+        // angrenzender Platten. Spaeter eintreffende Facetten koennen an
+        // demselben Knoten in einem spaeteren Arbeitsgang schliessen.
+        connectionProgress: arrivalEnds[Math.min(1, arrivalEnds.length - 1)],
+        neighbors: [...node.neighbors.values()],
+      };
+    })
+    .sort((a, b) => b.count - a.count || a.y - b.y || a.x - b.x);
+  if (shared.length === 0) return [];
+
+  const desiredCount = facets.length >= 36 ? 6 : facets.length >= 14 ? 4 : 3;
+  const stronglyShared = shared.filter((node) => node.count >= 3);
+  const edgeMarginX = viewBoxSize.width * 0.035;
+  const edgeMarginY = viewBoxSize.height * 0.035;
+  const sparseEdgeMarginX = viewBoxSize.width * 0.01;
+  const sparseEdgeMarginY = viewBoxSize.height * 0.01;
+  const interiorStronglyShared = stronglyShared.filter(
+    (node) =>
+      node.x > edgeMarginX &&
+      node.x < viewBoxSize.width - edgeMarginX &&
+      node.y > edgeMarginY &&
+      node.y < viewBoxSize.height - edgeMarginY
+  );
+  const interiorShared = shared.filter(
+    (node) =>
+      node.x > sparseEdgeMarginX &&
+      node.x < viewBoxSize.width - sparseEdgeMarginX &&
+      node.y > sparseEdgeMarginY &&
+      node.y < viewBoxSize.height - sparseEdgeMarginY
+  );
+  // Dichte Netze besitzen genug echte Innenknoten: dort sind zweifach
+  // geteilte Aussenrandpunkte kein sinnvoller Schweissort. Bei den bewusst
+  // groben Hocker-/Kaktus-Traces bleiben geteilte Kantenenden zulaessig,
+  // damit die Fertigung nicht ausschliesslich in einem einzigen Hub sitzt.
+  const spatialCandidates =
+    facets.length >= 36 && interiorStronglyShared.length >= desiredCount
+      ? interiorStronglyShared
+      : interiorShared.length >= desiredCount
+        ? interiorShared
+        : shared;
+  const timelyCandidates = spatialCandidates.filter(
+    (node) => node.connectionProgress <= 0.93 || node.count >= 3
+  );
+  const candidates =
+    timelyCandidates.length >= desiredCount ? timelyCandidates : spatialCandidates;
+  const selectionCount = Math.min(desiredCount, candidates.length);
+  const screenExtent = Math.max(
+    viewBoxSize.width,
+    viewBoxSize.height * HERO_STAGE_ASPECT_RATIO
+  );
+  const screenDistance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y) / screenExtent;
+
+  const first = candidates.reduce((best, candidate) => {
+    const score = screenDistance(candidate, center) - Math.min(8, candidate.count) * 0.018;
+    return score < best.score ? { point: candidate, score } : best;
+  }, { point: candidates[0], score: Number.POSITIVE_INFINITY }).point;
+  const selected = [first];
+
+  while (selected.length < selectionCount) {
+    const remaining = candidates.filter((candidate) => !selected.includes(candidate));
+    const next = remaining.reduce((best, candidate) => {
+      const spacing = Math.min(...selected.map((point) => screenDistance(candidate, point)));
+      const score = spacing + Math.min(6, candidate.count) * 0.016;
+      return score > best.score ? { point: candidate, score } : best;
+    }, { point: remaining[0], score: Number.NEGATIVE_INFINITY }).point;
+    selected.push(next);
+  }
+
+  return selected;
+}
+
+function buildWeldingEvents(
+  junctions: WeldJunctionCandidate[],
+  viewBoxSize: { width: number; height: number },
+  unitScale: number
+): WeldingEvent[] {
+  const blueprintIndicesByCount: Record<number, number[]> = {
+    1: [5],
+    2: [0, 5],
+    3: [0, 3, 5],
+    4: [0, 1, 4, 5],
+    5: [0, 1, 2, 4, 5],
+    6: [0, 1, 2, 3, 4, 5],
+  };
+  const blueprintIndices = blueprintIndicesByCount[Math.min(6, junctions.length)] ?? [];
+  const blueprintFor = (blueprintIndex: number): WeldingEventBlueprint => {
+    const blueprint = WELD_EVENT_BLUEPRINTS[blueprintIndex];
+    return junctions.length === 4 && blueprintIndex === 1
+      ? { ...blueprint, startProgress: 0.835, endProgress: 0.872 }
+      : blueprint;
+  };
+  const remaining = [...junctions];
+  const assigned = new Map<number, WeldJunctionCandidate>();
+
+  // Der finale Lock reserviert zuerst den am besten passenden, stark
+  // verbundenen Knoten. Sonst koennte ein fruehes Ankerfenster den zentralen
+  // Struktur-Hub verbrauchen und den wichtigsten Abschluss an einen Fuss-
+  // oder Bildrandpunkt draengen.
+  const assignmentOrder = [
+    ...blueprintIndices.filter((index) => index === 5),
+    ...blueprintIndices.filter((index) => index !== 5),
+  ];
+  assignmentOrder.forEach((blueprintIndex) => {
+    const blueprint = blueprintFor(blueprintIndex);
+    const target = {
+      x: blueprint.anchor.x * viewBoxSize.width,
+      y: blueprint.anchor.y * viewBoxSize.height,
+    };
+    const indexedCandidates = remaining.map((candidate, index) => ({ candidate, index }));
+    const contactReady =
+      blueprintIndex === 5
+        ? indexedCandidates
+        : indexedCandidates.filter(
+            ({ candidate }) => candidate.connectionProgress <= blueprint.endProgress + 0.012
+          );
+    const eligibleCandidates = contactReady.length > 0 ? contactReady : indexedCandidates;
+    const candidateIndex = eligibleCandidates.reduce((best, { candidate, index }) => {
+      const distance = Math.hypot(
+        (candidate.x - target.x) / viewBoxSize.width,
+        (candidate.y - target.y) / viewBoxSize.height
+      );
+      const structuralWeight = blueprintIndex === 5 ? 0.055 : 0.018;
+      const lateContactPenalty =
+        blueprintIndex === 5
+          ? 0
+          : Math.max(0, candidate.connectionProgress - blueprint.endProgress) * 4.5;
+      const score =
+        distance - Math.min(8, candidate.count) * structuralWeight + lateContactPenalty;
+      return score < best.score ? { index, score } : best;
+    }, { index: 0, score: Number.POSITIVE_INFINITY }).index;
+    assigned.set(blueprintIndex, remaining.splice(candidateIndex, 1)[0]);
+  });
+
+  return blueprintIndices.map((blueprintIndex) => {
+    const blueprint = blueprintFor(blueprintIndex);
+    const candidate = assigned.get(blueprintIndex)!;
+    const seamNeighbor = candidate.neighbors.reduce((best, neighbor) => {
+      const length = Math.hypot(neighbor.x - candidate.x, neighbor.y - candidate.y) / unitScale;
+      const score = Math.abs(length - 30) * 0.02 - neighbor.count * 0.24 + seeded(blueprintIndex + length) * 0.04;
+      return score < best.score ? { point: neighbor, score } : best;
+    }, { point: candidate.neighbors[0], score: Number.POSITIVE_INFINITY }).point;
+    const seamDistance = Math.hypot(
+      seamNeighbor.x - candidate.x,
+      seamNeighbor.y - candidate.y
+    ) || 1;
+    const seamLength = Math.min(
+      seamDistance * 0.44,
+      (12 + blueprint.heatStrength * 7) * unitScale
+    );
+
+    return {
+      ...blueprint,
+      id: blueprintIndex,
+      junction: {
+        x: candidate.x,
+        y: candidate.y,
+        count: candidate.count,
+        connectionProgress: candidate.connectionProgress,
+        seamEnd: {
+          x: candidate.x + ((seamNeighbor.x - candidate.x) / seamDistance) * seamLength,
+          y: candidate.y + ((seamNeighbor.y - candidate.y) / seamDistance) * seamLength,
+        },
+      },
+    };
+  });
+}
+
+function WeldSpark({
+  geometry,
+  sparkIndex,
+  event,
+  unitScale,
+  progress,
+  assemblyDirection,
+  gradientId,
+}: {
+  geometry: WeldSparkGeometry;
+  sparkIndex: number;
+  event: WeldingEvent;
+  unitScale: number;
+  progress: MotionValue<number>;
+  assemblyDirection: MotionValue<number>;
+  gradientId: string;
+}) {
+  const angle = event.id * 1.71 + sparkIndex * 0.19;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const depthScale = event.depthLayer === "back" ? 0.76 : event.depthLayer === "mid" ? 0.9 : 1;
+  const pathScale = unitScale * (0.64 + event.intensity * 0.36) * depthScale;
+  const rotatePoint = (x: number, y: number) => ({
+    x: (x * cos - y * sin) * pathScale,
+    y: (x * sin + y * cos) * pathScale,
+  });
+  const end = rotatePoint(geometry.dx, geometry.dy);
+  const control = rotatePoint(
+    geometry.dx * 0.48 + geometry.curveX,
+    geometry.dy * 0.28 + geometry.curveY
+  );
+  const span = event.endProgress - event.startProgress;
+  const sparkStart = event.startProgress + span * (0.1 + sparkIndex * 0.035);
+  const sparkEnd = event.endProgress - span * (0.04 + (sparkIndex % 2) * 0.06);
+  const opacity = useTransform(
+    [progress, assemblyDirection],
+    (values: number[]) => {
+      const [value, direction] = values;
+      if (value < sparkStart || value > sparkEnd || direction <= 0) return 0;
+      const local = (value - sparkStart) / (sparkEnd - sparkStart);
+      const envelope = smoothStep(local / 0.16) * smoothStep((1 - local) / 0.2);
+      return envelope * (0.55 + event.intensity * 0.45) * direction;
+    }
+  );
+  const dashOffset = useTransform(progress, (value) => {
+    const local = clamp01((value - sparkStart) / (sparkEnd - sparkStart));
+    return -0.84 * local;
+  });
+
+  return (
+    <motion.path
+      data-weld-spark={event.id}
+      d={`M ${event.junction.x} ${event.junction.y} Q ${event.junction.x + control.x} ${event.junction.y + control.y} ${event.junction.x + end.x} ${event.junction.y + end.y}`}
+      pathLength={1}
+      fill="none"
+      stroke={`url(#${gradientId})`}
+      strokeWidth={0.78 * unitScale}
+      strokeLinecap="round"
+      strokeDasharray="0.16 0.84"
+      pointerEvents="none"
+      style={{ opacity, strokeDashoffset: dashOffset }}
+    />
+  );
+}
+
+function WeldAmbient({
+  event,
+  unitScale,
+  progress,
+  assemblyDirection,
+  gradientId,
+}: {
+  event: WeldingEvent;
+  unitScale: number;
+  progress: MotionValue<number>;
+  assemblyDirection: MotionValue<number>;
+  gradientId: string;
+}) {
+  const opacity = useTransform(
+    [progress, assemblyDirection],
+    (values: number[]) => weldLightStrength(values[0], event) * values[1] * 0.78
+  );
+
+  return (
+    <motion.circle
+      data-weld-ambient={event.id}
+      aria-hidden="true"
+      cx={event.junction.x}
+      cy={event.junction.y}
+      r={(49 + event.intensity * 15) * unitScale}
+      fill={`url(#${gradientId})`}
+      pointerEvents="none"
+      style={{ opacity }}
+    />
+  );
+}
+
+function WeldArc({
+  event,
+  unitScale,
+  progress,
+  assemblyDirection,
+  coreFilterId,
+  sparkGradientId,
+}: {
+  event: WeldingEvent;
+  unitScale: number;
+  progress: MotionValue<number>;
+  assemblyDirection: MotionValue<number>;
+  coreFilterId: string;
+  sparkGradientId: string;
+}) {
+  const depthOpacity = event.depthLayer === "back" ? 0.72 : event.depthLayer === "mid" ? 0.88 : 1;
+  const opacity = useTransform(
+    [progress, assemblyDirection],
+    (values: number[]) => weldArcStrength(values[0], event) * values[1] * depthOpacity
+  );
+  const coreRadius = (5.2 + event.intensity * 1.25) * unitScale;
+  const arcRotation = (seeded(event.id + 3100) - 0.5) * 76;
+
+  return (
+    <g
+      data-weld-arc={event.id}
+      data-weld-depth={event.depthLayer}
+      data-weld-junction-count={event.junction.count}
+      data-weld-connection-progress={event.junction.connectionProgress.toFixed(3)}
+      aria-hidden="true"
+      pointerEvents="none"
+    >
+      <motion.g filter={`url(#${coreFilterId})`} style={{ opacity }}>
+        <circle
+          cx={event.junction.x}
+          cy={event.junction.y}
+          r={coreRadius}
+          fill="#62ddff"
+          fillOpacity="0.26"
+        />
+        <g transform={`rotate(${arcRotation} ${event.junction.x} ${event.junction.y})`}>
+          <path
+            d={`M ${event.junction.x - 4.1 * unitScale} ${event.junction.y + 1.4 * unitScale} L ${event.junction.x - 1.15 * unitScale} ${event.junction.y - 1.35 * unitScale} L ${event.junction.x + 1.05 * unitScale} ${event.junction.y + 0.65 * unitScale} L ${event.junction.x + 4.25 * unitScale} ${event.junction.y - 1.7 * unitScale}`}
+            fill="none"
+            stroke="#e9fcff"
+            strokeWidth={0.88 * unitScale}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+        <circle
+          cx={event.junction.x}
+          cy={event.junction.y}
+          r={1.55 * unitScale}
+          fill="#ffffff"
+        />
+      </motion.g>
+      {WELD_SPARK_PATHS.slice(0, event.sparkCount).map((geometry, sparkIndex) => (
+        <WeldSpark
+          key={sparkIndex}
+          geometry={geometry}
+          sparkIndex={sparkIndex}
+          event={event}
+          unitScale={unitScale}
+          progress={progress}
+          assemblyDirection={assemblyDirection}
+          gradientId={sparkGradientId}
+        />
+      ))}
+    </g>
+  );
+}
+
+function useWeldResidueAge(
+  event: WeldingEvent,
+  durationMs: number,
+  progress: MotionValue<number>,
+  assemblyDirection: MotionValue<number>,
+  time: MotionValue<number>
+): MotionValue<number> {
+  const triggeredAt = useMotionValue(-1);
+  const armed = useRef(true);
+  const previousProgress = useRef(progress.get());
+
+  useMotionValueEvent(assemblyDirection, "change", (direction) => {
+    if (direction <= 0) armed.current = true;
+  });
+  useMotionValueEvent(progress, "change", (value) => {
+    const previous = previousProgress.current;
+    previousProgress.current = value;
+    if (value < event.startProgress - 0.02) armed.current = true;
+    if (
+      assemblyDirection.get() > 0 &&
+      armed.current &&
+      previous < event.endProgress &&
+      value >= event.endProgress
+    ) {
+      triggeredAt.set(time.get());
+      armed.current = false;
+    }
+  });
+
+  return useTransform([time, triggeredAt], (values: number[]) => {
+    const [now, start] = values;
+    return start < 0 ? -1 : (now - start) / durationMs;
+  });
+}
+
+function WeldSmoke({
+  event,
+  unitScale,
+  progress,
+  assemblyDirection,
+  time,
+  gradientId,
+  filterId,
+}: {
+  event: WeldingEvent;
+  unitScale: number;
+  progress: MotionValue<number>;
+  assemblyDirection: MotionValue<number>;
+  time: MotionValue<number>;
+  gradientId: string;
+  filterId: string;
+}) {
+  const duration = 1950 + event.heatStrength * 950 + event.id * 55;
+  const age = useWeldResidueAge(event, duration, progress, assemblyDirection, time);
+  const depthOpacity = event.depthLayer === "back" ? 0.74 : event.depthLayer === "mid" ? 0.92 : 0.78;
+  const opacity = useTransform(age, (value) => {
+    if (value < 0 || value >= 1) return 0;
+    const fadeIn = smoothStep(value / 0.12);
+    const fadeOut = 1 - smoothStep((value - 0.36) / 0.64);
+    return fadeIn * fadeOut * (0.16 + event.heatStrength * 0.13) * depthOpacity;
+  });
+  const driftX = useTransform([time, age], (values: number[]) => {
+    const [now, value] = values;
+    if (value < 0) return 0;
+    const visibleAge = clamp01(value);
+    // Exakt dieselbe langsame Reise-Richtung wie das Fragmentfeld; nur die
+    // Strecke ist kleiner und wird mit dem Rauchalter aufgebaut.
+    const heading = Math.sin(now * 0.00015) * 1.3 + Math.sin(now * 0.00007 + 2.1) * 0.9;
+    const wind = (10 + 6 * Math.sin(now * 0.00011 + 0.6)) * unitScale;
+    const curl = Math.sin(visibleAge * Math.PI * 2.1 + event.id * 1.37) * 7 * unitScale;
+    return Math.cos(heading) * wind * visibleAge + curl * visibleAge;
+  });
+  const riseY = useTransform(age, (value) => {
+    const visibleAge = clamp01(value);
+    return -(7 + 54 * visibleAge) * unitScale;
+  });
+  const cx = useTransform(driftX, (value) => event.junction.x + value);
+  const cy = useTransform(riseY, (value) => event.junction.y + value);
+  const radiusX = useTransform(age, (value) => (5.5 + clamp01(value) * 18) * unitScale);
+  const radiusY = useTransform(age, (value) => (8 + clamp01(value) * 28) * unitScale);
+  const secondaryCx = useTransform(
+    [driftX, age],
+    (values: number[]) => event.junction.x + values[0] - Math.sin(clamp01(values[1]) * 5 + event.id) * 6 * unitScale
+  );
+  const secondaryCy = useTransform(
+    riseY,
+    (value) => event.junction.y + value + 8 * unitScale
+  );
+
+  return (
+    <motion.g
+      data-weld-smoke={event.id}
+      data-weld-depth={event.depthLayer}
+      aria-hidden="true"
+      pointerEvents="none"
+      filter={`url(#${filterId})`}
+      style={{ opacity }}
+    >
+      <motion.ellipse
+        cx={cx}
+        cy={cy}
+        rx={radiusX}
+        ry={radiusY}
+        fill={`url(#${gradientId})`}
+      />
+      {event.depthLayer !== "front" && (
+        <motion.ellipse
+          cx={secondaryCx}
+          cy={secondaryCy}
+          rx={radiusX}
+          ry={radiusY}
+          fill="#7f8c91"
+          fillOpacity="0.34"
+        />
+      )}
+    </motion.g>
+  );
+}
+
+function WeldAfterglow({
+  event,
+  unitScale,
+  progress,
+  assemblyDirection,
+  time,
+}: {
+  event: WeldingEvent;
+  unitScale: number;
+  progress: MotionValue<number>;
+  assemblyDirection: MotionValue<number>;
+  time: MotionValue<number>;
+}) {
+  const age = useWeldResidueAge(
+    event,
+    720 + event.heatStrength * 720,
+    progress,
+    assemblyDirection,
+    time
+  );
+  const opacity = useTransform(
+    [age, assemblyDirection],
+    (values: number[]) => {
+      const [value, direction] = values;
+      if (value < 0 || value >= 1 || direction <= 0) return 0;
+      return (1 - smoothStep(value)) * event.heatStrength * direction;
+    }
+  );
+  const haloOpacity = useTransform(opacity, (value) => value * 0.42);
+  const heatColor = useTransform(
+    age,
+    [0, 0.1, 0.34, 0.68, 1],
+    ["#f7feff", "#fff1a8", "#ffb43f", "#a94022", "#321817"]
+  );
+  const seamPath = `M ${event.junction.x} ${event.junction.y} L ${event.junction.seamEnd.x} ${event.junction.seamEnd.y}`;
+
+  return (
+    <g
+      data-weld-seam={event.id}
+      data-weld-depth={event.depthLayer}
+      aria-hidden="true"
+      pointerEvents="none"
+    >
+      <motion.path
+        d={seamPath}
+        fill="none"
+        stroke="#ff702a"
+        strokeWidth={(2.5 + event.heatStrength) * unitScale}
+        strokeLinecap="round"
+        style={{ opacity: haloOpacity }}
+      />
+      <motion.path
+        d={seamPath}
+        fill="none"
+        strokeWidth={(0.72 + event.heatStrength * 0.28) * unitScale}
+        strokeLinecap="round"
+        style={{ opacity, stroke: heatColor }}
+      />
+    </g>
+  );
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -258,6 +1065,23 @@ interface FacetProps {
    * Haupt-Rendering und Spiegelung dieselben Facetten-Indizes doppelt
    * verwenden und clipPath-IDs sonst kollidieren wuerden. */
   idPrefix: string;
+  /** Skalierungsfaktor fuer die gemeinsame Chaos-Quelle (viewBox-Breite /
+   * SHARED_CHAOS_REFERENCE_WIDTH) - normalisiert Streuradius und Treiben,
+   * damit ALLE Motive aus derselben Wolke an denselben Slot-Positionen
+   * starten. Nur im Chaos-Modus wirksam; Faktor 1 (= Katze) veraendert
+   * nichts am bisherigen Verhalten. */
+  chaosUnitScale?: number;
+  /** Gemeinsames Zentrum der universellen Chaos-Buehne in den Koordinaten
+   * dieser viewBox. */
+  chaosCenter: { x: number; y: number };
+  /** SVG-ID des Duoton-Filters, die DIESE Facette fuer ihr Foto-Fragment
+   * referenziert (dokumentweit eindeutig, siehe LowPolyMeshProps). */
+  tintFilterId?: string;
+  /** Gemeinsame lokale Lichtstaerke des Welding-Prototyps. Ein einziges
+   * Overlay pro realer Facette laesst das Foto reagieren, ohne dessen
+   * Textur durch Flat-Fills zu ersetzen. Nur im Hauptmesh gesetzt. */
+  weldMetalOpacity?: MotionValue<number>;
+  weldMetalGradientId?: string;
 }
 
 function Facet({
@@ -275,15 +1099,29 @@ function Facet({
   tintColor,
   imageSize,
   idPrefix,
+  chaosUnitScale = 1,
+  chaosCenter,
+  tintFilterId = "photo-tint",
+  weldMetalOpacity,
+  weldMetalGradientId,
 }: FacetProps) {
   const points = parsePoints(facet.points);
   const [cx, cy] = centroid(points);
   const dx = cx - center.x;
   const dy = cy - center.y;
   const distFromCenter = Math.hypot(dx, dy) || 1;
-  const angle = Math.atan2(dy, dx) + (seeded(index) - 0.5) * 1.6;
-  const effectiveScatterDistance = chaosEnabled ? CHAOS_SCATTER_DISTANCE : scatterDistance;
-  const magnitude = effectiveScatterDistance * (0.65 + seeded(index + 50) * 1.1);
+  const organicAngle = Math.atan2(dy, dx) + (seeded(index) - 0.5) * 1.6;
+  const sharedSlot = sharedChaosSlot(index);
+  // Gemeinsame Quelle: im Chaos-Modus auf die Katzen-Referenz normalisiert
+  // (siehe SHARED_CHAOS_REFERENCE_WIDTH) - alle vier Slides streuen damit in
+  // EINE Wolke an denselben Slot-Positionen. Die Flugbahn dorthin (Winkel,
+  // Stagger, Sway, Tumble) bleibt exakt unveraendert.
+  const effectiveScatterDistance = chaosEnabled
+    ? CHAOS_SCATTER_DISTANCE * chaosUnitScale
+    : scatterDistance;
+  // Ein gemeinsamer Tiefen-Slot pro Index: nahe Teile sind etwas groesser
+  // und bewegter, entfernte etwas kleiner und ruhiger.
+  const depthScale = sharedSlot.depth;
 
   // Im Chaos-Modus elliptisch statt kreisförmig verstreuen: der Hero ist
   // breiter als hoch, ein kreisförmiger Streuradius schickt bei größerem
@@ -291,8 +1129,18 @@ function Facet({
   // vorhandene Breite zu nutzen.
   const scatterScaleX = chaosEnabled ? 1.65 : 1;
   const scatterScaleY = chaosEnabled ? 0.7 : 1;
-  const scatterX = Math.cos(angle) * magnitude * scatterScaleX;
-  const scatterY = Math.sin(angle) * magnitude * scatterScaleY;
+  const organicMagnitude = effectiveScatterDistance * (0.65 + seeded(index + 50) * 1.1);
+  const rawScatterX = chaosEnabled
+    ? (sharedSlot.x - SHARED_CHAOS_CORE_BIAS.x) * effectiveScatterDistance
+    : Math.cos(organicAngle) * organicMagnitude * scatterScaleX;
+  const rawScatterY = chaosEnabled
+    ? (sharedSlot.y - SHARED_CHAOS_CORE_BIAS.y) * effectiveScatterDistance
+    : Math.sin(organicAngle) * organicMagnitude * scatterScaleY;
+  // Der gemeinsame Slot bezeichnet die Position des echten
+  // Facettenmittelpunkts. Unterschiedliche Polygonlagen/Zentren koennen die
+  // voll explodierte Wolke dadurch nicht mehr verschieben.
+  const scatterX = chaosEnabled ? chaosCenter.x + rawScatterX - cx : rawScatterX;
+  const scatterY = chaosEnabled ? chaosCenter.y + rawScatterY - cy : rawScatterY;
   const scatterVectorLength = Math.hypot(scatterX, scatterY) || 1;
   const scatterRotate = (seeded(index + 100) - 0.5) * SCATTER_ROTATION_DEG;
 
@@ -300,9 +1148,7 @@ function Facet({
   // (0-1) - manche setzen sich frueh zusammen, andere spaet, alle spaetestens
   // bei Gesamt-Fortschritt 1 fertig. "localArrive" ist der lokale Fortschritt
   // (0 = noch verstreut, 1 = angekommen) INNERHALB dieses Fensters.
-  const staggerStart = seeded(index + 200) * 0.5;
-  const staggerWidth = 0.35 + seeded(index + 300) * 0.25;
-  const staggerEnd = Math.min(1, staggerStart + staggerWidth);
+  const { start: staggerStart, end: staggerEnd } = facetArrivalWindow(index);
   const localArrive = useTransform(progress, [staggerStart, staggerEnd], [0, 1]);
 
   const baseX = useTransform(localArrive, (v) => scatterX * (1 - v));
@@ -325,6 +1171,51 @@ function Facet({
   // unsichtbar - sonst waere das Motiv waehrend einer eingefrorenen
   // Wartephase (z.B. Vor-Consent) komplett unsichtbar.
   const opacity = useTransform(localArrive, [0, 1], [0.55, 1]);
+  // Die ersten 20 echten Facetten bilden motivuebergreifend das sichtbare
+  // Kernfeld. Zusaetzliche reale Facetten von Katze/Bueste bleiben erhalten,
+  // treten im reinen Chaos aber zurueck. Beim Zusammenbau werden sie sofort
+  // wieder voll sichtbar; es werden weder Facetten ersetzt noch erfunden.
+  const chaosDensityWeight = index < SHARED_CHAOS_CORE_SLOT_COUNT ? 1 : 0.24;
+  const fieldOpacity = useTransform(
+    progress,
+    [0, 0.18],
+    [chaosEnabled ? chaosDensityWeight : 1, 1]
+  );
+
+  // Native Dreiecksflaechen werden in gemeinsame Referenzeinheiten
+  // umgerechnet und nur sanft normalisiert. Die engen Grenzen und der
+  // kleine Exponent bewahren die realen Groessenunterschiede.
+  const normalizedFacetArea = polygonArea(points) / (chaosUnitScale * chaosUnitScale);
+  const areaCompensation = Math.min(
+    1.24,
+    Math.max(
+      0.78,
+      Math.pow(SHARED_CHAOS_REFERENCE_FACET_AREA / Math.max(1, normalizedFacetArea), 0.16)
+    )
+  );
+  const xs = points.map((point) => point[0]);
+  const ys = points.map((point) => point[1]);
+  const normalizedFacetExtent = Math.max(
+    Math.max(...xs) - Math.min(...xs),
+    Math.max(...ys) - Math.min(...ys)
+  ) / chaosUnitScale;
+  const extentCompensation = Math.min(
+    1,
+    Math.max(
+      0.62,
+      Math.pow(
+        SHARED_CHAOS_REFERENCE_FACET_EXTENT / Math.max(1, normalizedFacetExtent),
+        0.4
+      )
+    )
+  );
+  const chaosFragmentScale = Math.min(
+    1.28,
+    Math.max(0.72, depthScale * areaCompensation * extentCompensation)
+  );
+  const fragmentScale = useTransform(localArrive, (v) =>
+    chaosEnabled ? chaosFragmentScale + (1 - chaosFragmentScale) * v : 1
+  );
 
   // "Wasserdicht"/verschweisst sobald komplett montiert: die dunklen
   // Facetten-Umrandungen (Stroke) blenden erst ganz am Ende der
@@ -350,7 +1241,13 @@ function Facet({
   // LowPolyMesh weiter unten) die "Blick folgt der Maus"-Funktion als EIN
   // zusammenhaengendes Stueck statt einzeln wackelnder Teile.
   const parallaxFade = useTransform(progress, [0.9, 1], [1, 0]);
-  const parallaxStrength = 14 + (distFromCenter / 130) * 20;
+  const sharedSlotDistance =
+    Math.hypot(
+      sharedSlot.x - SHARED_CHAOS_CORE_BIAS.x,
+      sharedSlot.y - SHARED_CHAOS_CORE_BIAS.y
+    ) * CHAOS_SCATTER_DISTANCE;
+  const normalizedDistFromCenter = chaosEnabled ? sharedSlotDistance : distFromCenter;
+  const parallaxStrength = 14 + (normalizedDistFromCenter / 130) * 20;
   const parallaxX = useTransform(
     [pointerX, parallaxFade],
     (values: number[]) => values[0] * parallaxStrength * values[1]
@@ -410,8 +1307,12 @@ function Facet({
   const driftAnglePhase3 = seeded(index + 870) * Math.PI * 2;
   // In viewBox-Einheiten (wie magnitude/scatterX/Y oben), NICHT Pixel - bei
   // der ~2.8-fachen Render-Skalierung ergibt das ~110-280px tatsaechliche
-  // Wander-Reichweite je Facette.
-  const driftRadiusBase = 40 + seeded(index + 780) * 60;
+  // Wander-Reichweite je Facette. Im Chaos-Modus ebenfalls auf die gemeinsame
+  // Quelle normalisiert (sonst wandert der Hocker-Slot nur ~1/4 so weit wie
+  // der Katzen-Slot und die Wolke wuerde pro Slide auseinanderfallen).
+  const driftRadiusBase =
+    (40 + seeded(index + 780) * 60) *
+    (chaosEnabled ? chaosUnitScale * depthScale : 1);
   const driftRadiusFreq = 0.0004 + seeded(index + 890) * 0.0005;
   const driftRadiusPhase = seeded(index + 900) * Math.PI * 2;
   const driftRotAmplitude = 30 + seeded(index + 810) * 50;
@@ -424,7 +1325,7 @@ function Facet({
   // Streuweite periodisch fuer die GANZE GRUPPE gemeinsam an/ab, wie eine
   // Windboe durch einen Schwarm laeuft, statt dass jedes Teil komplett fuer
   // sich allein umherirrt.
-  const flockPhaseOffset = distFromCenter * 0.006;
+  const flockPhaseOffset = normalizedDistFromCenter * 0.006;
   const flockGust = useTransform(time, (t) => 0.75 + 0.35 * Math.sin(t * 0.00022 + flockPhaseOffset));
 
   // Gemeinsame, langsam wandernde "Reise-Richtung" des GESAMTEN Schwarms -
@@ -436,7 +1337,11 @@ function Facet({
     time,
     (t) => Math.sin(t * 0.00015) * 1.3 + Math.sin(t * 0.00007 + 2.1) * 0.9
   );
-  const flockHeadingMagnitude = useTransform(time, (t) => 16 + 10 * Math.sin(t * 0.00011 + 0.6));
+  const flockHeadingMagnitude = useTransform(time, (t) =>
+    chaosEnabled
+      ? (16 + 10 * Math.sin(t * 0.00011 + 0.6)) * chaosUnitScale
+      : 16 + 10 * Math.sin(t * 0.00011 + 0.6)
+  );
   const flockHeadingX = useTransform(
     [flockHeadingAngle, flockHeadingMagnitude],
     (values: number[]) => Math.cos(values[0]) * values[1]
@@ -449,8 +1354,14 @@ function Facet({
   // "Fallende Feder": leichter, ueberwiegend nach unten gerichteter Bias
   // (schwingt zwischen -2 und +10 - meistens sinkend, gelegentlich kurz von
   // einer "Boe" nach oben getragen) statt rein symmetrischem Umherirren.
+  // Wie driftRadiusBase im Chaos-Modus auf die gemeinsame Quelle skaliert,
+  // damit alle Slides dasselbe Sinkverhalten in denselben Einheiten zeigen.
   const fallPhase = seeded(index + 950) * Math.PI * 2;
-  const fallBias = useTransform(time, (t) => 4 + 6 * Math.sin(t * 0.00013 + fallPhase));
+  const fallBias = useTransform(time, (t) =>
+    chaosEnabled
+      ? (4 + 6 * Math.sin(t * 0.00013 + fallPhase)) * chaosUnitScale * depthScale
+      : 4 + 6 * Math.sin(t * 0.00013 + fallPhase)
+  );
 
   // "Blatt im Wind"-Trudeln: Rotation an die aktuelle Wanderrichtung
   // gekoppelt statt komplett unabhaengig - das Teil "rockt" sichtbar mit,
@@ -510,6 +1421,24 @@ function Facet({
     [baseY, swayY, driftY, parallaxY],
     (values: number[]) => values[0] + values[1] + values[2] + values[3]
   );
+  // Framer Motion normalisiert CSS-transform-origin bei einer geclippten
+  // SVG-Bildgruppe auf deren volle Bild-Bounding-Box. Das verschiebt gleiche
+  // Chaos-Slots je nach Quell-viewBox stark. Als SVG-Attribut bleibt der
+  // Pivot dagegen exakt der reale Facettenschwerpunkt; die Translation liegt
+  // separat auf der aeusseren Gruppe und wird nicht mitrotiert/-skaliert.
+  const fragmentTransform = useTransform(
+    [rotate, fragmentScale],
+    (values: number[]) => {
+      const [rotation, scale] = values;
+      return `translate(${cx}px, ${cy}px) rotate(${rotation}deg) scale(${scale}) translate(${-cx}px, ${-cy}px)`;
+    }
+  );
+  const fragmentTransformStyle = {
+    transform: fragmentTransform,
+    transformBox: "view-box" as const,
+    originX: 0,
+    originY: 0,
+  };
 
   // Schimmernde Kantenkontur statt der frueheren blauen "Datentransfer"-
   // Linie - wie eine Glas-/Metallscherbe, die beim Trudeln Licht einfaengt.
@@ -551,21 +1480,19 @@ function Facet({
   const shimmerStroke = tintColor ? `rgb(${shadeHex(tintColor, 0.55).join(",")})` : "#ffe3ad";
   const shimmerGlowInner = tintColor ? `rgb(${shadeHex(tintColor, 0.32).join(",")})` : "#ffcf7a";
   const shimmerGlowOuter = tintColor ? `rgb(${shadeHex(tintColor, 0.05).join(",")})` : "#ff9d3d";
+  const strokeUnitScale = chaosEnabled ? chaosUnitScale : 1;
 
   return (
-    <>
+    <motion.g style={{ x, y, opacity: fieldOpacity }}>
       {chaosEnabled && (
         <motion.polygon
           points={facet.points}
           fill="none"
           stroke={shimmerStroke}
-          strokeWidth={1.1}
+          strokeWidth={1.1 * strokeUnitScale}
           style={{
-            x,
-            y,
-            rotate,
+            ...fragmentTransformStyle,
             opacity: edgeShimmerOpacity,
-            transformOrigin: `${cx}px ${cy}px`,
             filter: `drop-shadow(0 0 3px ${shimmerGlowInner}) drop-shadow(0 0 7px ${shimmerGlowOuter})`,
           }}
         />
@@ -579,7 +1506,7 @@ function Facet({
           </defs>
           <motion.g
             clipPath={`url(#${clipId})`}
-            style={{ x, y, rotate, opacity, transformOrigin: `${cx}px ${cy}px` }}
+            style={{ ...fragmentTransformStyle, opacity }}
           >
             <image
               href={imageUrl}
@@ -588,7 +1515,7 @@ function Facet({
               width={imageSize.width}
               height={imageSize.height}
               preserveAspectRatio="xMidYMid slice"
-              filter={tintColor ? "url(#photo-tint)" : undefined}
+              filter={tintColor ? `url(#${tintFilterId})` : undefined}
             />
           </motion.g>
           {/* Warmer Schein UNTER der dunklen Nahtstellen-Linie (siehe
@@ -599,8 +1526,8 @@ function Facet({
             points={facet.points}
             fill="none"
             stroke={seamHaloColor}
-            strokeWidth={1.5}
-            style={{ x, y, rotate, opacity: seamHaloOpacity, transformOrigin: `${cx}px ${cy}px` }}
+            strokeWidth={1.5 * strokeUnitScale}
+            style={{ ...fragmentTransformStyle, opacity: seamHaloOpacity }}
           />
           {/* Duenne dunkle Nahtstellen-Kontur obendrauf - wie beim
               Flachfarben-Modus, blendet beim Verschweissen aus
@@ -610,8 +1537,8 @@ function Facet({
             points={facet.points}
             fill="none"
             stroke={SEAM_STROKE}
-            strokeWidth={0.6}
-            style={{ x, y, rotate, opacity: strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
+            strokeWidth={0.6 * strokeUnitScale}
+            style={{ ...fragmentTransformStyle, opacity: strokeOpacity }}
           />
         </>
       ) : (
@@ -619,7 +1546,7 @@ function Facet({
           <motion.polygon
             points={facet.points}
             fill={`url(#grad-${facet.tone})`}
-            style={{ x, y, rotate, opacity, transformOrigin: `${cx}px ${cy}px` }}
+            style={{ ...fragmentTransformStyle, opacity }}
           />
           {/* Gleiches zweischichtiges Nahtstellen-Profil wie im Foto-Modus -
               warmer Schein unter der dunklen Kontur. */}
@@ -627,19 +1554,32 @@ function Facet({
             points={facet.points}
             fill="none"
             stroke={seamHaloColor}
-            strokeWidth={1.4}
-            style={{ x, y, rotate, opacity: seamHaloOpacity, transformOrigin: `${cx}px ${cy}px` }}
+            strokeWidth={1.4 * strokeUnitScale}
+            style={{ ...fragmentTransformStyle, opacity: seamHaloOpacity }}
           />
           <motion.polygon
             points={facet.points}
             fill="none"
             stroke={SEAM_STROKE}
-            strokeWidth={0.75}
-            style={{ x, y, rotate, opacity: strokeOpacity, transformOrigin: `${cx}px ${cy}px` }}
+            strokeWidth={0.75 * strokeUnitScale}
+            style={{ ...fragmentTransformStyle, opacity: strokeOpacity }}
           />
         </>
       )}
-    </>
+      {weldMetalOpacity && weldMetalGradientId && (
+        <motion.polygon
+          aria-hidden="true"
+          points={facet.points}
+          fill={`url(#${weldMetalGradientId})`}
+          pointerEvents="none"
+          style={{
+            ...fragmentTransformStyle,
+            opacity: weldMetalOpacity,
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
+    </motion.g>
   );
 }
 
@@ -663,6 +1603,9 @@ export interface LowPolyMeshProps {
    * Treiben weich ein statt es abrupt zu starten (siehe Facet-Kommentar). */
   chaosStartTime: MotionValue<number>;
   progress: MotionValue<number>;
+  /** 1 waehrend des Zusammenbaus, 0 beim Rueckwaerts-Sprengen. Der
+   * Welding-Prototyp darf nur in positiver Montagerichtung feuern. */
+  assemblyDirection: MotionValue<number>;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   ariaLabel: string;
@@ -679,6 +1622,16 @@ export interface LowPolyMeshProps {
    * gelockerten Defaults braucht (siehe heroSlides.ts). */
   tintDarkMix?: number;
   tintLightMix?: number;
+  /** SVG-ID des Duoton-Filters (Default "photo-tint"). Muss gesetzt werden,
+   * wenn zwei LowPolyMesh-Instanzen GLEICHZEITIG im Dokument haengen
+   * (Crossfade beim Slide-Wechsel im HeroCarousel) - sonst wuerde eine
+   * Instanz den Filter der anderen referenzieren und in deren Wunschfarbe
+   * eingefaerbt werden (SVG-IDs sind dokumentweit eindeutig). */
+  tintFilterId?: string;
+  /** Eindeutiger Praefix fuer die SVG-clipPath-IDs dieser Mesh-Instanz.
+   * Erforderlich, wenn beim Crossfade zwei Meshes gleichzeitig gerendert
+   * werden, da clipPath-IDs ebenso dokumentweit gelten wie Filter-IDs. */
+  clipIdPrefix?: string;
 }
 
 export function LowPolyMesh({
@@ -691,6 +1644,7 @@ export function LowPolyMesh({
   time,
   chaosStartTime,
   progress,
+  assemblyDirection,
   pointerX,
   pointerY,
   ariaLabel,
@@ -698,9 +1652,59 @@ export function LowPolyMesh({
   tintColor,
   tintDarkMix,
   tintLightMix,
+  tintFilterId = "photo-tint",
+  clipIdPrefix = "low-poly",
 }: LowPolyMeshProps) {
   const prefersReducedMotion = useReducedMotion();
   const imageSize = imageUrl ? parseViewBoxSize(viewBox) : undefined;
+  const viewBoxSize = parseViewBoxSize(viewBox);
+  // Screen-Space-Skalierung auf der festen 4:5-Hero-Buehne: Bei breiten
+  // Motiven limitiert die viewBox-Breite, bei hohen die eingepasste Hoehe.
+  // Dadurch entspricht eine Chaos-Referenzeinheit bei allen vier Motiven
+  // derselben ungefaehren Pixelstrecke.
+  const chaosUnitScale =
+    Math.max(viewBoxSize.width, viewBoxSize.height * HERO_STAGE_ASPECT_RATIO) /
+    SHARED_CHAOS_REFERENCE_WIDTH;
+  const chaosCenter = {
+    x: viewBoxSize.width / 2,
+    y: viewBoxSize.height / 2,
+  };
+  const weldJunctions = findWeldJunctions(facets, center, viewBoxSize);
+  const weldingEvents = buildWeldingEvents(weldJunctions, viewBoxSize, chaosUnitScale);
+  const weldAmbientGradientId = `${clipIdPrefix}-weld-ambient`;
+  const weldMetalGradientId = `${clipIdPrefix}-weld-metal`;
+  const weldCoreFilterId = `${clipIdPrefix}-weld-core-glow`;
+  const weldSparkGradientId = `${clipIdPrefix}-weld-sparks`;
+  const weldSmokeGradientId = `${clipIdPrefix}-weld-smoke-fill`;
+  const weldSmokeFilterId = `${clipIdPrefix}-weld-smoke-soften`;
+
+  // Ein einziges Screen-Overlay pro realer Facette bleibt erhalten. Nur das
+  // Zentrum des gemeinsam wiederverwendeten radialen Lichtfeldes springt in
+  // den dunklen Pausen (Opacity=0) zum jeweils aktiven Event. So reagieren
+  // nahe Facetten lokal, ohne Filter/Overlays pro Event zu vervielfachen.
+  const weldMetalOpacity = useTransform(
+    [progress, assemblyDirection],
+    (values: number[]) => {
+      const [value, direction] = values;
+      const strongest = weldingEvents.reduce(
+        (best, event) => Math.max(best, weldLightStrength(value, event)),
+        0
+      );
+      return strongest * direction * 0.82;
+    }
+  );
+  const weldMetalX = useTransform(progress, (value) =>
+    dominantWeldingEvent(value, weldingEvents)?.junction.x ?? center.x
+  );
+  const weldMetalY = useTransform(progress, (value) =>
+    dominantWeldingEvent(value, weldingEvents)?.junction.y ?? center.y
+  );
+  const weldMetalRadius = useTransform(
+    progress,
+    (value) =>
+      (42 + (dominantWeldingEvent(value, weldingEvents)?.intensity ?? 0.5) * 9) *
+      chaosUnitScale
+  );
 
   // "Blick folgt der Maus": sanfte 3D-Neigung des GESAMTEN Motivs Richtung
   // Zeiger (nicht nur die per-Facette-Mausparallaxe von oben) - wacht erst
@@ -730,7 +1734,12 @@ export function LowPolyMesh({
           <>
             {tintColor && (
               <defs>
-                <PhotoTintFilter color={tintColor} darkMix={tintDarkMix} lightMix={tintLightMix} />
+                <PhotoTintFilter
+                  color={tintColor}
+                  darkMix={tintDarkMix}
+                  lightMix={tintLightMix}
+                  id={tintFilterId}
+                />
               </defs>
             )}
             <image
@@ -740,7 +1749,7 @@ export function LowPolyMesh({
               width={imageSize.width}
               height={imageSize.height}
               preserveAspectRatio="xMidYMid slice"
-              filter={tintColor ? "url(#photo-tint)" : undefined}
+              filter={tintColor ? `url(#${tintFilterId})` : undefined}
             />
           </>
         ) : (
@@ -767,18 +1776,6 @@ export function LowPolyMesh({
         className="relative h-full w-full"
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
       >
-        {/* Pulsierender blauer Umgebungs-Glow - "Hightech"-Atmosphäre hinter
-            dem Motiv, per CSS animiert (siehe .cat-glow-pulse). */}
-        <div
-          aria-hidden
-          className="cat-glow-pulse pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(closest-side, rgba(95,212,255,0.5), rgba(95,212,255,0.12) 55%, transparent 75%)",
-            filter: "blur(28px)",
-          }}
-        />
-
         <svg
           viewBox={viewBox}
           className={className}
@@ -786,9 +1783,114 @@ export function LowPolyMesh({
           style={{ overflow: "visible", position: "relative" }}
           role="img"
           aria-label={ariaLabel}
+          data-weld-event-count={weldingEvents.length}
         >
           <ToneGradients />
-          {tintColor && <defs><PhotoTintFilter color={tintColor} /></defs>}
+          <defs>
+            <radialGradient id={weldAmbientGradientId} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#f7feff" stopOpacity="0.68" />
+              <stop offset="10%" stopColor="#a9efff" stopOpacity="0.5" />
+              <stop offset="38%" stopColor="#31cfff" stopOpacity="0.2" />
+              <stop offset="72%" stopColor="#147cab" stopOpacity="0.07" />
+              <stop offset="100%" stopColor="#147cab" stopOpacity="0" />
+            </radialGradient>
+            <motion.radialGradient
+              id={weldMetalGradientId}
+              gradientUnits="userSpaceOnUse"
+              cx={weldMetalX}
+              cy={weldMetalY}
+              r={weldMetalRadius}
+            >
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.96" />
+              <stop offset="12%" stopColor="#dcfaff" stopOpacity="0.88" />
+              <stop offset="42%" stopColor="#66ddff" stopOpacity="0.46" />
+              <stop offset="78%" stopColor="#2189b7" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="#2189b7" stopOpacity="0" />
+            </motion.radialGradient>
+            <linearGradient id={weldSparkGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fffdf0" />
+              <stop offset="38%" stopColor="#ffd36a" />
+              <stop offset="100%" stopColor="#ff792c" />
+            </linearGradient>
+            <radialGradient id={weldSmokeGradientId} cx="42%" cy="35%" r="68%">
+              <stop offset="0%" stopColor="#dff8ff" stopOpacity="0.72" />
+              <stop offset="28%" stopColor="#91aeb6" stopOpacity="0.48" />
+              <stop offset="72%" stopColor="#4d585c" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#343a3c" stopOpacity="0" />
+            </radialGradient>
+            <filter
+              id={weldCoreFilterId}
+              x="-220%"
+              y="-220%"
+              width="540%"
+              height="540%"
+            >
+              <feGaussianBlur stdDeviation={1.55 * chaosUnitScale} result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <filter
+              id={weldSmokeFilterId}
+              x="-80%"
+              y="-80%"
+              width="260%"
+              height="260%"
+            >
+              <feGaussianBlur stdDeviation={3.2 * chaosUnitScale} />
+            </filter>
+          </defs>
+          {tintColor && (
+            <defs>
+              <PhotoTintFilter
+                color={tintColor}
+                darkMix={tintDarkMix}
+                lightMix={tintLightMix}
+                id={tintFilterId}
+              />
+            </defs>
+          )}
+          {/* Hintere Fumes und Arcs liegen wirklich unter den Fotofacetten.
+              Ihre Kontaktkerne werden verdeckt; sichtbar bleiben vor allem
+              Silhouettenlicht und wenige herauslaufende Funken. */}
+          {weldingEvents.map((event) =>
+            event.depthLayer === "back" ? (
+              <WeldSmoke
+                key={`smoke-back-${event.id}`}
+                event={event}
+                unitScale={chaosUnitScale}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                time={time}
+                gradientId={weldSmokeGradientId}
+                filterId={weldSmokeFilterId}
+              />
+            ) : null
+          )}
+          {weldingEvents.map((event) => (
+            <WeldAmbient
+              key={`ambient-${event.id}`}
+              event={event}
+              unitScale={chaosUnitScale}
+              progress={progress}
+              assemblyDirection={assemblyDirection}
+              gradientId={weldAmbientGradientId}
+            />
+          ))}
+          {weldingEvents.map((event) =>
+            event.depthLayer === "back" ? (
+              <WeldArc
+                key={`arc-back-${event.id}`}
+                event={event}
+                unitScale={chaosUnitScale}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                coreFilterId={weldCoreFilterId}
+                sparkGradientId={weldSparkGradientId}
+              />
+            ) : null
+          )}
           {facets.map((facet, i) => (
             <Facet
               key={i}
@@ -797,6 +1899,8 @@ export function LowPolyMesh({
               center={center}
               scatterDistance={scatterDistance}
               chaosEnabled={chaosEnabled}
+              chaosUnitScale={chaosUnitScale}
+              chaosCenter={chaosCenter}
               time={time}
               chaosStartTime={chaosStartTime}
               progress={progress}
@@ -805,9 +1909,42 @@ export function LowPolyMesh({
               imageUrl={imageUrl}
               imageSize={imageSize}
               tintColor={tintColor}
-              idPrefix="main"
+              tintFilterId={tintFilterId}
+              weldMetalOpacity={weldMetalOpacity}
+              weldMetalGradientId={weldMetalGradientId}
+              idPrefix={`${clipIdPrefix}-main`}
             />
           ))}
+          {/* Mittlere Fumes liegen zwischen Fragment-Mosaik und finalem
+              Vollbild. Mid-/Front-Arcs bleiben kompakt oberhalb der
+              Fragmentlage, feuern aber nie gleichzeitig mit Back-Events. */}
+          {weldingEvents.map((event) =>
+            event.depthLayer === "mid" ? (
+              <WeldSmoke
+                key={`smoke-mid-${event.id}`}
+                event={event}
+                unitScale={chaosUnitScale}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                time={time}
+                gradientId={weldSmokeGradientId}
+                filterId={weldSmokeFilterId}
+              />
+            ) : null
+          )}
+          {weldingEvents.map((event) =>
+            event.depthLayer !== "back" ? (
+              <WeldArc
+                key={`arc-${event.depthLayer}-${event.id}`}
+                event={event}
+                unitScale={chaosUnitScale}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                coreFilterId={weldCoreFilterId}
+                sparkGradientId={weldSparkGradientId}
+              />
+            ) : null
+          )}
           {imageUrl && imageSize && (
             <motion.image
               href={imageUrl}
@@ -817,9 +1954,36 @@ export function LowPolyMesh({
               height={imageSize.height}
               preserveAspectRatio="xMidYMid slice"
               pointerEvents="none"
-              filter={tintColor ? "url(#photo-tint)" : undefined}
+              filter={tintColor ? `url(#${tintFilterId})` : undefined}
               style={{ opacity: weldImageOpacity }}
             />
+          )}
+          {/* Die elektrische Aktivitaet endet vor 0.985. Danach bleiben nur
+              kurze echte Kantenabschnitte thermisch sichtbar und die
+              sparsame vordere Fume-Schicht steigt noch aus. */}
+          {weldingEvents.map((event) => (
+            <WeldAfterglow
+              key={`seam-${event.id}`}
+              event={event}
+              unitScale={chaosUnitScale}
+              progress={progress}
+              assemblyDirection={assemblyDirection}
+              time={time}
+            />
+          ))}
+          {weldingEvents.map((event) =>
+            event.depthLayer === "front" ? (
+              <WeldSmoke
+                key={`smoke-front-${event.id}`}
+                event={event}
+                unitScale={chaosUnitScale}
+                progress={progress}
+                assemblyDirection={assemblyDirection}
+                time={time}
+                gradientId={weldSmokeGradientId}
+                filterId={weldSmokeFilterId}
+              />
+            ) : null
           )}
         </svg>
 
@@ -846,6 +2010,8 @@ export function LowPolyMesh({
                 center={center}
                 scatterDistance={scatterDistance}
                 chaosEnabled={chaosEnabled}
+                chaosUnitScale={chaosUnitScale}
+                chaosCenter={chaosCenter}
                 time={time}
                 chaosStartTime={chaosStartTime}
                 progress={progress}
@@ -854,7 +2020,8 @@ export function LowPolyMesh({
                 imageUrl={imageUrl}
                 imageSize={imageSize}
                 tintColor={tintColor}
-                idPrefix="reflection"
+                tintFilterId={tintFilterId}
+                idPrefix={`${clipIdPrefix}-reflection`}
               />
             ))}
             {imageUrl && imageSize && (
@@ -866,7 +2033,7 @@ export function LowPolyMesh({
                 height={imageSize.height}
                 preserveAspectRatio="xMidYMid slice"
                 pointerEvents="none"
-                filter={tintColor ? "url(#photo-tint)" : undefined}
+                filter={tintColor ? `url(#${tintFilterId})` : undefined}
                 style={{ opacity: weldImageOpacity }}
               />
             )}
