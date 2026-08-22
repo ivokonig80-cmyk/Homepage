@@ -265,6 +265,19 @@ function seeded(n: number): number {
   return x - Math.floor(x);
 }
 
+// Node und Browser koennen bei trigonometrischen Funktionen in den letzten
+// Binärstellen voneinander abweichen. SVG-Attribute behalten diese Stellen,
+// waehrend Chromium CSS-Transforms beim Parsen auf drei Nachkommastellen
+// normalisiert. Nur die gerenderte Ausgabe wird deshalb stabilisiert; die
+// MotionValues und damit die eigentliche Animationsphysik bleiben ungerundet.
+function stableSvgValue(value: number): number {
+  return Math.round(value * 10_000) / 10_000;
+}
+
+function stableCssTransformValue(value: number): number {
+  return Math.round(value * 1_000) / 1_000;
+}
+
 function facetArrivalWindow(index: number): { start: number; end: number } {
   const start = seeded(index + 200) * 0.5;
   const width = 0.35 + seeded(index + 300) * 0.25;
@@ -713,6 +726,11 @@ function WeldSpark({
     geometry.dx * 0.48 + geometry.curveX,
     geometry.dy * 0.28 + geometry.curveY
   );
+  const sparkPath = [
+    `M ${stableSvgValue(event.junction.x)} ${stableSvgValue(event.junction.y)}`,
+    `Q ${stableSvgValue(event.junction.x + control.x)} ${stableSvgValue(event.junction.y + control.y)}`,
+    `${stableSvgValue(event.junction.x + end.x)} ${stableSvgValue(event.junction.y + end.y)}`,
+  ].join(" ");
   const span = event.endProgress - event.startProgress;
   const sparkStart = event.startProgress + span * (0.1 + sparkIndex * 0.035);
   const sparkEnd = event.endProgress - span * (0.04 + (sparkIndex % 2) * 0.06);
@@ -737,7 +755,7 @@ function WeldSpark({
   return (
     <motion.path
       data-weld-spark={event.id}
-      d={`M ${event.junction.x} ${event.junction.y} Q ${event.junction.x + control.x} ${event.junction.y + control.y} ${event.junction.x + end.x} ${event.junction.y + end.y}`}
+      d={sparkPath}
       pathLength={1}
       fill="none"
       stroke={`url(#${gradientId})`}
@@ -805,7 +823,13 @@ function WeldArc({
     (values: number[]) => weldArcStrength(values[0], event) * values[1] * depthOpacity
   );
   const coreRadius = (4.5 + event.intensity * 0.95) * unitScale;
-  const arcRotation = (seeded(event.id + 3100) - 0.5) * 76;
+  const arcRotation = stableSvgValue((seeded(event.id + 3100) - 0.5) * 76);
+  const arcPath = [
+    `M ${stableSvgValue(event.junction.x - 4.1 * unitScale)} ${stableSvgValue(event.junction.y + 1.4 * unitScale)}`,
+    `L ${stableSvgValue(event.junction.x - 1.15 * unitScale)} ${stableSvgValue(event.junction.y - 1.35 * unitScale)}`,
+    `L ${stableSvgValue(event.junction.x + 1.05 * unitScale)} ${stableSvgValue(event.junction.y + 0.65 * unitScale)}`,
+    `L ${stableSvgValue(event.junction.x + 4.25 * unitScale)} ${stableSvgValue(event.junction.y - 1.7 * unitScale)}`,
+  ].join(" ");
 
   return (
     <g
@@ -824,9 +848,11 @@ function WeldArc({
           fill="#a6edf6"
           fillOpacity="0.22"
         />
-        <g transform={`rotate(${arcRotation} ${event.junction.x} ${event.junction.y})`}>
+        <g
+          transform={`rotate(${arcRotation} ${stableSvgValue(event.junction.x)} ${stableSvgValue(event.junction.y)})`}
+        >
           <path
-            d={`M ${event.junction.x - 4.1 * unitScale} ${event.junction.y + 1.4 * unitScale} L ${event.junction.x - 1.15 * unitScale} ${event.junction.y - 1.35 * unitScale} L ${event.junction.x + 1.05 * unitScale} ${event.junction.y + 0.65 * unitScale} L ${event.junction.x + 4.25 * unitScale} ${event.junction.y - 1.7 * unitScale}`}
+            d={arcPath}
             fill="none"
             stroke="#e9fcff"
             strokeWidth={0.88 * unitScale}
@@ -933,33 +959,44 @@ function WeldSmoke({
     const visibleAge = clamp01(value);
     return -(7 + 62 * visibleAge) * unitScale;
   });
-  const cx = useTransform(driftX, (value) => event.junction.x + value);
-  const cy = useTransform(riseY, (value) => event.junction.y + value);
+  const cx = useTransform(driftX, (value) =>
+    stableSvgValue(event.junction.x + value)
+  );
+  const cy = useTransform(riseY, (value) =>
+    stableSvgValue(event.junction.y + value)
+  );
   const shapeWidth = 0.9 + seeded(event.id + 5200) * 0.22;
   const shapeHeight = 0.92 + seeded(event.id + 5300) * 0.2;
   const radiusX = useTransform(
     age,
-    (value) => (5.5 + clamp01(value) * 22) * unitScale * shapeWidth
+    (value) =>
+      stableSvgValue((5.5 + clamp01(value) * 22) * unitScale * shapeWidth)
   );
   const radiusY = useTransform(
     age,
-    (value) => (8 + clamp01(value) * 35) * unitScale * shapeHeight
+    (value) =>
+      stableSvgValue((8 + clamp01(value) * 35) * unitScale * shapeHeight)
   );
   const secondaryCx = useTransform(
     [driftX, age],
-    (values: number[]) => event.junction.x + values[0] - Math.sin(clamp01(values[1]) * 5 + event.id) * 6 * unitScale
+    (values: number[]) =>
+      stableSvgValue(
+        event.junction.x +
+          values[0] -
+          Math.sin(clamp01(values[1]) * 5 + event.id) * 6 * unitScale
+      )
   );
   const secondaryCy = useTransform(
     riseY,
-    (value) => event.junction.y + value + 8 * unitScale
+    (value) => stableSvgValue(event.junction.y + value + 8 * unitScale)
   );
   const secondaryRadiusX = useTransform(
     age,
-    (value) => (3.8 + clamp01(value) * 13) * unitScale
+    (value) => stableSvgValue((3.8 + clamp01(value) * 13) * unitScale)
   );
   const secondaryRadiusY = useTransform(
     age,
-    (value) => (6 + clamp01(value) * 23) * unitScale
+    (value) => stableSvgValue((6 + clamp01(value) * 23) * unitScale)
   );
   const coolCatchOpacity = useTransform(age, (value) => {
     if (value < 0 || value >= 0.34) return 0;
@@ -967,19 +1004,19 @@ function WeldSmoke({
   });
   const coolCx = useTransform(
     driftX,
-    (value) => event.junction.x + value * 0.42
+    (value) => stableSvgValue(event.junction.x + value * 0.42)
   );
   const coolCy = useTransform(
     riseY,
-    (value) => event.junction.y + value * 0.36
+    (value) => stableSvgValue(event.junction.y + value * 0.36)
   );
   const coolRadiusX = useTransform(
     age,
-    (value) => (3.8 + clamp01(value) * 7) * unitScale
+    (value) => stableSvgValue((3.8 + clamp01(value) * 7) * unitScale)
   );
   const coolRadiusY = useTransform(
     age,
-    (value) => (6 + clamp01(value) * 13) * unitScale
+    (value) => stableSvgValue((6 + clamp01(value) * 13) * unitScale)
   );
   const finalCloudOpacity = useTransform(age, (value) => {
     if (event.id !== 5 || value < 0.12 || value >= 0.92) return 0;
@@ -990,19 +1027,23 @@ function WeldSmoke({
   const finalCloudCx = useTransform(
     [driftX, age],
     (values: number[]) =>
-      event.junction.x + values[0] * 0.78 - Math.sin(clamp01(values[1]) * 3.4) * 9 * unitScale
+      stableSvgValue(
+        event.junction.x +
+          values[0] * 0.78 -
+          Math.sin(clamp01(values[1]) * 3.4) * 9 * unitScale
+      )
   );
   const finalCloudCy = useTransform(
     riseY,
-    (value) => event.junction.y + value - 12 * unitScale
+    (value) => stableSvgValue(event.junction.y + value - 12 * unitScale)
   );
   const finalCloudRadiusX = useTransform(
     age,
-    (value) => (7 + clamp01(value) * 24) * unitScale
+    (value) => stableSvgValue((7 + clamp01(value) * 24) * unitScale)
   );
   const finalCloudRadiusY = useTransform(
     age,
-    (value) => (15 + clamp01(value) * 52) * unitScale
+    (value) => stableSvgValue((15 + clamp01(value) * 52) * unitScale)
   );
   const wispOpacity = useTransform(age, (value) => {
     if (value < 0.04 || value >= 0.78) return 0;
@@ -1010,14 +1051,18 @@ function WeldSmoke({
     const disperse = 1 - smoothStep((value - 0.44) / 0.34);
     return reveal * disperse * 0.62;
   });
-  const wispX = useTransform(driftX, (value) => value * 0.52);
-  const wispY = useTransform(riseY, (value) => value * 0.42);
+  const wispX = useTransform(driftX, (value) =>
+    stableCssTransformValue(value * 0.52)
+  );
+  const wispY = useTransform(riseY, (value) =>
+    stableCssTransformValue(value * 0.42)
+  );
   const wispDirection = seeded(event.id + 5700) > 0.5 ? 1 : -1;
   const wispPath = [
-    `M ${event.junction.x} ${event.junction.y}`,
-    `C ${event.junction.x + wispDirection * 6 * unitScale} ${event.junction.y - 12 * unitScale}`,
-    `${event.junction.x - wispDirection * 11 * unitScale} ${event.junction.y - 29 * unitScale}`,
-    `${event.junction.x + wispDirection * 4 * unitScale} ${event.junction.y - 48 * unitScale}`,
+    `M ${stableSvgValue(event.junction.x)} ${stableSvgValue(event.junction.y)}`,
+    `C ${stableSvgValue(event.junction.x + wispDirection * 6 * unitScale)} ${stableSvgValue(event.junction.y - 12 * unitScale)}`,
+    `${stableSvgValue(event.junction.x - wispDirection * 11 * unitScale)} ${stableSvgValue(event.junction.y - 29 * unitScale)}`,
+    `${stableSvgValue(event.junction.x + wispDirection * 4 * unitScale)} ${stableSvgValue(event.junction.y - 48 * unitScale)}`,
   ].join(" ");
 
   return (
@@ -1108,7 +1153,10 @@ function WeldAfterglow({
     [0, 0.07, 0.26, 0.62, 1],
     ["#f7feff", "#fff1a8", "#ffb43f", "#a94022", "#321817"]
   );
-  const seamPath = `M ${event.junction.x} ${event.junction.y} L ${event.junction.seamEnd.x} ${event.junction.seamEnd.y}`;
+  const seamPath = [
+    `M ${stableSvgValue(event.junction.x)} ${stableSvgValue(event.junction.y)}`,
+    `L ${stableSvgValue(event.junction.seamEnd.x)} ${stableSvgValue(event.junction.seamEnd.y)}`,
+  ].join(" ");
 
   return (
     <g
@@ -1536,6 +1584,8 @@ function Facet({
     [baseY, swayY, driftY, parallaxY],
     (values: number[]) => values[0] + values[1] + values[2] + values[3]
   );
+  const renderedX = useTransform(x, stableCssTransformValue);
+  const renderedY = useTransform(y, stableCssTransformValue);
   // Framer Motion normalisiert CSS-transform-origin bei einer geclippten
   // SVG-Bildgruppe auf deren volle Bild-Bounding-Box. Das verschiebt gleiche
   // Chaos-Slots je nach Quell-viewBox stark. Als SVG-Attribut bleibt der
@@ -1545,7 +1595,9 @@ function Facet({
     [rotate, fragmentScale],
     (values: number[]) => {
       const [rotation, scale] = values;
-      return `translate(${cx}px, ${cy}px) rotate(${rotation}deg) scale(${scale}) translate(${-cx}px, ${-cy}px)`;
+      const stableCx = stableCssTransformValue(cx);
+      const stableCy = stableCssTransformValue(cy);
+      return `translate(${stableCx}px, ${stableCy}px) rotate(${stableCssTransformValue(rotation)}deg) scale(${stableCssTransformValue(scale)}) translate(${-stableCx}px, ${-stableCy}px)`;
     }
   );
   const fragmentTransformStyle = {
@@ -1598,7 +1650,7 @@ function Facet({
   const strokeUnitScale = chaosEnabled ? chaosUnitScale : 1;
 
   return (
-    <motion.g style={{ x, y, opacity: fieldOpacity }}>
+    <motion.g style={{ x: renderedX, y: renderedY, opacity: fieldOpacity }}>
       {chaosEnabled && (
         <motion.polygon
           points={facet.points}
