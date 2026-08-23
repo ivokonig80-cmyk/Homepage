@@ -1,7 +1,11 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
+
+const subscribeHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 interface RevealProps {
   children: ReactNode;
@@ -27,8 +31,14 @@ const OFFSETS: Record<NonNullable<RevealProps["direction"]>, { x?: number; y?: n
  */
 export function Reveal({ children, className, delay = 0, direction = "up" }: RevealProps) {
   const prefersReducedMotion = useReducedMotion();
+  const hasHydrated = useSyncExternalStore(
+    subscribeHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
+  const shouldReduceMotion = hasHydrated && prefersReducedMotion;
 
-  if (prefersReducedMotion) {
+  if (shouldReduceMotion) {
     return <div className={className}>{children}</div>;
   }
 

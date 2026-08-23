@@ -6,6 +6,7 @@ import {
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
+  useSpring,
   useTransform,
   type MotionValue,
 } from "framer-motion";
@@ -278,6 +279,1152 @@ function stableCssTransformValue(value: number): number {
   return Math.round(value * 1_000) / 1_000;
 }
 
+const UNIVERSAL_SOURCE_VIEW_BOX = "0 0 240 300";
+const UNIVERSAL_SOURCE_WIDTH = 240;
+const UNIVERSAL_SOURCE_HEIGHT = 300;
+const UNIVERSAL_SOURCE_SLOT_COUNT = 18;
+const ADDITIONAL_SOURCE_SLOT_COUNT = 18;
+const UNIVERSAL_SOURCE_HOT_BEAD_COUNT = 12;
+const UNIVERSAL_SOURCE_SPARK_REMNANT_COUNT = 4;
+const UNIVERSAL_SOURCE_CENTER = { x: 146, y: 177 };
+const SOURCE_HANDOFF_RESIDUE_MS = 2800;
+const SOURCE_HOT_PARTICLE_COOLDOWN_MS = 4500;
+const SOURCE_LIGHT_SLOT_INDICES = [1, 5, 8, 10, 14, 17] as const;
+
+type UniversalSourceZone = "outer" | "mixing" | "core";
+type SourceFragmentSize = "small" | "medium" | "large";
+type SourceDepthPlane = "back" | "mid" | "front";
+
+interface UniversalSourceSlot {
+  zone: UniversalSourceZone;
+  flowGroup: number;
+  flowLagMs: number;
+  flowTimeScale: number;
+  tumbleScale: number;
+  gravityScale: number;
+  parallaxScale: number;
+  rollPhase: number;
+  gustBias: number;
+  x: number;
+  y: number;
+  depth: number;
+  rotation: number;
+  phase: number;
+  speed: number;
+  scaleBias: number;
+  orbitX: number;
+  orbitY: number;
+  captureX: number;
+  captureY: number;
+  captureSpin: number;
+  fallDelay: number;
+  restX: number;
+  restY: number;
+  restRotation: number;
+  points: string;
+}
+
+interface NeutralSourceSlot extends UniversalSourceSlot {
+  sizeClass: SourceFragmentSize;
+  depthPlane: SourceDepthPlane;
+  sourceXUnit: number;
+  sourceYUnit: number;
+}
+
+interface SharedSourceBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fallDistance: number;
+  restMinX: number;
+  restMaxX: number;
+  sourceMinY: number;
+  sourceMaxY: number;
+}
+
+/** Integer-basierter, plattformstabiler Hash fuer die neue universelle
+ * Quelle. Anders als `seeded()` benoetigt er keine trigonometrische Funktion
+ * und liefert deshalb bereits vor der Render-Quantisierung exakt dasselbe
+ * Ergebnis in Node und im Browser. */
+function sourceRandom(seed: number): number {
+  let value = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+  value ^= value >>> 13;
+  value = Math.imul(value, 0xc2b2ae35);
+  value ^= value >>> 16;
+  return (value >>> 0) / 4_294_967_296;
+}
+
+interface UniversalSourceFlowGroup {
+  phase: number;
+  headingSpeed: number;
+  mergeSpeed: number;
+  baseAngle: number;
+  strength: number;
+}
+
+// Drei guenstige, deterministische Vektorfelder statt einer O(n²)-Boids-
+// Simulation. Jede Gruppe besitzt eine gemeinsame Reiserichtung und einen
+// langsamen Trennen-/Zusammenfinden-Zyklus. Ein kleiner Lag pro Platte laesst
+// einzelne Teile nachlaufen oder ueberschiessen, ohne die Gruppensprache zu
+// verlieren.
+const UNIVERSAL_SOURCE_FLOW_GROUPS: UniversalSourceFlowGroup[] = Array.from(
+  { length: 3 },
+  (_, index) => ({
+    phase: sourceRandom(index * 37 + 401) * Math.PI * 2,
+    headingSpeed: 0.00016 + sourceRandom(index * 41 + 409) * 0.00008,
+    mergeSpeed: 0.0001 + sourceRandom(index * 43 + 419) * 0.000055,
+    baseAngle: (sourceRandom(index * 47 + 431) - 0.5) * Math.PI * 1.2,
+    strength: 0.86 + sourceRandom(index * 53 + 443) * 0.28,
+  })
+);
+
+function sourceFlowSample(slot: UniversalSourceSlot, timeMs: number) {
+  const group = UNIVERSAL_SOURCE_FLOW_GROUPS[slot.flowGroup];
+  const laggedTime = timeMs * slot.flowTimeScale - slot.flowLagMs;
+  const heading =
+    group.baseAngle +
+    Math.sin(laggedTime * group.headingSpeed + group.phase) * 1.05 +
+    Math.sin(laggedTime * 0.000073 + group.phase * 1.8) * 0.48;
+  const mergeCycle =
+    0.58 +
+    smoothStep((Math.sin(laggedTime * group.mergeSpeed + group.phase * 0.7) + 1) / 2) * 0.42;
+  const gust = Math.max(0, Math.sin(laggedTime * 0.00039 + slot.gustBias)) ** 3;
+  const zoneMagnitude = slot.zone === "outer" ? 39 : slot.zone === "mixing" ? 28 : 13;
+  const depthTravel = 0.8 + slot.depth * 0.2;
+  const groupMagnitude =
+    zoneMagnitude * group.strength * depthTravel * mergeCycle +
+    gust * (slot.zone === "outer" ? 18 : slot.zone === "mixing" ? 11 : 5);
+  // Der globale Bogen haelt die drei Subflows als EINEN Schwarm lesbar.
+  const globalHeading =
+    Math.sin(timeMs * 0.00012 + 0.35) * 1.05 + Math.sin(timeMs * 0.000052 + 2.4) * 0.55;
+  const globalMagnitude = 14 + Math.sin(timeMs * 0.00009 + 0.8) * 6;
+
+  return {
+    x: Math.cos(heading) * groupMagnitude + Math.cos(globalHeading) * globalMagnitude,
+    y: Math.sin(heading) * groupMagnitude * 0.66 + Math.sin(globalHeading) * globalMagnitude * 0.58,
+    turn:
+      (Math.sin(laggedTime * group.headingSpeed + group.phase) * 19 +
+        Math.sin(laggedTime * 0.00072 + slot.rollPhase) * (10 + gust * 12)) *
+      slot.tumbleScale,
+  };
+}
+
+function sourcePlateForeshorten(slot: UniversalSourceSlot, timeMs: number): number {
+  const roll = Math.sin(timeMs * (0.00058 + slot.speed * 0.00017) + slot.rollPhase);
+  return 0.62 + Math.abs(roll) * 0.42;
+}
+
+// Eine einzige, motivunabhaengige 4:5-Buehne. Acht lose Outer-, sechs
+// Mixing- und vier Core-Slots bilden ein grosses raeumliches Materialfeld
+// um denselben bisherigen Anker. Reale Modellfacetten werden spaeter in
+// ihre jeweilige viewBox zurueckgemappt; Position und Zonentiefe der Quelle
+// bleiben dabei fuer alle Slides identisch.
+const UNIVERSAL_SOURCE_SLOTS: UniversalSourceSlot[] = Array.from(
+  { length: UNIVERSAL_SOURCE_SLOT_COUNT },
+  (_, index) => {
+    const zone: UniversalSourceZone = index < 8 ? "outer" : index < 14 ? "mixing" : "core";
+    const angle = index * 2.3999632297 + (sourceRandom(index + 11) - 0.5) * 0.78;
+    // Keine gleichmaessige Ringverteilung: zwei Outer-Slots duerfen als
+    // echte Fernlaeufer bis an den Rand des visuellen Feldes wandern, die
+    // uebrigen bilden eine breite Hauptmasse. Mixing bleibt deutlich
+    // raeumlich, waehrend der technische Core klein und untergeordnet bleibt.
+    const isOuterOutlier = zone === "outer" && index < 2;
+    const radiusBase = isOuterOutlier
+      ? 1.18
+      : zone === "outer"
+        ? 0.56
+        : zone === "mixing"
+          ? 0.38
+          : 0.08;
+    const radiusRange = isOuterOutlier
+      ? 0.24
+      : zone === "outer"
+        ? 0.52
+        : zone === "mixing"
+          ? 0.54
+          : 0.3;
+    const radius = radiusBase + Math.sqrt(sourceRandom(index + 29)) * radiusRange;
+    // Die 4:5-Quellbuehne skaliert bereits mit der responsiven Hero-Stage.
+    // Groessere Referenzradien ergeben deshalb dieselbe wahrgenommene
+    // Bildschirmspanne auf Desktop und Narrow, ohne Pixel-Breakpoints.
+    const radiusX = zone === "outer" ? 154 : zone === "mixing" ? 98 : 29;
+    const radiusY = zone === "outer" ? 116 : zone === "mixing" ? 74 : 22;
+    // Deutlich tiefere Staffelung: entfernte Platten werden klein und ruhig,
+    // nahe Platten klar praesent, ohne die maximale Groesse zu ueberziehen.
+    const depthBase = zone === "outer" ? 0.34 : zone === "mixing" ? 0.5 : 0.76;
+    const depthRange = zone === "outer" ? 1.42 : zone === "mixing" ? 1.02 : 0.48;
+    const depth = depthBase + sourceRandom(index + 47) * depthRange;
+    const shardWidth =
+      (zone === "outer" ? 7.5 : zone === "mixing" ? 6.5 : 5.5) +
+      sourceRandom(index + 61) * (zone === "outer" ? 7.5 : 6.5);
+    const shardHeight =
+      (zone === "outer" ? 5.5 : zone === "mixing" ? 5 : 4) +
+      sourceRandom(index + 73) * (zone === "outer" ? 8 : 7);
+    const skew = (sourceRandom(index + 89) - 0.5) * shardWidth * 0.7;
+    const captureDistance = zone === "outer" ? 28 : zone === "mixing" ? 19 : 10;
+    const captureAngle = angle + Math.PI / 2 + (sourceRandom(index + 193) - 0.5) * 0.5;
+
+    return {
+      zone,
+      flowGroup: index % UNIVERSAL_SOURCE_FLOW_GROUPS.length,
+      flowLagMs: (sourceRandom(index + 457) - 0.42) * 360,
+      flowTimeScale: 1,
+      tumbleScale: 1,
+      gravityScale: 1,
+      parallaxScale: 1,
+      rollPhase: sourceRandom(index + 461) * Math.PI * 2,
+      gustBias: sourceRandom(index + 467) * Math.PI * 2,
+      x: stableSvgValue(
+        UNIVERSAL_SOURCE_CENTER.x + Math.cos(angle) * radius * radiusX
+      ),
+      y: stableSvgValue(
+        UNIVERSAL_SOURCE_CENTER.y + Math.sin(angle) * radius * radiusY
+      ),
+      depth,
+      rotation: (sourceRandom(index + 101) - 0.5) * 320,
+      phase: sourceRandom(index + 127) * Math.PI * 2,
+      speed:
+        (zone === "outer" ? 0.62 : zone === "mixing" ? 0.82 : 0.94) +
+        sourceRandom(index + 137) * (zone === "outer" ? 0.2 : 0.24),
+      scaleBias:
+        (zone === "outer" ? 0.7 : zone === "mixing" ? 0.76 : 0.82) +
+        sourceRandom(index + 149) * (zone === "outer" ? 0.7 : zone === "mixing" ? 0.56 : 0.4),
+      orbitX:
+        (zone === "outer" ? 12 : zone === "mixing" ? 8 : 4) +
+        sourceRandom(index + 167) * (zone === "outer" ? 12 : zone === "mixing" ? 8 : 5),
+      orbitY:
+        (zone === "outer" ? 9 : zone === "mixing" ? 6 : 3) +
+        sourceRandom(index + 181) * (zone === "outer" ? 10 : zone === "mixing" ? 7 : 4),
+      captureX: Math.cos(captureAngle) * captureDistance,
+      captureY: Math.sin(captureAngle) * captureDistance * 0.78,
+      captureSpin: (sourceRandom(index + 211) - 0.5) * (zone === "outer" ? 190 : 130),
+      fallDelay: sourceRandom(index + 227) * 0.075,
+      restX: -72 + sourceRandom(index + 241) * 362,
+      restY: (sourceRandom(index + 257) - 0.5) * 15,
+      restRotation: 82 + (sourceRandom(index + 269) - 0.5) * 28,
+      points: [
+        `${stableSvgValue(-shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.42)}`,
+        `${stableSvgValue(skew)},${stableSvgValue(-shardHeight * 0.58)}`,
+        `${stableSvgValue(shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.36)}`,
+      ].join(" "),
+    };
+  }
+);
+
+// Begrenzter, rein neutraler Zusatzpool. Die bestehenden 18 Slots bleiben
+// unveraendert und bilden weiterhin allein das Mapping-Ziel der realen
+// Modellfacetten. Diese zusaetzlichen Platten erhoehen nur die sichtbare
+// Materialmenge und laufen durch exakt dasselbe Flow-/Fall-/Return-System.
+const ADDITIONAL_MIXING_INDICES = new Set([2, 5, 8, 11, 13, 14]);
+
+const ADDITIONAL_SOURCE_SLOTS: NeutralSourceSlot[] = Array.from(
+  { length: ADDITIONAL_SOURCE_SLOT_COUNT },
+  (_, index) => {
+    const seedIndex = 10_000 + index * 97;
+    const sizeClass: SourceFragmentSize =
+      index < 9 ? "small" : index < 15 ? "medium" : "large";
+    const depthPlane: SourceDepthPlane =
+      index < 6 || index === 9 || index === 10
+        ? "back"
+        : index < 9 || index < 15
+          ? "mid"
+          : "front";
+    const zone: UniversalSourceZone = ADDITIONAL_MIXING_INDICES.has(index)
+      ? "mixing"
+      : "outer";
+    const depthBase = depthPlane === "back" ? 0.3 : depthPlane === "mid" ? 0.68 : 1.18;
+    const depthRange = depthPlane === "back" ? 0.28 : depthPlane === "mid" ? 0.44 : 0.32;
+    const depth = depthBase + sourceRandom(seedIndex + 47) * depthRange;
+    const shardWidth =
+      sizeClass === "small"
+        ? 6 + sourceRandom(seedIndex + 61) * 5
+        : sizeClass === "medium"
+          ? 10 + sourceRandom(seedIndex + 61) * 7
+          : 18 + sourceRandom(seedIndex + 61) * 12;
+    const shardHeight =
+      sizeClass === "small"
+        ? 4 + sourceRandom(seedIndex + 73) * 4
+        : sizeClass === "medium"
+          ? 7 + sourceRandom(seedIndex + 73) * 5
+          : 12 + sourceRandom(seedIndex + 73) * 9;
+    const skew = (sourceRandom(seedIndex + 89) - 0.5) * shardWidth * 0.7;
+    const captureDistance =
+      sizeClass === "large" ? 34 : zone === "outer" ? 28 : 19;
+    const angle =
+      index * 2.3999632297 +
+      (sourceRandom(seedIndex + 11) - 0.5) * 0.92 +
+      Math.PI * 0.37;
+    const captureAngle =
+      angle + Math.PI / 2 + (sourceRandom(seedIndex + 193) - 0.5) * 0.5;
+    const points =
+      sizeClass === "small"
+        ? [
+            `${stableSvgValue(-shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.42)}`,
+            `${stableSvgValue(skew)},${stableSvgValue(-shardHeight * 0.58)}`,
+            `${stableSvgValue(shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.36)}`,
+          ]
+        : sizeClass === "medium"
+          ? [
+              `${stableSvgValue(-shardWidth * 0.56)},${stableSvgValue(shardHeight * 0.31)}`,
+              `${stableSvgValue(-shardWidth * 0.27 + skew * 0.2)},${stableSvgValue(-shardHeight * 0.55)}`,
+              `${stableSvgValue(shardWidth * 0.43 + skew * 0.16)},${stableSvgValue(-shardHeight * 0.34)}`,
+              `${stableSvgValue(shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.28)}`,
+            ]
+          : [
+              `${stableSvgValue(-shardWidth * 0.58)},${stableSvgValue(shardHeight * 0.34)}`,
+              `${stableSvgValue(-shardWidth * 0.42 + skew * 0.16)},${stableSvgValue(-shardHeight * 0.42)}`,
+              `${stableSvgValue(shardWidth * 0.08 + skew * 0.18)},${stableSvgValue(-shardHeight * 0.6)}`,
+              `${stableSvgValue(shardWidth * 0.58)},${stableSvgValue(-shardHeight * 0.12)}`,
+              `${stableSvgValue(shardWidth * 0.4)},${stableSvgValue(shardHeight * 0.45)}`,
+            ];
+
+    return {
+      sizeClass,
+      depthPlane,
+      zone,
+      flowGroup: index % UNIVERSAL_SOURCE_FLOW_GROUPS.length,
+      flowLagMs:
+        sizeClass === "small"
+          ? -80 + sourceRandom(seedIndex + 457) * 240
+          : sizeClass === "medium"
+            ? 140 + sourceRandom(seedIndex + 457) * 220
+            : 420 + sourceRandom(seedIndex + 457) * 300,
+      flowTimeScale:
+        sizeClass === "small"
+          ? 1.08 + sourceRandom(seedIndex + 459) * 0.18
+          : sizeClass === "medium"
+            ? 0.86 + sourceRandom(seedIndex + 459) * 0.12
+            : 0.58 + sourceRandom(seedIndex + 459) * 0.14,
+      tumbleScale: sizeClass === "small" ? 0.9 : sizeClass === "medium" ? 1.04 : 1.3,
+      gravityScale: sizeClass === "small" ? 0.94 : sizeClass === "medium" ? 1 : 1.1,
+      parallaxScale: depthPlane === "back" ? 0.58 : depthPlane === "mid" ? 0.9 : 1.2,
+      rollPhase: sourceRandom(seedIndex + 461) * Math.PI * 2,
+      gustBias: sourceRandom(seedIndex + 467) * Math.PI * 2,
+      sourceXUnit: stableSvgValue(0.04 + sourceRandom(seedIndex + 31) * 0.92),
+      sourceYUnit: stableSvgValue(0.06 + sourceRandom(seedIndex + 37) * 0.88),
+      x: UNIVERSAL_SOURCE_CENTER.x,
+      y: UNIVERSAL_SOURCE_CENTER.y,
+      depth,
+      rotation: (sourceRandom(seedIndex + 101) - 0.5) * 320,
+      phase: sourceRandom(seedIndex + 127) * Math.PI * 2,
+      speed:
+        sizeClass === "small"
+          ? 1.04 + sourceRandom(seedIndex + 137) * 0.22
+          : sizeClass === "medium"
+            ? 0.78 + sourceRandom(seedIndex + 137) * 0.22
+            : 0.56 + sourceRandom(seedIndex + 137) * 0.16,
+      scaleBias:
+        sizeClass === "small"
+          ? 1.05 + sourceRandom(seedIndex + 149) * 0.3
+          : sizeClass === "medium"
+            ? 0.9 + sourceRandom(seedIndex + 149) * 0.3
+            : 0.9 + sourceRandom(seedIndex + 149) * 0.22,
+      orbitX:
+        sizeClass === "large"
+          ? 20 + sourceRandom(seedIndex + 167) * 14
+          : (zone === "outer" ? 12 : 8) + sourceRandom(seedIndex + 167) * 12,
+      orbitY:
+        sizeClass === "large"
+          ? 14 + sourceRandom(seedIndex + 181) * 11
+          : (zone === "outer" ? 9 : 6) + sourceRandom(seedIndex + 181) * 10,
+      captureX: Math.cos(captureAngle) * captureDistance,
+      captureY: Math.sin(captureAngle) * captureDistance * 0.78,
+      captureSpin:
+        (sourceRandom(seedIndex + 211) - 0.5) *
+        (sizeClass === "large" ? 420 : zone === "outer" ? 190 : 130),
+      fallDelay:
+        sizeClass === "small"
+          ? 0.045 + sourceRandom(seedIndex + 227) * 0.065
+          : sizeClass === "medium"
+            ? 0.015 + sourceRandom(seedIndex + 227) * 0.06
+            : sourceRandom(seedIndex + 227) * 0.035,
+      restX: -72 + sourceRandom(seedIndex + 241) * 362,
+      restY: (sourceRandom(seedIndex + 257) - 0.5) * 15,
+      restRotation: 82 + (sourceRandom(seedIndex + 269) - 0.5) * 28,
+      points: points.join(" "),
+    };
+  }
+);
+
+interface SourceHotParticleGeometry {
+  kind: "bead" | "spark";
+  depthClass: SourceDepthPlane;
+  slotIndex: number;
+  delay: number;
+  radius: number;
+  launchX: number;
+  launchY: number;
+  gravity: number;
+  lifeEnd: number;
+  restUnit: number;
+}
+
+const SOURCE_HOT_PARTICLE_SLOT_INDICES = [
+  0, 2, 3, 4, 7,
+  9, 10, 11, 13, 15,
+  5, 8,
+  0, 7, 11, 1,
+] as const;
+
+const SOURCE_HOT_PARTICLES: SourceHotParticleGeometry[] = Array.from(
+  { length: UNIVERSAL_SOURCE_HOT_BEAD_COUNT + UNIVERSAL_SOURCE_SPARK_REMNANT_COUNT },
+  (_, index) => {
+    const kind = index < UNIVERSAL_SOURCE_HOT_BEAD_COUNT ? "bead" : "spark";
+    const particleIndex =
+      kind === "bead" ? index : index - UNIVERSAL_SOURCE_HOT_BEAD_COUNT;
+    const depthClass: SourceDepthPlane =
+      (kind === "bead" && index < 5) || (kind === "spark" && particleIndex < 2)
+        ? "back"
+        : (kind === "bead" && index < 10) || (kind === "spark" && particleIndex === 2)
+          ? "mid"
+          : "front";
+    const angle = -1.38 + (sourceRandom(index + 601) - 0.5) * (kind === "bead" ? 1.05 : 1.42);
+    const launchDistance =
+      kind === "bead"
+        ? 7 + sourceRandom(index + 613) * 11
+        : 20 + sourceRandom(index + 613) * 18;
+    const depthRadius = depthClass === "back" ? 0.72 : depthClass === "mid" ? 0.94 : 1.14;
+    const lifeEnd =
+      kind === "spark"
+        ? 0.58 + sourceRandom(index + 653) * 0.14
+        : depthClass === "back"
+          ? 0.82 + sourceRandom(index + 653) * 0.18
+          : depthClass === "mid"
+            ? 1 + sourceRandom(index + 653) * 0.2
+            : 1.25 + sourceRandom(index + 653) * 0.15;
+    return {
+      kind,
+      depthClass,
+      slotIndex: SOURCE_HOT_PARTICLE_SLOT_INDICES[index],
+      delay: stableSvgValue(
+        kind === "bead"
+          ? (index % 6) * 0.032 + Math.floor(index / 6) * 0.025
+          : 0.045 + particleIndex * 0.036
+      ),
+      radius: stableSvgValue(
+        (kind === "bead"
+          ? 1 + sourceRandom(index + 631) * 0.74
+          : 0.72 + sourceRandom(index + 631) * 0.38) * depthRadius
+      ),
+      launchX: stableSvgValue(Math.cos(angle) * launchDistance),
+      launchY: stableSvgValue(Math.sin(angle) * launchDistance),
+      gravity: stableSvgValue(
+        kind === "bead"
+          ? 25 + sourceRandom(index + 647) * 17
+          : 40 + sourceRandom(index + 647) * 22
+      ),
+      lifeEnd: stableSvgValue(lifeEnd),
+      restUnit: stableSvgValue(0.05 + sourceRandom(index + 659) * 0.9),
+    };
+  }
+);
+
+function sourceSlotForFacet(
+  points: [number, number][],
+  index: number
+): UniversalSourceSlot {
+  // Facettenform und Index gehen gemeinsam in den Hash ein. Damit mappen
+  // unterschiedliche Modelle nicht blind indexgleich, das Ergebnis bleibt
+  // aber fuer jede reale Facette ueber alle Render hinweg stabil.
+  let hash = (2_166_136_261 ^ Math.imul(index + 1, 16_777_619)) >>> 0;
+  points.forEach(([x, y]) => {
+    hash = Math.imul(hash ^ Math.round(x * 10), 16_777_619) >>> 0;
+    hash = Math.imul(hash ^ Math.round(y * 10), 16_777_619) >>> 0;
+  });
+  return UNIVERSAL_SOURCE_SLOTS[hash % UNIVERSAL_SOURCE_SLOT_COUNT];
+}
+
+function sourceDepthPlaneFor(depth: number): SourceDepthPlane {
+  return depth < 0.62 ? "back" : depth > 1.18 ? "front" : "mid";
+}
+
+function SharedSourceShard({
+  slot,
+  index,
+  sourceKind,
+  neutralIndex,
+  sizeClass,
+  depthPlane,
+  sourceX,
+  sourceY,
+  time,
+  sourceProgress,
+  handoffAge,
+  fallProgress,
+  returnForce,
+  fallDistance,
+  restMinX,
+  restMaxX,
+  pointerX,
+  pointerY,
+}: {
+  slot: UniversalSourceSlot;
+  index: number;
+  sourceKind: "base" | "neutral";
+  neutralIndex?: number;
+  sizeClass?: SourceFragmentSize;
+  depthPlane: SourceDepthPlane;
+  sourceX?: number;
+  sourceY?: number;
+  time: MotionValue<number>;
+  sourceProgress: MotionValue<number>;
+  handoffAge: MotionValue<number>;
+  fallProgress: MotionValue<number>;
+  returnForce: MotionValue<number>;
+  fallDistance: number;
+  restMinX: number;
+  restMaxX: number;
+  pointerX: MotionValue<number>;
+  pointerY: MotionValue<number>;
+}) {
+  const anchorX = sourceX ?? slot.x;
+  const anchorY = sourceY ?? slot.y;
+  const depthN = clamp01((slot.depth - 0.34) / 1.42);
+  const massN = clamp01((slot.depth * slot.scaleBias - 0.25) / 1.9);
+  const restUnit = clamp01((slot.restX + 72) / 362);
+  const restBaseX = restMinX + (restMaxX - restMinX) * restUnit;
+  const x = useTransform(
+    [time, pointerX, fallProgress, returnForce, sourceProgress],
+    (values: number[]) => {
+      const progress = values[2];
+      if (values[4] <= 0.081 && progress <= 0.0001 && values[3] <= 0.001) {
+        return stableCssTransformValue(anchorX);
+      }
+      const settle = smoothStep((progress - 0.68) / 0.32);
+      const spread = smoothStep((progress - 0.05) / 0.67) * (1 - settle);
+      const flow = sourceFlowSample(slot, values[0]);
+      const returnRelease = smoothStep(
+        (1 - progress - (0.015 + massN * 0.09 + slot.fallDelay * 0.25)) / 0.24
+      );
+      const returnEnvelope =
+        values[3] * returnRelease * smoothStep(progress / 0.22);
+      const sourceX =
+        anchorX +
+          flow.x * (1 - progress * 0.18) +
+          Math.sin(values[0] * 0.00053 * slot.speed + slot.phase) * slot.orbitX +
+          Math.sin(values[0] * 0.00117 * slot.speed + slot.phase * 1.73) * slot.orbitX * 0.32 +
+          values[1] *
+            (slot.depth - 0.72) *
+            19 *
+            slot.parallaxScale *
+            (1 - smoothStep(progress)) +
+          Math.sin(values[0] * 0.00029 * slot.speed + slot.phase * 2.1) *
+            slot.orbitX *
+            0.62 *
+            smoothStep(progress) *
+            (1 - progress * 0.72);
+      const fallingX =
+        sourceX +
+        (restBaseX - sourceX) * spread * (0.42 + depthN * 0.2) +
+        (anchorX - UNIVERSAL_SOURCE_CENTER.x) * spread * (0.1 + depthN * 0.1) +
+        slot.captureX * Math.sin(progress * Math.PI) * (0.45 + depthN * 0.35) +
+        returnEnvelope *
+          (slot.captureX * 0.72 +
+            Math.sin(slot.phase + slot.flowGroup * 2.1) * 18 +
+            flow.x * 0.22);
+      const restingX =
+        restBaseX + Math.sin(values[0] * 0.00012 + slot.phase * 1.37) * 1.7;
+      return stableCssTransformValue(fallingX + (restingX - fallingX) * settle);
+    }
+  );
+  const y = useTransform(
+    [time, pointerY, fallProgress, returnForce, sourceProgress],
+    (values: number[]) => {
+      const progress = values[2];
+      if (values[4] <= 0.081 && progress <= 0.0001 && values[3] <= 0.001) {
+        return stableCssTransformValue(anchorY);
+      }
+      const delayedFall = smoothStep(
+        (progress - slot.fallDelay) / (1 - slot.fallDelay)
+      );
+      const depthFall = Math.pow(delayedFall, 1.14 - depthN * 0.3);
+      const settle = smoothStep((progress - 0.68) / 0.32);
+      const flow = sourceFlowSample(slot, values[0]);
+      const returnRelease = smoothStep(
+        (1 - progress - (0.015 + massN * 0.09 + slot.fallDelay * 0.25)) / 0.24
+      );
+      const returnEnvelope =
+        values[3] * returnRelease * smoothStep(progress / 0.22);
+      const wholeFall = fallDistance * progress;
+      const dragDelta = fallDistance * (depthFall - progress) * 0.32;
+      const fallDepthPlane =
+        fallDistance * Math.sin(Math.PI * progress) * (depthN - 0.5) * 0.14;
+      const massGravity =
+        fallDistance * Math.sin(Math.PI * progress) * (slot.gravityScale - 1) * 0.26;
+      const fallingY =
+        anchorY +
+          flow.y * (1 - progress * 0.42) +
+          Math.sin(values[0] * 0.00041 * slot.speed + slot.phase * 1.31) * slot.orbitY +
+          Math.cos(values[0] * 0.00091 * slot.speed + slot.phase * 0.67) * slot.orbitY * 0.38 +
+          values[1] *
+            (slot.depth - 0.72) *
+            14 *
+            slot.parallaxScale *
+            (1 - delayedFall) +
+          wholeFall +
+          dragDelta +
+          fallDepthPlane -
+          returnEnvelope *
+            (18 + (1 - massN) * 32 + (slot.zone === "outer" ? 8 : 0)) +
+          massGravity;
+      const residualStrength = 0.7 + (1 - depthN) * 0.8;
+      const restingY =
+        UNIVERSAL_SOURCE_CENTER.y +
+        fallDistance +
+        slot.restY * 2.2 +
+        (depthN - 0.5) * 20 +
+        Math.sin(values[0] * 0.0001 + slot.phase) * 1.15 * residualStrength;
+      return stableCssTransformValue(fallingY + (restingY - fallingY) * settle);
+    }
+  );
+  const rotate = useTransform(
+    [time, fallProgress, returnForce, sourceProgress],
+    (values: number[]) => {
+      const progress = values[1];
+      if (values[3] <= 0.081 && progress <= 0.0001 && values[2] <= 0.001) {
+        return stableCssTransformValue(slot.rotation);
+      }
+      const settle = smoothStep((progress - 0.68) / 0.32);
+      const returnRelease = smoothStep(
+        (1 - progress - (0.015 + massN * 0.09 + slot.fallDelay * 0.25)) / 0.24
+      );
+      const returnEnvelope =
+        values[2] * returnRelease * smoothStep(progress / 0.22);
+      const fallingRotation =
+        slot.rotation +
+          sourceFlowSample(slot, values[0]).turn +
+          Math.sin(values[0] * 0.00037 * slot.speed + slot.phase) * 34 +
+          Math.sin(values[0] * 0.00083 * slot.speed + slot.phase * 1.9) * 13 +
+          smoothStep(progress) * slot.captureSpin * 0.24 +
+          returnEnvelope * slot.captureSpin * 0.14;
+      const restingRotation =
+        82 +
+        (slot.restRotation - 82) * 1.6 +
+        (depthN - 0.5) * 10 +
+        Math.sin(values[0] * 0.00009 + slot.phase * 0.73) * 1.8;
+      return stableCssTransformValue(
+        fallingRotation + (restingRotation - fallingRotation) * settle
+      );
+    }
+  );
+  const scale = useTransform(
+    [time, fallProgress, sourceProgress],
+    (values: number[]) => {
+      if (values[2] <= 0.081 && values[1] <= 0.0001) {
+        return stableCssTransformValue(slot.depth * slot.scaleBias);
+      }
+      return stableCssTransformValue(
+        slot.depth *
+          slot.scaleBias *
+          (0.94 + Math.sin(values[0] * 0.00046 * slot.speed + slot.phase * 1.43) * 0.09) *
+          (1 + Math.sin(Math.PI * values[1]) * (depthN - 0.5) * 0.16)
+      );
+    }
+  );
+  const scaleX = useTransform(
+    [time, sourceProgress, fallProgress],
+    (values: number[]) =>
+      stableCssTransformValue(
+        sourcePlateForeshorten(
+          slot,
+          values[1] <= 0.081 && values[2] <= 0.0001 ? 0 : values[0]
+        )
+      )
+  );
+  const scaleY = useTransform(scaleX, (value) =>
+    stableCssTransformValue(1 + (1 - value) * 0.16)
+  );
+  const skewX = useTransform(
+    [time, sourceProgress, fallProgress],
+    (values: number[]) =>
+      stableCssTransformValue(
+        Math.sin(
+          (values[1] <= 0.081 && values[2] <= 0.0001 ? 0 : values[0]) * 0.00067 +
+            slot.rollPhase * 1.3
+        ) * 7
+      )
+  );
+  const opacity = useTransform([sourceProgress, fallProgress], (values: number[]) => {
+    const reveal = smoothStep((values[0] - 0.08) / 0.82);
+    const depthReadability = smoothStep((slot.depth - 0.28) / 1.5);
+    const zoneBase = slot.zone === "outer" ? 0.14 : slot.zone === "mixing" ? 0.2 : 0.24;
+    const depthOpacity = slot.zone === "outer" ? 0.58 : slot.zone === "mixing" ? 0.5 : 0.36;
+    const fallDepthDamping = 1 - smoothStep(values[1]) * (1 - depthReadability) * 0.18;
+    const neutralPlaneOpacity =
+      sourceKind === "neutral"
+        ? depthPlane === "back"
+          ? 0.78
+          : depthPlane === "mid"
+            ? 0.94
+            : 1
+        : 1;
+    return (
+      reveal *
+      (zoneBase + depthReadability * depthOpacity) *
+      fallDepthDamping *
+      neutralPlaneOpacity
+    );
+  });
+  const baseStrokeOpacity =
+    sourceKind === "neutral" && sizeClass === "large"
+      ? 0.46
+      : slot.depth > 1.18
+        ? 0.8
+        : slot.depth < 0.62
+          ? 0.28
+          : 0.46;
+  // Nur wenige Platten fangen das Licht gleichzeitig ein. Die sehr schmale
+  // Sinus-Huelle erzeugt kurze, lokale Metallreflexe statt eines permanenten
+  // Pulsierens des gesamten Feldes. Beim echten Motiv-Handoff kommt fuer
+  // einen Moment eine waermere, etwas kraeftigere Reflexion hinzu; Scrollen
+  // allein kann sie nicht ausloesen, weil dafuer der rohe sourceProgress
+  // benoetigt wird.
+  const edgeGlintOpacity = useTransform(
+    [time, sourceProgress, handoffAge, fallProgress],
+    (values: number[]) => {
+      const [now, presence, handoff, fall] = values;
+      const glintSlot =
+        (sourceKind === "base" &&
+          (SOURCE_LIGHT_SLOT_INDICES as readonly number[]).includes(index)) ||
+        (sourceKind === "neutral" && sizeClass === "large");
+      if (!glintSlot) return baseStrokeOpacity;
+      const coolGlint =
+        Math.max(0, Math.sin(now * (0.00105 + slot.speed * 0.00014) + slot.phase * 1.9)) **
+        12;
+      const warmGlint =
+        Math.max(0, Math.sin(now * 0.00148 + slot.rollPhase + 0.7)) ** 10 *
+        (handoff >= 0 && handoff < 0.68
+          ? smoothStep(handoff / 0.07) * (1 - smoothStep((handoff - 0.2) / 0.48))
+          : 0);
+      const visible = smoothStep((presence - 0.1) / 0.62);
+      const fallDamping = 1 - smoothStep(fall) * 0.42;
+      return Math.min(
+        1,
+        baseStrokeOpacity + visible * fallDamping * (coolGlint * 0.34 + warmGlint * 0.46)
+      );
+    }
+  );
+  const gradient = index % 3;
+
+  return (
+    <motion.g
+      data-source-slot={sourceKind === "base" ? index : undefined}
+      data-source-neutral-fragment={sourceKind === "neutral" ? neutralIndex : undefined}
+      data-source-kind={sourceKind}
+      data-source-size={sizeClass}
+      data-source-depth-plane={depthPlane}
+      data-source-zone={slot.zone}
+      data-source-flow-group={slot.flowGroup}
+      style={{ x, y, rotate, scale, scaleX, scaleY, skewX, opacity }}
+    >
+      <motion.polygon
+        points={slot.points}
+        fill={`url(#hero-source-metal-${gradient})`}
+        stroke={slot.depth > 1.18 ? "#e4fbfc" : "#879396"}
+        strokeWidth={slot.depth > 1.18 ? 0.76 : slot.depth < 0.62 ? 0.3 : 0.44}
+        filter={
+          sourceKind === "base" && slot.depth > 1.24
+            ? "url(#hero-source-edge-glow)"
+            : slot.depth < 0.62 &&
+                (sourceKind === "base" || (neutralIndex ?? 0) % 2 === 0)
+              ? "url(#hero-source-far-soften)"
+              : undefined
+        }
+        style={{ strokeOpacity: edgeGlintOpacity }}
+      />
+    </motion.g>
+  );
+}
+
+function useSourceHandoffAge(
+  sourceProgress: MotionValue<number>,
+  time: MotionValue<number>
+): MotionValue<number> {
+  const triggeredAt = useMotionValue(-1);
+  const armed = useRef(sourceProgress.get() < 0.12);
+  const previousProgress = useRef(sourceProgress.get());
+
+  useMotionValueEvent(sourceProgress, "change", (value) => {
+    const previous = previousProgress.current;
+    previousProgress.current = value;
+    if (value <= 0.12) armed.current = true;
+    if (armed.current && previous < 0.985 && value >= 0.985) {
+      const now = time.get();
+      const previousTrigger = triggeredAt.get();
+      if (
+        previousTrigger < 0 ||
+        now - previousTrigger >= SOURCE_HOT_PARTICLE_COOLDOWN_MS
+      ) {
+        triggeredAt.set(now);
+      }
+      armed.current = false;
+    }
+  });
+
+  return useTransform([time, triggeredAt], (values: number[]) => {
+    const [now, start] = values;
+    return start < 0 ? -1 : (now - start) / SOURCE_HANDOFF_RESIDUE_MS;
+  });
+}
+
+function SourceHotParticle({
+  geometry,
+  index,
+  age,
+  time,
+  fallProgress,
+  fallDistance,
+  restMinX,
+  restMaxX,
+}: {
+  geometry: SourceHotParticleGeometry;
+  index: number;
+  age: MotionValue<number>;
+  time: MotionValue<number>;
+  fallProgress: MotionValue<number>;
+  fallDistance: number;
+  restMinX: number;
+  restMaxX: number;
+}) {
+  const slot = UNIVERSAL_SOURCE_SLOTS[geometry.slotIndex];
+  const localAgeFor = (value: number) => (value - geometry.delay) / geometry.lifeEnd;
+  const localAge = useTransform(age, localAgeFor);
+  const particleDepthN =
+    geometry.depthClass === "back" ? 0.18 : geometry.depthClass === "mid" ? 0.54 : 0.88;
+  const restBaseX = restMinX + (restMaxX - restMinX) * geometry.restUnit;
+  const opacity = useTransform(localAge, (local) => {
+    if (local < 0 || local >= 1) return 0;
+    const depthOpacity =
+      geometry.depthClass === "back" ? 0.56 : geometry.depthClass === "mid" ? 0.78 : 0.94;
+    const kindOpacity = geometry.kind === "spark" ? 0.88 : 1;
+    return (
+      smoothStep(local / 0.045) *
+      (1 - smoothStep((local - (geometry.kind === "spark" ? 0.36 : 0.48)) / 0.52)) *
+      depthOpacity *
+      kindOpacity
+    );
+  });
+  const fill = useTransform(
+    localAge,
+    [-0.05, 0, 0.18, 0.46, 0.76, 1],
+    ["#fffef4", "#fffef4", "#ffe887", "#ff9a39", "#cf3f1b", "#471714"]
+  );
+  const cx = useTransform([time, age, fallProgress], (values: number[]) => {
+    const [now, rawAge, fall] = values;
+    if (rawAge < geometry.delay) return slot.x;
+    const visibleAge = clamp01(localAgeFor(rawAge));
+    const triggerTime = now - (rawAge - geometry.delay) * SOURCE_HANDOFF_RESIDUE_MS;
+    const originFlow = sourceFlowSample(slot, triggerTime);
+    const currentFlow = sourceFlowSample(slot, now);
+    const detach = smoothStep(visibleAge / 0.18);
+    const flowX = currentFlow.x + (originFlow.x - currentFlow.x) * detach;
+    const spread = smoothStep((fall - 0.05) / 0.67) * (1 - smoothStep((fall - 0.68) / 0.32));
+    const settle = smoothStep((fall - 0.72) / 0.28);
+    const sourceX =
+      slot.x +
+        flowX +
+        geometry.launchX * visibleAge +
+        Math.sin(now * 0.0012 + slot.phase) *
+          (geometry.kind === "spark" ? 3.8 : 2.4) *
+          visibleAge;
+    const fallingX =
+      sourceX +
+      (restBaseX - sourceX) * spread * (0.45 + particleDepthN * 0.18) +
+      slot.captureX * Math.sin(fall * Math.PI) * (0.32 + particleDepthN * 0.22);
+    const restingX = restBaseX + Math.sin(now * 0.00012 + slot.phase) * 0.72;
+    return stableSvgValue(
+      fallingX + (restingX - fallingX) * settle
+    );
+  });
+  const cy = useTransform([time, age, fallProgress], (values: number[]) => {
+    const [now, rawAge, fall] = values;
+    if (rawAge < geometry.delay) return slot.y;
+    const visibleAge = clamp01(localAgeFor(rawAge));
+    const triggerTime = now - (rawAge - geometry.delay) * SOURCE_HANDOFF_RESIDUE_MS;
+    const originFlow = sourceFlowSample(slot, triggerTime);
+    const currentFlow = sourceFlowSample(slot, now);
+    const detach = smoothStep(visibleAge / 0.18);
+    const flowY = currentFlow.y + (originFlow.y - currentFlow.y) * detach;
+    const delayedFall = smoothStep((fall - slot.fallDelay) / (1 - slot.fallDelay));
+    const depthFall = Math.pow(delayedFall, 1.12 - particleDepthN * 0.28);
+    const settle = smoothStep((fall - 0.72) / 0.28);
+    const sourceY =
+      slot.y +
+        flowY +
+        geometry.launchY * visibleAge +
+        geometry.gravity * visibleAge * visibleAge;
+    const wholeFall = fallDistance * fall;
+    const dragDelta = fallDistance * (depthFall - fall) * 0.3;
+    const depthPlane =
+      fallDistance * Math.sin(Math.PI * fall) * (particleDepthN - 0.5) * 0.12;
+    const fallingY = sourceY + wholeFall + dragDelta + depthPlane;
+    const restingY =
+      UNIVERSAL_SOURCE_CENTER.y +
+      fallDistance +
+      (geometry.restUnit - 0.5) * 24 +
+      (particleDepthN - 0.5) * 18;
+    return stableSvgValue(
+      fallingY + (restingY - fallingY) * settle
+    );
+  });
+  const radiusX = useTransform(localAge, (value) => {
+    const visibleAge = value < 0 ? 0 : clamp01(value);
+    return stableSvgValue(
+      geometry.radius *
+        (geometry.kind === "spark" ? 0.42 : 1) *
+        (1 - visibleAge * (geometry.kind === "spark" ? 0.6 : 0.5))
+    );
+  });
+  const radiusY = useTransform(localAge, (value) => {
+    const visibleAge = value < 0 ? 0 : clamp01(value);
+    return stableSvgValue(
+      geometry.radius *
+        (geometry.kind === "spark" ? 1.68 : 0.72) *
+        (1 - visibleAge * (geometry.kind === "spark" ? 0.6 : 0.5))
+    );
+  });
+
+  return (
+    <motion.ellipse
+      data-source-hot-particle={index}
+      data-source-hot-bead={geometry.kind === "bead" ? index : undefined}
+      data-source-spark-remnant={geometry.kind === "spark" ? index : undefined}
+      data-source-particle-depth={geometry.depthClass}
+      aria-hidden="true"
+      cx={cx}
+      cy={cy}
+      rx={radiusX}
+      ry={radiusY}
+      filter={
+        geometry.depthClass === "back"
+          ? "url(#hero-source-far-soften)"
+          : geometry.depthClass === "front"
+            ? "url(#hero-source-edge-glow)"
+            : undefined
+      }
+      pointerEvents="none"
+      style={{ opacity, fill }}
+    />
+  );
+}
+
+/** Persistente, slide-unabhaengige Materialquelle. Sie wird genau einmal im
+ * HeroCarousel gerendert; ihre Slots und ihr Zeitfeld wechseln nie mit dem
+ * aktiven Motiv. */
+export function SharedMaterialSource({
+  time,
+  sourceProgress,
+  fallProgress,
+  fallDirection,
+  returnPresence,
+  pointerX,
+  pointerY,
+  fixedBounds,
+  className,
+}: {
+  time: MotionValue<number>;
+  sourceProgress: MotionValue<number>;
+  fallProgress: MotionValue<number>;
+  fallDirection: MotionValue<number>;
+  returnPresence: MotionValue<number>;
+  pointerX: MotionValue<number>;
+  pointerY: MotionValue<number>;
+  fixedBounds?: SharedSourceBounds;
+  className?: string;
+}) {
+  const handoffAge = useSourceHandoffAge(sourceProgress, time);
+  const returnForceTarget = useTransform(fallDirection, (direction): number =>
+    direction < 0 ? 1 : 0
+  );
+  const returnForce = useSpring(returnForceTarget, {
+    stiffness: 95,
+    damping: 22,
+    mass: 0.55,
+  });
+  const sourcePresence = useTransform(
+    [sourceProgress, fallProgress, returnPresence],
+    (values: number[]) =>
+      Math.max(values[0], 0.08 + smoothStep(values[1] / 0.14) * 0.82, values[2])
+  );
+  const coreOpacity = useTransform(
+    [sourceProgress, fallProgress, returnPresence],
+    (values: number[]) => {
+      const sourceReveal = smoothStep((Math.max(values[0], values[2]) - 0.22) / 0.78);
+      return sourceReveal * 0.15 * (1 - smoothStep(values[1] / 0.24));
+    }
+  );
+  const mixingOpacity = useTransform(
+    [sourceProgress, fallProgress, returnPresence],
+    (values: number[]) => {
+      const sourceReveal = smoothStep((Math.max(values[0], values[2]) - 0.18) / 0.82);
+      return sourceReveal * 0.075 * (1 - smoothStep(values[1] / 0.32));
+    }
+  );
+  const coreScale = useTransform(sourceProgress, (value) =>
+    stableCssTransformValue(0.76 + smoothStep(value) * 0.24)
+  );
+  const restMinX = fixedBounds?.restMinX ?? -72;
+  const restMaxX = fixedBounds?.restMaxX ?? 290;
+  const sourceMinY = fixedBounds?.sourceMinY ?? 4;
+  const sourceMaxY = fixedBounds?.sourceMaxY ?? 296;
+  const renderNeutralPlane = (plane: SourceDepthPlane) =>
+    ADDITIONAL_SOURCE_SLOTS.map((slot, index) =>
+      slot.depthPlane === plane ? (
+        <SharedSourceShard
+          key={`neutral-${index}`}
+          slot={slot}
+          index={UNIVERSAL_SOURCE_SLOT_COUNT + index}
+          sourceKind="neutral"
+          neutralIndex={index}
+          sizeClass={slot.sizeClass}
+          depthPlane={slot.depthPlane}
+          sourceX={restMinX + (restMaxX - restMinX) * slot.sourceXUnit}
+          sourceY={sourceMinY + (sourceMaxY - sourceMinY) * slot.sourceYUnit}
+          time={time}
+          sourceProgress={sourcePresence}
+          handoffAge={handoffAge}
+          fallProgress={fallProgress}
+          returnForce={returnForce}
+          fallDistance={fixedBounds?.fallDistance ?? 0}
+          restMinX={restMinX}
+          restMaxX={restMaxX}
+          pointerX={pointerX}
+          pointerY={pointerY}
+        />
+      ) : null
+    );
+  const renderBasePlane = (plane: SourceDepthPlane) =>
+    UNIVERSAL_SOURCE_SLOTS.map((slot, index) =>
+      sourceDepthPlaneFor(slot.depth) === plane ? (
+        <SharedSourceShard
+          key={`base-${index}`}
+          slot={slot}
+          index={index}
+          sourceKind="base"
+          depthPlane={plane}
+          time={time}
+          sourceProgress={sourcePresence}
+          handoffAge={handoffAge}
+          fallProgress={fallProgress}
+          returnForce={returnForce}
+          fallDistance={fixedBounds?.fallDistance ?? 0}
+          restMinX={restMinX}
+          restMaxX={restMaxX}
+          pointerX={pointerX}
+          pointerY={pointerY}
+        />
+      ) : null
+    );
+  const renderHotParticlePlane = (plane: SourceDepthPlane) =>
+    SOURCE_HOT_PARTICLES.map((geometry, index) =>
+      geometry.depthClass === plane ? (
+        <SourceHotParticle
+          key={`hot-particle-${index}`}
+          geometry={geometry}
+          index={index}
+          age={handoffAge}
+          time={time}
+          fallProgress={fallProgress}
+          fallDistance={fixedBounds?.fallDistance ?? 0}
+          restMinX={restMinX}
+          restMaxX={restMaxX}
+        />
+      ) : null
+    );
+
+  return (
+    <svg
+      viewBox={UNIVERSAL_SOURCE_VIEW_BOX}
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+      className={className}
+      data-shared-material-source="true"
+      data-source-slot-count={UNIVERSAL_SOURCE_SLOT_COUNT}
+      data-source-neutral-fragment-count={ADDITIONAL_SOURCE_SLOT_COUNT}
+      data-source-total-fragment-count={
+        UNIVERSAL_SOURCE_SLOT_COUNT + ADDITIONAL_SOURCE_SLOT_COUNT
+      }
+      data-source-hot-bead-count={UNIVERSAL_SOURCE_HOT_BEAD_COUNT}
+      data-source-spark-remnant-count={UNIVERSAL_SOURCE_SPARK_REMNANT_COUNT}
+      style={{
+        overflow: "visible",
+        ...(fixedBounds
+          ? {
+              left: fixedBounds.left,
+              top: fixedBounds.top,
+              width: fixedBounds.width,
+              height: fixedBounds.height,
+            }
+          : {}),
+      }}
+    >
+      <defs>
+        <linearGradient id="hero-source-metal-0" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e5e7e8" />
+          <stop offset="48%" stopColor="#8e9698" />
+          <stop offset="100%" stopColor="#3f4648" />
+        </linearGradient>
+        <linearGradient id="hero-source-metal-1" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stopColor="#d7c9ad" />
+          <stop offset="52%" stopColor="#817663" />
+          <stop offset="100%" stopColor="#373735" />
+        </linearGradient>
+        <linearGradient id="hero-source-metal-2" x1="0%" y1="15%" x2="100%" y2="85%">
+          <stop offset="0%" stopColor="#cfe8eb" />
+          <stop offset="45%" stopColor="#728286" />
+          <stop offset="100%" stopColor="#303638" />
+        </linearGradient>
+        <radialGradient id="hero-source-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#b7d8dc" stopOpacity="0.58" />
+          <stop offset="58%" stopColor="#69797c" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#242a2b" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-source-mixing" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#91a4a7" stopOpacity="0.2" />
+          <stop offset="54%" stopColor="#5c6668" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#232728" stopOpacity="0" />
+        </radialGradient>
+        <filter id="hero-source-edge-glow" x="-90%" y="-90%" width="280%" height="280%">
+          <feGaussianBlur stdDeviation="0.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="hero-source-far-soften" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.38" />
+        </filter>
+      </defs>
+      {renderBasePlane("back")}
+      {renderNeutralPlane("back")}
+      {renderHotParticlePlane("back")}
+      <motion.ellipse
+        cx={UNIVERSAL_SOURCE_CENTER.x}
+        cy={UNIVERSAL_SOURCE_CENTER.y}
+        rx="154"
+        ry="116"
+        fill="url(#hero-source-mixing)"
+        style={{ opacity: mixingOpacity }}
+      />
+      <motion.ellipse
+        cx={UNIVERSAL_SOURCE_CENTER.x}
+        cy={UNIVERSAL_SOURCE_CENTER.y}
+        rx="36"
+        ry="26"
+        fill="url(#hero-source-core)"
+        style={{ opacity: coreOpacity, scale: coreScale, transformOrigin: "146px 177px" }}
+      />
+      {renderBasePlane("mid")}
+      {renderNeutralPlane("mid")}
+      {renderHotParticlePlane("mid")}
+      {renderBasePlane("front")}
+      {renderNeutralPlane("front")}
+      {renderHotParticlePlane("front")}
+    </svg>
+  );
+}
+
 function facetArrivalWindow(index: number): { start: number; end: number } {
   const start = seeded(index + 200) * 0.5;
   const width = 0.35 + seeded(index + 300) * 0.25;
@@ -382,7 +1529,7 @@ const WELD_EVENT_BLUEPRINTS: WeldingEventBlueprint[] = [
     endProgress: 0.803,
     intensity: 0.72,
     depthLayer: "mid",
-    sparkCount: 3,
+    sparkCount: 4,
     heatStrength: 0.62,
     anchor: { x: 0.72, y: 0.68 },
   },
@@ -409,7 +1556,7 @@ const WELD_EVENT_BLUEPRINTS: WeldingEventBlueprint[] = [
     endProgress: 0.938,
     intensity: 0.82,
     depthLayer: "front",
-    sparkCount: 4,
+    sparkCount: 5,
     heatStrength: 0.78,
     anchor: { x: 0.45, y: 0.54 },
   },
@@ -418,7 +1565,7 @@ const WELD_EVENT_BLUEPRINTS: WeldingEventBlueprint[] = [
     endProgress: 0.98,
     intensity: 1,
     depthLayer: "front",
-    sparkCount: 5,
+    sparkCount: 6,
     heatStrength: 1,
     anchor: { x: 0.56, y: 0.48 },
   },
@@ -713,8 +1860,8 @@ function WeldSpark({
   // physikalische Spannweite ohne einen groesseren Partikelsatz.
   const longSpark = event.intensity >= 0.8 && sparkIndex === event.sparkCount - 1;
   const trajectoryScale = longSpark
-    ? 1.12
-    : 0.68 + seeded(event.id * 17 + sparkIndex + 4400) * 0.2;
+    ? 1.34
+    : 0.8 + seeded(event.id * 17 + sparkIndex + 4400) * 0.24;
   const pathScale =
     unitScale * (0.64 + event.intensity * 0.36) * depthScale * trajectoryScale;
   const rotatePoint = (x: number, y: number) => ({
@@ -726,14 +1873,19 @@ function WeldSpark({
     geometry.dx * 0.48 + geometry.curveX,
     geometry.dy * 0.28 + geometry.curveY
   );
+  // Ein kleiner Schwerkraftbogen macht die bestehenden Bahnen lesbarer,
+  // ohne neue Partikel oder Welding-Events einzufuehren.
+  const gravity = (4.4 + event.intensity * 4 + sparkIndex * 0.5) * unitScale;
+  end.y += gravity;
+  control.y += gravity * 0.22;
   const sparkPath = [
     `M ${stableSvgValue(event.junction.x)} ${stableSvgValue(event.junction.y)}`,
     `Q ${stableSvgValue(event.junction.x + control.x)} ${stableSvgValue(event.junction.y + control.y)}`,
     `${stableSvgValue(event.junction.x + end.x)} ${stableSvgValue(event.junction.y + end.y)}`,
   ].join(" ");
   const span = event.endProgress - event.startProgress;
-  const sparkStart = event.startProgress + span * (0.1 + sparkIndex * 0.035);
-  const sparkEnd = event.endProgress - span * (0.04 + (sparkIndex % 2) * 0.06);
+  const sparkStart = event.startProgress + span * (0.07 + sparkIndex * 0.026);
+  const sparkEnd = event.endProgress - span * (0.018 + (sparkIndex % 2) * 0.035);
   const opacity = useTransform(
     [progress, assemblyDirection],
     (values: number[]) => {
@@ -741,7 +1893,7 @@ function WeldSpark({
       if (value < sparkStart || value > sparkEnd || direction <= 0) return 0;
       const local = (value - sparkStart) / (sparkEnd - sparkStart);
       const envelope = smoothStep(local / 0.16) * smoothStep((1 - local) / 0.2);
-      const sparkEnergy = (0.38 + event.intensity * 0.5) * (longSpark ? 1 : 0.88);
+      const sparkEnergy = (0.5 + event.intensity * 0.5) * (longSpark ? 1 : 0.96);
       return envelope * sparkEnergy * direction;
     }
   );
@@ -759,9 +1911,9 @@ function WeldSpark({
       pathLength={1}
       fill="none"
       stroke={`url(#${gradientId})`}
-      strokeWidth={(longSpark ? 0.7 : 0.62) * unitScale}
+      strokeWidth={(longSpark ? 0.8 : 0.7) * unitScale}
       strokeLinecap="round"
-      strokeDasharray={longSpark ? "0.18 0.82" : "0.11 0.89"}
+      strokeDasharray={longSpark ? "0.23 0.77" : "0.15 0.85"}
       pointerEvents="none"
       style={{ opacity, strokeDashoffset: dashOffset }}
     />
@@ -1212,6 +2364,7 @@ interface FacetProps {
   time: MotionValue<number>;
   chaosStartTime: MotionValue<number>;
   progress: MotionValue<number>;
+  sourceProgress: MotionValue<number>;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   /** "Scherben-Foto"-Modus (siehe Datei-Kommentar) - wenn gesetzt, wird die
@@ -1256,6 +2409,7 @@ function Facet({
   time,
   chaosStartTime,
   progress,
+  sourceProgress,
   pointerX,
   pointerY,
   imageUrl,
@@ -1270,6 +2424,7 @@ function Facet({
 }: FacetProps) {
   const points = parsePoints(facet.points);
   const [cx, cy] = centroid(points);
+  const sourceSlot = sourceSlotForFacet(points, index);
   const dx = cx - center.x;
   const dy = cy - center.y;
   const distFromCenter = Math.hypot(dx, dy) || 1;
@@ -1304,6 +2459,14 @@ function Facet({
   // voll explodierte Wolke dadurch nicht mehr verschieben.
   const scatterX = chaosEnabled ? chaosCenter.x + rawScatterX - cx : rawScatterX;
   const scatterY = chaosEnabled ? chaosCenter.y + rawScatterY - cy : rawScatterY;
+  const sourceTargetX =
+    chaosCenter.x +
+    (sourceSlot.x - UNIVERSAL_SOURCE_WIDTH / 2) * chaosUnitScale -
+    cx;
+  const sourceTargetY =
+    chaosCenter.y +
+    (sourceSlot.y - UNIVERSAL_SOURCE_HEIGHT / 2) * chaosUnitScale -
+    cy;
   const scatterVectorLength = Math.hypot(scatterX, scatterY) || 1;
   const scatterRotate = (seeded(index + 100) - 0.5) * SCATTER_ROTATION_DEG;
 
@@ -1344,6 +2507,15 @@ function Facet({
     [0, 0.18],
     [chaosEnabled ? chaosDensityWeight : 1, 1]
   );
+  const sourceIdentityOpacity = useTransform(
+    sourceProgress,
+    [0, 0.46, 0.82, 1],
+    [1, 0.9, 0.3, 0.035]
+  );
+  const pooledFieldOpacity = useTransform(
+    [fieldOpacity, sourceIdentityOpacity],
+    (values: number[]) => values[0] * values[1]
+  );
 
   // Native Dreiecksflaechen werden in gemeinsame Referenzeinheiten
   // umgerechnet und nur sanft normalisiert. Die engen Grenzen und der
@@ -1378,6 +2550,31 @@ function Facet({
   );
   const fragmentScale = useTransform(localArrive, (v) =>
     chaosEnabled ? chaosFragmentScale + (1 - chaosFragmentScale) * v : 1
+  );
+  // In der Quelle verlieren sehr grosse Hocker-/Kaktusfacetten und kleine
+  // Portraitdetails ihre modellspezifische Groessenwirkung. Die Skalierung
+  // zielt nur im Pool auf eine gemeinsame Screen-Space-Kantenlaenge; die
+  // bestehende Chaos-/Montageskalierung davor bleibt unangetastet.
+  const sourceFragmentScale = Math.min(
+    1.15,
+    Math.max(
+      0.07,
+      ((20 + sourceSlot.scaleBias * 12) * sourceSlot.depth) /
+        Math.max(1, normalizedFacetExtent)
+    )
+  );
+  const sourceScalePulse = useTransform(time, (value) =>
+    sourceFragmentScale *
+    (0.95 + Math.sin(value * 0.00046 * sourceSlot.speed + sourceSlot.phase * 1.43) * 0.07)
+  );
+  const pooledFragmentScale = useTransform(
+    [fragmentScale, sourceScalePulse, sourceProgress],
+    (values: number[]) => {
+      const [currentScale, poolScale, poolProgress] = values;
+      const mix = smoothStep(poolProgress);
+      const depthCrossing = 1 + Math.sin(mix * Math.PI) * (sourceSlot.depth - 1) * 0.24;
+      return currentScale + (poolScale * depthCrossing - currentScale) * mix;
+    }
   );
 
   // "Wasserdicht"/verschweisst sobald komplett montiert: die dunklen
@@ -1575,6 +2772,56 @@ function Facet({
     [baseRotate, tumble, driftRotate],
     (values: number[]) => values[0] + values[1] + values[2]
   );
+  const sourceVortexX = useTransform(
+    [time, pointerX],
+    (values: number[]) =>
+      (
+        sourceFlowSample(sourceSlot, values[0]).x +
+        Math.sin(values[0] * 0.00053 * sourceSlot.speed + sourceSlot.phase) * sourceSlot.orbitX +
+        Math.sin(values[0] * 0.00117 * sourceSlot.speed + sourceSlot.phase * 1.73) * sourceSlot.orbitX * 0.32 +
+        values[1] * (sourceSlot.depth - 0.72) * 19
+      ) * chaosUnitScale
+  );
+  const sourceVortexY = useTransform(
+    [time, pointerY],
+    (values: number[]) =>
+      (
+        sourceFlowSample(sourceSlot, values[0]).y +
+        Math.sin(values[0] * 0.00041 * sourceSlot.speed + sourceSlot.phase * 1.31) * sourceSlot.orbitY +
+        Math.cos(values[0] * 0.00091 * sourceSlot.speed + sourceSlot.phase * 0.67) * sourceSlot.orbitY * 0.38 +
+        values[1] * (sourceSlot.depth - 0.72) * 14
+      ) * chaosUnitScale
+  );
+  const sourceRotation = useTransform(time, (value) =>
+    sourceSlot.rotation +
+    sourceFlowSample(sourceSlot, value).turn +
+    Math.sin(value * 0.00037 * sourceSlot.speed + sourceSlot.phase) * 34 +
+    Math.sin(value * 0.00083 * sourceSlot.speed + sourceSlot.phase * 1.9) * 13
+  );
+  const sourceForeshorten = useTransform(time, (value) =>
+    sourcePlateForeshorten(sourceSlot, value)
+  );
+  const pooledForeshorten = useTransform(
+    [sourceForeshorten, sourceProgress],
+    (values: number[]) => 1 + (values[0] - 1) * smoothStep(values[1])
+  );
+  const sourceSkew = useTransform(
+    time,
+    (value) => Math.sin(value * 0.00067 + sourceSlot.rollPhase * 1.3) * 7
+  );
+  const pooledSkew = useTransform(
+    [sourceSkew, sourceProgress],
+    (values: number[]) => values[0] * smoothStep(values[1])
+  );
+  const pooledRotate = useTransform(
+    [rotate, sourceRotation, sourceProgress],
+    (values: number[]) => {
+      const [currentRotation, poolRotation, poolProgress] = values;
+      const mix = smoothStep(poolProgress);
+      const captureRotation = Math.sin(mix * Math.PI) * sourceSlot.captureSpin;
+      return currentRotation + (poolRotation + captureRotation - currentRotation) * mix;
+    }
+  );
 
   const x = useTransform(
     [baseX, swayX, driftX, parallaxX],
@@ -1584,20 +2831,40 @@ function Facet({
     [baseY, swayY, driftY, parallaxY],
     (values: number[]) => values[0] + values[1] + values[2] + values[3]
   );
-  const renderedX = useTransform(x, stableCssTransformValue);
-  const renderedY = useTransform(y, stableCssTransformValue);
+  const pooledX = useTransform(
+    [x, sourceVortexX, sourceProgress],
+    (values: number[]) => {
+      const [currentX, vortexX, poolProgress] = values;
+      const mix = smoothStep(poolProgress);
+      const interceptX = Math.sin(mix * Math.PI) * sourceSlot.captureX * chaosUnitScale;
+      const poolX = sourceTargetX + vortexX + interceptX;
+      return currentX + (poolX - currentX) * mix;
+    }
+  );
+  const pooledY = useTransform(
+    [y, sourceVortexY, sourceProgress],
+    (values: number[]) => {
+      const [currentY, vortexY, poolProgress] = values;
+      const mix = smoothStep(poolProgress);
+      const interceptY = Math.sin(mix * Math.PI) * sourceSlot.captureY * chaosUnitScale;
+      const poolY = sourceTargetY + vortexY + interceptY;
+      return currentY + (poolY - currentY) * mix;
+    }
+  );
+  const renderedX = useTransform(pooledX, stableCssTransformValue);
+  const renderedY = useTransform(pooledY, stableCssTransformValue);
   // Framer Motion normalisiert CSS-transform-origin bei einer geclippten
   // SVG-Bildgruppe auf deren volle Bild-Bounding-Box. Das verschiebt gleiche
   // Chaos-Slots je nach Quell-viewBox stark. Als SVG-Attribut bleibt der
   // Pivot dagegen exakt der reale Facettenschwerpunkt; die Translation liegt
   // separat auf der aeusseren Gruppe und wird nicht mitrotiert/-skaliert.
   const fragmentTransform = useTransform(
-    [rotate, fragmentScale],
+    [pooledRotate, pooledFragmentScale, pooledForeshorten, pooledSkew],
     (values: number[]) => {
-      const [rotation, scale] = values;
+      const [rotation, scale, foreshorten, skew] = values;
       const stableCx = stableCssTransformValue(cx);
       const stableCy = stableCssTransformValue(cy);
-      return `translate(${stableCx}px, ${stableCy}px) rotate(${stableCssTransformValue(rotation)}deg) scale(${stableCssTransformValue(scale)}) translate(${-stableCx}px, ${-stableCy}px)`;
+      return `translate(${stableCx}px, ${stableCy}px) rotate(${stableCssTransformValue(rotation)}deg) skewX(${stableCssTransformValue(skew)}deg) scale(${stableCssTransformValue(scale)}) scaleX(${stableCssTransformValue(foreshorten)}) translate(${-stableCx}px, ${-stableCy}px)`;
     }
   );
   const fragmentTransformStyle = {
@@ -1650,7 +2917,7 @@ function Facet({
   const strokeUnitScale = chaosEnabled ? chaosUnitScale : 1;
 
   return (
-    <motion.g style={{ x: renderedX, y: renderedY, opacity: fieldOpacity }}>
+    <motion.g style={{ x: renderedX, y: renderedY, opacity: pooledFieldOpacity }}>
       {chaosEnabled && (
         <motion.polygon
           points={facet.points}
@@ -1770,6 +3037,8 @@ export interface LowPolyMeshProps {
    * Treiben weich ein statt es abrupt zu starten (siehe Facet-Kommentar). */
   chaosStartTime: MotionValue<number>;
   progress: MotionValue<number>;
+  /** 0 = bisheriges modellspezifisches Chaos, 1 = universelle Hero-Quelle. */
+  sourceProgress: MotionValue<number>;
   /** 1 waehrend des Zusammenbaus, 0 beim Rueckwaerts-Sprengen. Der
    * Welding-Prototyp darf nur in positiver Montagerichtung feuern. */
   assemblyDirection: MotionValue<number>;
@@ -1811,6 +3080,7 @@ export function LowPolyMesh({
   time,
   chaosStartTime,
   progress,
+  sourceProgress,
   assemblyDirection,
   pointerX,
   pointerY,
@@ -1985,9 +3255,9 @@ export function LowPolyMesh({
               <stop offset="100%" stopColor="#416f78" stopOpacity="0" />
             </motion.radialGradient>
             <linearGradient id={weldSparkGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fffdf0" />
-              <stop offset="38%" stopColor="#ffd36a" />
-              <stop offset="100%" stopColor="#ff792c" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="38%" stopColor="#ffe48a" />
+              <stop offset="100%" stopColor="#ff6d24" />
             </linearGradient>
             <radialGradient id={weldSmokeGradientId} cx="42%" cy="35%" r="68%">
               <stop offset="0%" stopColor="#cad8da" stopOpacity="0.7" />
@@ -2081,6 +3351,7 @@ export function LowPolyMesh({
               time={time}
               chaosStartTime={chaosStartTime}
               progress={progress}
+              sourceProgress={sourceProgress}
               pointerX={pointerX}
               pointerY={pointerY}
               imageUrl={imageUrl}
@@ -2192,6 +3463,7 @@ export function LowPolyMesh({
                 time={time}
                 chaosStartTime={chaosStartTime}
                 progress={progress}
+                sourceProgress={sourceProgress}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 imageUrl={imageUrl}

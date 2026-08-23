@@ -14,7 +14,7 @@ import {
   useTime,
   useTransform,
 } from "framer-motion";
-import { LowPolyMesh } from "./LowPolyMesh";
+import { LowPolyMesh, SharedMaterialSource } from "./LowPolyMesh";
 import { HERO_SLIDES } from "./heroSlides";
 import { trackEvent } from "@/lib/analytics";
 import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
@@ -27,9 +27,11 @@ import { getServerSnapshot, readConsent, subscribe } from "@/lib/consent";
  * Slide-Wechsel (Pfeil ODER Punkt): das aktuelle Motiv wird automatisch
  * gesprengt (progress -> 0, animiert - läuft exakt denselben Weg rückwärts,
  * den die Montage genommen hätte, da die Positions-Formeln in LowPolyMesh
- * rein aus dem aktuellen Zahlenwert abgeleitet sind), danach wird das
- * Facetten-Set getauscht - der NEUE Zusammenbau ist dann wieder organisch
- * per Mausbewegung gesteuert (kein automatisches Wieder-Zusammenfügen).
+ * rein aus dem aktuellen Zahlenwert abgeleitet sind). Danach wird es in den
+ * universellen Materialpool absorbiert, dort verdeckt an das neue Motiv
+ * übergeben und aus derselben Quelle wieder ins bisherige Chaos entlassen.
+ * Der NEUE Zusammenbau ist dann wieder organisch per Mausbewegung gesteuert
+ * (kein automatisches Wieder-Zusammenfügen).
  * `mouseTravel` wird beim Wechsel zurückgesetzt, damit jedes Motiv frische
  * Mausbewegung braucht statt vom bereits verbrauchten Weg des vorherigen
  * Motivs zu profitieren. Das gilt fuer JEDEN Slide gleich (auch den
@@ -44,14 +46,12 @@ const SCROLL_ASSEMBLE_PX = 420;
 const MOUSE_ASSEMBLE_PX = 1120;
 const AUTO_ADVANCE_MS = 7000;
 const EXPLODE_DURATION = 0.9;
-// Weicher Motivwechsel (gemeinsame Quelle): Nach dem Sprengen bleibt das
-// AUSGEHENDE Motiv noch kurz als verstreutes Overlay stehen und blendet aus,
-// waehrend das neue Motiv an denselben Slot-Positionen (siehe
-// SHARED_CHAOS_REFERENCE_WIDTH in LowPolyMesh.tsx) einfadet. Der Nutzer
-// sieht dadurch beim reinen Durchklicken kein "Pop" eines fremden
-// Teile-Sets, sondern EIN durchgehendes Chaos, dessen Materialfarbe weich
-// ueberblendet - den Zusammenbau steuert weiterhin allein die Mausbewegung.
+// Alt und Neu werden nur im dichtesten, neutral überlagerten Materialpool
+// gekreuzt. Der kurze Fade versteckt dort den Identitätswechsel; Konvergenz
+// und Austritt aus der Quelle haben eigene, längere Bewegungsphasen.
 const CROSSFADE_DURATION = 0.35;
+const SOURCE_CONVERGE_DURATION = 0.68;
+const SOURCE_EMERGE_DURATION = 0.68;
 // Sobald die maus-/scroll-getriebene Montage diese Schwelle erreicht,
 // uebernimmt eine garantiert weiche, fest getimte Animation den letzten
 // Rest bis progress=1 (siehe weldTakeover unten) - der rohe Mauswert
@@ -69,6 +69,26 @@ const CROSSFADE_DURATION = 0.35;
 // mit hoher Anfangsgeschwindigkeit einsetzt.
 const WELD_TAKEOVER_THRESHOLD = 0.75;
 const WELD_TAKEOVER_DURATION = 0.75;
+const subscribeHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
+interface SourceStageBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fallDistance: number;
+  restMinX: number;
+  restMaxX: number;
+  sourceMinY: number;
+  sourceMaxY: number;
+}
+
+function smoothEnvironmentStep(value: number): number {
+  const clamped = Math.min(1, Math.max(0, value));
+  return clamped * clamped * (3 - 2 * clamped);
+}
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -90,6 +110,12 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
 
 export function HeroCarousel() {
   const prefersReducedMotion = useReducedMotion();
+  const hasHydrated = useSyncExternalStore(
+    subscribeHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
+  const shouldReduceMotion = hasHydrated && prefersReducedMotion;
   const consent = useSyncExternalStore(subscribe, readConsent, getServerSnapshot);
   const consentResolved = consent !== "unknown";
 
@@ -106,13 +132,23 @@ export function HeroCarousel() {
   // bei 1), damit der Radius-Wechsel keinen sichtbaren Sprung verursacht.
   const [chaosEnabled, setChaosEnabled] = useState(false);
 
-  // Slide, der gerade beim Motivwechsel ausblendet (Crossfade der gemeinsamen
-  // Quelle, siehe CROSSFADE_DURATION) - null = kein Overlay aktiv.
+  // Vormotiv, das bis zum verdeckten Handoff im universellen Pool erhalten
+  // bleibt - null = kein Übergangs-Mesh aktiv.
   const [leavingSlideIndex, setLeavingSlideIndex] = useState<number | null>(null);
-  // Deckkraft dieses Overlays; wird im Effect unten von 1 -> 0 animiert.
+  // Deckkraft dieses Overlays; wird innerhalb des Pool-Handoffs animiert.
   const leavingOpacity = useMotionValue(1);
+  const activeMeshOpacity = useMotionValue(1);
 
   const progress = useMotionValue(0);
+  // 0 = bestehendes modellspezifisches Chaos, 1 = dichter universeller
+  // Materialpool. Dieses MotionValue gehoert dem Hero und wird von altem,
+  // neuem und neutralem Quell-Layer gemeinsam gelesen.
+  const sourceProgress = useMotionValue(0);
+  // SSR/erster Client-Render starten deterministisch bei 0. Erst nach der
+  // Hydration schreibt der reale Seiten-Scroll in diese Umwelteinwirkung.
+  const fallProgress = useMotionValue(0);
+  const fallDirection = useMotionValue(0);
+  const returnSourcePresence = useMotionValue(0);
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
   // Gemeinsame Uhr fuer das Umhertreiben in LowPolyMesh - hier oben erzeugt
@@ -135,6 +171,10 @@ export function HeroCarousel() {
   const autoAdvanceStarted = useRef(false);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoveringRef = useRef(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const previousScrollY = useRef(0);
+  const scrollEnvironment = useRef({ start: 100, rest: 1000 });
+  const [sourceStageBounds, setSourceStageBounds] = useState<SourceStageBounds | null>(null);
 
   // --- Organische Erstmontage (nur für den allerersten Slide beim Laden) -
   // exakt das bisherige LowPolyCat-Verhalten, nur jetzt hier in der
@@ -143,10 +183,113 @@ export function HeroCarousel() {
   const scrollAssemble = useTransform(scrollY, [0, SCROLL_ASSEMBLE_PX], [0, 1]);
   const mouseTravel = useMotionValue(0);
   const mouseAssemble = useTransform(mouseTravel, [0, MOUSE_ASSEMBLE_PX], [0, 1]);
+  const realFragmentVisibility = useTransform(fallProgress, [0, 0.08, 0.22], [1, 0.84, 0]);
+  const leavingMeshOpacity = useTransform(
+    [leavingOpacity, realFragmentVisibility],
+    (values: number[]) => values[0] * values[1]
+  );
+  const visibleActiveMeshOpacity = useTransform(
+    [activeMeshOpacity, realFragmentVisibility],
+    (values: number[]) => values[0] * values[1]
+  );
+
+  // Die eine bestehende Quelle wird nach der Hydration exakt ueber ihrer
+  // Hero-Buehne fixiert. So kann sie rein visuell durch spaetere Sektionen
+  // fallen, ohne DOM-Knoten umzuziehen, Dokumenthoehe zu veraendern oder
+  // eine zweite Quelle zu rendern.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const updateFallProgress = (latestScroll: number) => {
+      const { start, rest } = scrollEnvironment.current;
+      const raw = (latestScroll - start) / Math.max(1, rest - start);
+      const direction =
+        latestScroll === previousScrollY.current
+          ? 0
+          : latestScroll > previousScrollY.current
+            ? 1
+            : -1;
+      const nextFallProgress = shouldReduceMotion ? 0 : smoothEnvironmentStep(raw);
+      fallDirection.set(direction);
+      if (shouldReduceMotion || (direction > 0 && nextFallProgress > 0.02)) {
+        returnSourcePresence.set(0);
+      } else if (direction < 0 && nextFallProgress < 0.16) {
+        returnSourcePresence.set(0.32);
+      }
+      previousScrollY.current = latestScroll;
+      fallProgress.set(nextFallProgress);
+    };
+
+    const measure = () => {
+      const rect = stage.getBoundingClientRect();
+      const documentTop = rect.top + window.scrollY;
+      const unitScale = Math.min(rect.width / 240, rect.height / 300);
+      const letterboxY = (rect.height - 300 * unitScale) / 2;
+      const sourceCenterY = documentTop + letterboxY + 177 * unitScale;
+      const restingCenterY = window.innerHeight * 0.84;
+      const viewportInset = Math.min(28, window.innerWidth * 0.035);
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const hero = stage.closest("section");
+      const heroHeight = hero?.getBoundingClientRect().height ?? window.innerHeight;
+
+      scrollEnvironment.current = {
+        start: Math.min(heroHeight * 0.12, window.innerHeight * 0.12),
+        rest: Math.max(heroHeight * 0.45, maxScroll * 0.92),
+      };
+      setSourceStageBounds({
+        left: rect.left,
+        top: documentTop,
+        width: rect.width,
+        height: rect.height,
+        // Auch auf dem schmalen Layout, wo die Hero-Buehne bereits tief
+        // sitzt, bleibt eine kleine sichtbare gemeinsame Fallstrecke.
+        fallDistance: Math.max(
+          14,
+          (restingCenterY - sourceCenterY) / Math.max(0.001, unitScale)
+        ),
+        restMinX: (viewportInset - rect.left) / Math.max(0.001, unitScale),
+        restMaxX:
+          (window.innerWidth - viewportInset - rect.left) / Math.max(0.001, unitScale),
+        sourceMinY:
+          (viewportInset - documentTop - letterboxY) / Math.max(0.001, unitScale),
+        sourceMaxY:
+          (window.innerHeight - viewportInset - documentTop - letterboxY) /
+          Math.max(0.001, unitScale),
+      });
+      updateFallProgress(window.scrollY);
+    };
+
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(stage);
+    window.addEventListener("resize", measure);
+    const unsubscribeScroll = scrollY.on("change", updateFallProgress);
+    return () => {
+      unsubscribeScroll();
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [fallDirection, fallProgress, returnSourcePresence, scrollY, shouldReduceMotion]);
 
   useAnimationFrame(() => {
-    if (!organicControlActive.current || prefersReducedMotion || !consentResolved) return;
-    const current = Math.max(scrollAssemble.get(), mouseAssemble.get());
+    if (
+      !organicControlActive.current ||
+      shouldReduceMotion ||
+      !consentResolved ||
+      fallProgress.get() > 0.055
+    ) return;
+    // Scrollen darf die urspruengliche Erstmontage nur im unmittelbaren
+    // Hero-Bereich unterstuetzen. Noch bevor Gravity die Interaktion ganz
+    // sperrt, wird dieser Eingang weich ausgeblendet; sonst koennte der alte
+    // absolute scrollY-Wert auf dem Weg nach unten unbemerkt bis zum Welding-
+    // Takeover anwachsen und das Motiv fernab des Heros fertig montieren.
+    const scrollAssemblyWeight =
+      1 - smoothEnvironmentStep(fallProgress.get() / 0.04);
+    const current = Math.max(
+      scrollAssemble.get() * scrollAssemblyWeight,
+      mouseAssemble.get()
+    );
     if (current >= WELD_TAKEOVER_THRESHOLD && progress.get() < 1) {
       organicControlActive.current = false;
       animate(progress, 1, { duration: WELD_TAKEOVER_DURATION, ease: "easeInOut" }).then(() => {
@@ -158,22 +301,33 @@ export function HeroCarousel() {
   });
 
   useEffect(() => {
-    if (prefersReducedMotion || !consentResolved) return;
+    if (shouldReduceMotion || !consentResolved) return;
     let last: { x: number; y: number } | null = null;
 
     function handlePointerMove(e: PointerEvent) {
       pointerX.set(e.clientX / window.innerWidth - 0.5);
       pointerY.set(e.clientY / window.innerHeight - 0.5);
-      if (organicControlActive.current && last) {
+      if (organicControlActive.current && fallProgress.get() <= 0.055 && last) {
         const delta = Math.hypot(e.clientX - last.x, e.clientY - last.y);
         mouseTravel.set(mouseTravel.get() + delta);
+        if (returnSourcePresence.get() > 0) {
+          returnSourcePresence.set(Math.max(0, returnSourcePresence.get() - delta / 900));
+        }
       }
       last = { x: e.clientX, y: e.clientY };
     }
 
     window.addEventListener("pointermove", handlePointerMove);
     return () => window.removeEventListener("pointermove", handlePointerMove);
-  }, [prefersReducedMotion, consentResolved, pointerX, pointerY, mouseTravel]);
+  }, [
+    shouldReduceMotion,
+    consentResolved,
+    pointerX,
+    pointerY,
+    mouseTravel,
+    fallProgress,
+    returnSourcePresence,
+  ]);
 
   // --- Slide-Wechsel: sprengen (progress -> 0, automatisch animiert),
   // Facetten tauschen, danach den Zusammenbau wieder der Maus überlassen
@@ -189,51 +343,80 @@ export function HeroCarousel() {
       isTransitioning.current = true;
       assemblyDirection.set(0);
       setChaosEnabled(true);
+      sourceProgress.set(0);
+      activeMeshOpacity.set(1);
+      leavingOpacity.set(1);
 
-      if (prefersReducedMotion) {
+      if (shouldReduceMotion) {
+        setLeavingSlideIndex(null);
         setActiveIndex(wrapped);
         progress.set(1);
+        sourceProgress.set(0);
+        returnSourcePresence.set(0);
         isTransitioning.current = false;
         return;
       }
 
-      // Laeuft noch ein Crossfade-Overlay vom VORHERIGEN Wechsel, hart
-      // entfernen - ein neuer Uebergang startet immer sauber (sonst koennten
-      // bei schnellen Klicks zwei Overlays uebereinander liegen).
+      // Defensive Bereinigung eines eventuell noch vorhandenen Vormotivs.
+      // Die Interaktionssperre verhindert regulär überlappende Wechsel.
       setLeavingSlideIndex(null);
 
       await animate(progress, 0, { duration: EXPLODE_DURATION, ease: [0.55, 0, 1, 0.45] });
       chaosStartTime.set(time.get());
-      // Weicher Motivwechsel (gemeinsame Quelle): das ausgehende Motiv bleibt
-      // als verstreutes Overlay stehen und blendet weich aus (Effect unten),
-      // waehrend das neue an denselben Slot-Positionen erscheint. Nur der
-      // bisher harte Facetten-Tausch wird dadurch ersetzt - Sprengen, Drift
-      // und mausgetriebener Zusammenbau bleiben exakt wie bisher.
+      // Text und Dot wechseln weiterhin exakt am bisherigen Zeitpunkt: nach
+      // der bestehenden Explosion. Das neue Mesh ist waehrend der folgenden
+      // Absorption jedoch unsichtbar; nur das alte reale Facettenfeld reist
+      // als leaving-Layer weiter in die universelle Quelle.
+      activeMeshOpacity.set(0);
       setLeavingSlideIndex(activeIndexRef.current);
       setActiveIndex(wrapped);
       mouseTravel.set(0);
+
+      await animate(sourceProgress, 1, {
+        duration: SOURCE_CONVERGE_DURATION,
+        ease: [0.45, 0, 0.35, 1],
+      });
+
+      // Erst im dichtesten, neutral ueberlagerten Pool werden Alt- und
+      // Neumotiv uebergeben. Beide realen Meshes sind hier stark gedimmt;
+      // die Form-/Farbidentitaet wechselt somit innerhalb derselben Quelle.
+      await Promise.all([
+        animate(leavingOpacity, 0, {
+          duration: CROSSFADE_DURATION,
+          ease: "easeOut",
+        }),
+        animate(activeMeshOpacity, 1, {
+          duration: CROSSFADE_DURATION,
+          ease: "easeIn",
+        }),
+      ]);
+      setLeavingSlideIndex(null);
+
+      // Das neue reale Mesh verlaesst dieselben Quell-Slots und landet wieder
+      // im unveraenderten bisherigen Chaos. Erst danach uebernimmt erneut die
+      // bestehende maus-/scrollgesteuerte Montage.
+      await animate(sourceProgress, 0, {
+        duration: SOURCE_EMERGE_DURATION,
+        ease: [0.45, 0, 0.35, 1],
+      });
+      returnSourcePresence.set(0);
       assemblyDirection.set(1);
       organicControlActive.current = true;
       isTransitioning.current = false;
     },
-    [prefersReducedMotion, progress, mouseTravel, time, chaosStartTime, assemblyDirection]
+    [
+      shouldReduceMotion,
+      progress,
+      mouseTravel,
+      time,
+      chaosStartTime,
+      assemblyDirection,
+      sourceProgress,
+      returnSourcePresence,
+      activeMeshOpacity,
+      leavingOpacity,
+    ]
   );
-
-  // --- Crossfade des ausgehenden Motivs (gemeinsame Quelle): Overlay von 1
-  // nach 0 animieren und danach komplett entfernen. Abbruch (neuer Wechsel)
-  // stoppt die Animation sauber; das Overlay selbst wird in goToSlide
-  // vor jedem neuen Uebergang entfernt.
-  useEffect(() => {
-    if (leavingSlideIndex === null) return;
-    leavingOpacity.set(1);
-    let cancelled = false;
-    animate(leavingOpacity, 0, { duration: CROSSFADE_DURATION, ease: "easeOut" }).then(() => {
-      if (!cancelled) setLeavingSlideIndex(null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [leavingSlideIndex, leavingOpacity]);
 
   // --- Auto-Advance: startet erst, sobald der aktive Slide zum ersten Mal
   // fertig verschweißt ist (nicht vorher - sonst würde es die Consent-Gate-
@@ -255,7 +438,7 @@ export function HeroCarousel() {
   }, [goToSlide]);
 
   useMotionValueEvent(progress, "change", (v) => {
-    if (prefersReducedMotion || autoAdvanceStarted.current) return;
+    if (shouldReduceMotion || autoAdvanceStarted.current) return;
     if (v >= 0.995) {
       autoAdvanceStarted.current = true;
       scheduleAutoAdvanceRef.current();
@@ -274,9 +457,9 @@ export function HeroCarousel() {
   }
 
   const slide = HERO_SLIDES[activeIndex];
-  const textInitial = prefersReducedMotion ? {} : { opacity: 0, y: 12 };
-  const textAnimate = prefersReducedMotion ? {} : { opacity: 1, y: 0 };
-  const textExit = prefersReducedMotion ? {} : { opacity: 0, y: -8 };
+  const textInitial = shouldReduceMotion ? {} : { opacity: 0, y: 12 };
+  const textAnimate = shouldReduceMotion ? {} : { opacity: 1, y: 0 };
+  const textExit = shouldReduceMotion ? {} : { opacity: 0, y: -8 };
 
   return (
     <div
@@ -289,7 +472,7 @@ export function HeroCarousel() {
       }}
     >
       <div className="mx-auto grid w-full max-w-7xl items-stretch gap-8 md:grid-cols-[1fr_1.3fr] md:gap-4">
-        <div className="relative z-10 flex h-full flex-col items-center justify-center text-center md:items-start md:justify-end md:pb-6 md:text-left">
+        <div className="relative z-30 flex h-full flex-col items-center justify-center text-center md:items-start md:justify-end md:pb-6 md:text-left">
           <AnimatePresence mode="sync">
             <motion.div
               key={slide.id}
@@ -340,6 +523,7 @@ export function HeroCarousel() {
             bei jedem Slide exakt gleich gross. Der Chaos-Streu-/Treib-
             Bereich ignoriert diese Box ohnehin (overflow: visible). */}
         <div
+          ref={stageRef}
           className="relative mx-auto aspect-[4/5]"
           // 65svh Hoehe * 4/5 = 52svh Breite. Nur die Breite festlegen,
           // damit `aspect-ratio` die Hoehe wirklich ableitet; die fruehere
@@ -347,18 +531,15 @@ export function HeroCarousel() {
           // Screens fast quadratisch und brach die Chaos-Screen-Normalisierung.
           style={{ width: "min(100%, 52svh, 42rem)" }}
         >
-          {/* Ausblendendes Vormotiv (Crossfade der gemeinsamen Quelle):
-              haengt UNTER dem aktiven Mesh, teilt dessen progress/Zeit/Zeiger
-              (steht beim Start des Fades bei 0 = verstreut) und zeigt dadurch
-              dasselbe Chaos an denselben Slot-Positionen - nur die
-              Materialfarbe weicht weich ueberblendet. Eigenen Filter-ID-Praefix,
-              damit beide gleichzeitig gerenderten Duoton-Filter nicht
-              kollidieren (siehe tintFilterId in LowPolyMesh). */}
+          {/* Vormotiv für Absorption und verdeckten Pool-Handoff. Es teilt
+              Zeit, progress und sourceProgress mit dem neuen Mesh, besitzt
+              aber eigene SVG-ID-Präfixe, damit die gleichzeitig gerenderten
+              Filter und ClipPaths nicht kollidieren. */}
           {leavingSlideIndex !== null && (
             <motion.div
               aria-hidden
               className="pointer-events-none absolute inset-0"
-              style={{ opacity: leavingOpacity }}
+              style={{ opacity: leavingMeshOpacity }}
             >
               <LowPolyMesh
                 facets={HERO_SLIDES[leavingSlideIndex].facets}
@@ -369,6 +550,7 @@ export function HeroCarousel() {
                 time={time}
                 chaosStartTime={chaosStartTime}
                 progress={progress}
+                sourceProgress={sourceProgress}
                 assemblyDirection={assemblyDirection}
                 pointerX={pointerX}
                 pointerY={pointerY}
@@ -383,25 +565,46 @@ export function HeroCarousel() {
               />
             </motion.div>
           )}
-          <LowPolyMesh
-            facets={slide.facets}
-            viewBox={slide.viewBox}
-            center={slide.center}
-            scatterDistance={slide.scatterDistance}
-            chaosEnabled={chaosEnabled}
+          <motion.div
+            className="relative z-10 h-full w-full"
+            style={{ opacity: visibleActiveMeshOpacity }}
+          >
+            <LowPolyMesh
+              facets={slide.facets}
+              viewBox={slide.viewBox}
+              center={slide.center}
+              scatterDistance={slide.scatterDistance}
+              chaosEnabled={chaosEnabled}
+              time={time}
+              chaosStartTime={chaosStartTime}
+              progress={progress}
+              sourceProgress={sourceProgress}
+              assemblyDirection={assemblyDirection}
+              pointerX={pointerX}
+              pointerY={pointerY}
+              ariaLabel={slide.ariaLabel}
+              imageUrl={slide.imageUrl}
+              tintColor={slide.tintColor}
+              tintDarkMix={slide.tintDarkMix}
+              tintLightMix={slide.tintLightMix}
+              clipIdPrefix="hero-active"
+              className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+            />
+          </motion.div>
+          <SharedMaterialSource
             time={time}
-            chaosStartTime={chaosStartTime}
-            progress={progress}
-            assemblyDirection={assemblyDirection}
+            sourceProgress={sourceProgress}
+            fallProgress={fallProgress}
+            fallDirection={fallDirection}
+            returnPresence={returnSourcePresence}
             pointerX={pointerX}
             pointerY={pointerY}
-            ariaLabel={slide.ariaLabel}
-            imageUrl={slide.imageUrl}
-            tintColor={slide.tintColor}
-            tintDarkMix={slide.tintDarkMix}
-            tintLightMix={slide.tintLightMix}
-            clipIdPrefix="hero-active"
-            className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+            fixedBounds={sourceStageBounds ?? undefined}
+            className={
+              sourceStageBounds
+                ? "pointer-events-none fixed z-20"
+                : "pointer-events-none absolute inset-0 z-20 h-full w-full"
+            }
           />
         </div>
       </div>
@@ -410,7 +613,7 @@ export function HeroCarousel() {
         type="button"
         aria-label="Vorheriges Motiv"
         onClick={() => handleManualNav(activeIndex - 1)}
-        className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full p-3 text-foreground opacity-40 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:left-6"
+        className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-3 text-foreground opacity-40 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:left-6"
       >
         <ArrowIcon direction="left" />
       </button>
@@ -418,12 +621,12 @@ export function HeroCarousel() {
         type="button"
         aria-label="Nächstes Motiv"
         onClick={() => handleManualNav(activeIndex + 1)}
-        className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full p-3 text-foreground opacity-40 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:right-6"
+        className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-3 text-foreground opacity-40 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:right-6"
       >
         <ArrowIcon direction="right" />
       </button>
 
-      <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2 md:bottom-10">
+      <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2 md:bottom-10">
         {HERO_SLIDES.map((s, i) => (
           <button
             key={s.id}

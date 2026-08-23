@@ -11,11 +11,15 @@ export default function Home() {
       <Nav />
       <main>
         <Hero />
-        <HowItWorks />
-        <Gallery />
-        <CTASection />
+        <div className="relative z-30">
+          <HowItWorks />
+          <Gallery />
+          <CTASection />
+        </div>
       </main>
-      <Footer />
+      <div className="relative z-30">
+        <Footer />
+      </div>
     </>
   );
 }
