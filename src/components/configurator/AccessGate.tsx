@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ACCESS_TOKEN_STORAGE_KEY } from "@/lib/sculptureApi";
+import { readAccessToken, writeAccessToken } from "@/lib/sculptureApi";
 
 /**
  * Schuetzt den Konfigurator waehrend der Testphase vor unkontrolliertem
@@ -13,15 +13,13 @@ import { ACCESS_TOKEN_STORAGE_KEY } from "@/lib/sculptureApi";
  * oeffentlichen JS-Bundle.
  */
 export function AccessGate({ children }: { children: ReactNode }) {
-  const [hasCode, setHasCode] = useState(
-    () => typeof window !== "undefined" && Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY))
-  );
+  const [hasCode, setHasCode] = useState(() => typeof window !== "undefined" && Boolean(readAccessToken()));
   const [value, setValue] = useState("");
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!value.trim()) return;
-    window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, value.trim());
+    writeAccessToken(value.trim());
     setHasCode(true);
   }
 

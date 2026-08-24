@@ -20,8 +20,38 @@ export interface SculptureStatusResponse {
   error: string | null;
 }
 
+// localStorage-Zugriff kann in manchen Browsern/Datenschutz-Einstellungen
+// (strikte Cookie-Blocker, restriktive Storage-Policies) eine Exception
+// werfen statt einfach leer zu sein - ohne Absicherung wuerde das den
+// gesamten Upload sofort abbrechen, noch bevor ein einziger Request
+// rausgeht (live beobachtet: mehrere Browser inkl. Inkognito zeigten
+// sofort einen Fehler, ohne dass das Backend je eine Anfrage sah). Faellt
+// in diesem Fall auf eine reine In-Memory-Variable zurueck - der
+// Zugangscode "haelt" dann nur fuer den aktuellen Seitenaufruf statt
+// dauerhaft, was besser ist als ein kompletter Ausfall der Funktion.
+let memoryAccessToken: string | null = null;
+
+export function readAccessToken(): string | null {
+  try {
+    return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) ?? memoryAccessToken;
+  } catch {
+    return memoryAccessToken;
+  }
+}
+
+export function writeAccessToken(value: string | null): void {
+  memoryAccessToken = value;
+  try {
+    if (value === null) window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    else window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, value);
+  } catch {
+    // localStorage nicht verfuegbar - memoryAccessToken traegt die Session
+    // zumindest fuer den aktuellen Seitenaufruf.
+  }
+}
+
 function accessTokenHeaders(): HeadersInit {
-  const token = typeof window !== "undefined" ? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) : null;
+  const token = typeof window !== "undefined" ? readAccessToken() : null;
   return token ? { "X-Access-Token": token } : {};
 }
 
@@ -37,7 +67,7 @@ export async function createSculptureTask(file: File): Promise<string> {
     // Falscher/fehlender Code - lokal geloescht, damit AccessGate beim
     // naechsten Versuch wieder danach fragt statt den falschen Wert erneut
     // stillschweigend mitzuschicken.
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    writeAccessToken(null);
     throw new Error("invalid_access_token");
   }
   if (!res.ok) {
