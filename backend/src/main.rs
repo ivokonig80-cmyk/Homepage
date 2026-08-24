@@ -143,7 +143,17 @@ async fn create_sculpture(State(state): State<AppState>, headers: HeaderMap, mut
     }
 
     match state.provider.create_task(&bytes, &content_type).await {
-        Ok(task_id) => Json(CreateSculptureResponse { task_id }).into_response(),
+        Ok(task_id) => {
+            // Bewusst VOR dem Zurueckschicken geloggt: der Task ist bei
+            // Tripo in diesem Moment bereits erstellt und abgerechnet. Geht
+            // die Antwort selbst noch verloren (z.B. Verbindungsabbruch
+            // durch einen Deploy-Wechsel mitten in der Anfrage), bleibt der
+            // Task sonst fuer uns komplett unauffindbar, obwohl er bei
+            // Tripo existiert - dieser Log-Eintrag ist dann die einzige
+            // Spur, um ihn nachtraeglich manuell abzurufen.
+            tracing::info!(task_id = %task_id, "3D-Task erstellt (Tripo-Credit abgebucht)");
+            Json(CreateSculptureResponse { task_id }).into_response()
+        }
         Err(e) => {
             tracing::error!("3D-Task konnte nicht erstellt werden: {e}");
             error_response(StatusCode::BAD_GATEWAY, "Die 3D-Generierung konnte nicht gestartet werden.")
