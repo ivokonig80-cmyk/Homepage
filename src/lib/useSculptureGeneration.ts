@@ -88,10 +88,18 @@ export function useSculptureGeneration(file: File | null): GenerationState {
         if (cancelled) return;
         setState((s) => ({ ...s, status: "processing" }));
         timer = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
-      } catch {
+      } catch (err) {
         if (cancelled) return;
-        setState({ status: "failed", progress: null, modelUrl: null, error: "Foto konnte nicht hochgeladen werden." });
-        trackEvent("sculpture_generation_failed", { reason: "upload_error" });
+        const isInvalidToken = err instanceof Error && err.message === "invalid_access_token";
+        setState({
+          status: "failed",
+          progress: null,
+          modelUrl: null,
+          error: isInvalidToken
+            ? "Zugangscode fehlt oder ist falsch. Bitte Seite neu laden und erneut eingeben."
+            : "Foto konnte nicht hochgeladen werden.",
+        });
+        trackEvent("sculpture_generation_failed", { reason: isInvalidToken ? "invalid_access_token" : "upload_error" });
       }
     }
 

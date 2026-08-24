@@ -4,6 +4,12 @@
 // gezeigt werden kann, ohne Code-Änderung.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+// Vom Betreiber an Tester weitergegebener Code (siehe AccessGate.tsx) - schuetzt
+// den kostenpflichtigen Foto-zu-3D-Endpunkt waehrend der Testphase vor
+// unkontrolliertem Zugriff. Wird nur lokal gemerkt, nicht clientseitig
+// geprueft - die eigentliche Pruefung macht das Backend (ACCESS_TOKEN).
+export const ACCESS_TOKEN_STORAGE_KEY = "sculptureAccessToken";
+
 export type SculptureTaskStatus = "processing" | "succeeded" | "failed";
 
 export interface SculptureStatusResponse {
@@ -14,10 +20,26 @@ export interface SculptureStatusResponse {
   error: string | null;
 }
 
+function accessTokenHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) : null;
+  return token ? { "X-Access-Token": token } : {};
+}
+
 export async function createSculptureTask(file: File): Promise<string> {
   const form = new FormData();
   form.append("photo", file);
-  const res = await fetch(`${API_BASE}/api/sculptures`, { method: "POST", body: form });
+  const res = await fetch(`${API_BASE}/api/sculptures`, {
+    method: "POST",
+    headers: accessTokenHeaders(),
+    body: form,
+  });
+  if (res.status === 401) {
+    // Falscher/fehlender Code - lokal geloescht, damit AccessGate beim
+    // naechsten Versuch wieder danach fragt statt den falschen Wert erneut
+    // stillschweigend mitzuschicken.
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    throw new Error("invalid_access_token");
+  }
   if (!res.ok) {
     throw new Error(`create_sculpture_failed: ${res.status}`);
   }

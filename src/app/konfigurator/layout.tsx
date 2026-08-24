@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { ProgressBar } from "@/components/configurator/ProgressBar";
+import { AccessGate } from "@/components/configurator/AccessGate";
 import { KonfiguratorProvider, useKonfigurator } from "@/components/configurator/KonfiguratorContext";
 import { CONFIGURATOR_STEPS } from "@/lib/configurator-steps";
 
@@ -66,8 +67,10 @@ function KonfiguratorChrome({ children }: { children: ReactNode }) {
 
 export default function KonfiguratorLayout({ children }: { children: ReactNode }) {
   return (
-    <KonfiguratorProvider>
-      <KonfiguratorChrome>{children}</KonfiguratorChrome>
-    </KonfiguratorProvider>
+    <AccessGate>
+      <KonfiguratorProvider>
+        <KonfiguratorChrome>{children}</KonfiguratorChrome>
+      </KonfiguratorProvider>
+    </AccessGate>
   );
 }
