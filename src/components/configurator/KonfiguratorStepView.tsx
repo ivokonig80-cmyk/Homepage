@@ -13,7 +13,7 @@ import { trackEvent } from "@/lib/analytics";
 import type { ConfiguratorStepId } from "@/lib/configurator-steps";
 
 export function KonfiguratorStepView({ step }: { step: ConfiguratorStepId }) {
-  const { file, setFile, materialId, setMaterialId, sizeId, setSizeId, generation } = useKonfigurator();
+  const { files, addFile, removeFile, materialId, setMaterialId, sizeId, setSizeId, generation } = useKonfigurator();
 
   useEffect(() => {
     trackEvent("configurator_step_view", { step });
@@ -25,7 +25,7 @@ export function KonfiguratorStepView({ step }: { step: ConfiguratorStepId }) {
 
   switch (step) {
     case "upload":
-      return <StepUpload file={file} onFileSelected={setFile} />;
+      return <StepUpload files={files} onFileAdded={addFile} onFileRemoved={removeFile} />;
     case "vorschau":
       return <StepVorschau colorHex={material.colorHex} scale={size.scale} generation={generation} />;
     case "farbe":

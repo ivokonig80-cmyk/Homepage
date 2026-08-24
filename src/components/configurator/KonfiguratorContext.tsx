@@ -4,14 +4,24 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { DEFAULT_MATERIAL_ID, DEFAULT_SIZE_ID } from "@/lib/catalog";
 import { useSculptureGeneration, type GenerationState } from "@/lib/useSculptureGeneration";
 
+const MAX_PHOTOS = 4;
+
 interface KonfiguratorContextValue {
-  file: File | null;
-  setFile: (file: File) => void;
+  /** 1-4 hochgeladene Fotos (erstes Pflicht, bis zu 3 weitere optionale
+   * Blickwinkel - siehe StepUpload.tsx/collage.rs). */
+  files: File[];
+  addFile: (file: File) => void;
+  removeFile: (index: number) => void;
   materialId: string;
   setMaterialId: (id: string) => void;
   sizeId: string;
   setSizeId: (id: string) => void;
   generation: GenerationState;
+  /** Stoesst die KI-Generierung mit dem aktuellen Foto-Set an - explizit
+   * beim Verlassen des Upload-Schritts aufgerufen (siehe
+   * useSculptureGeneration.ts fuer die Begruendung, warum nicht mehr
+   * automatisch beim ersten Foto). */
+  startGeneration: () => void;
 }
 
 const KonfiguratorContext = createContext<KonfiguratorContextValue | null>(null);
@@ -23,21 +33,28 @@ const KonfiguratorContext = createContext<KonfiguratorContextValue | null>(null)
  * sechs komplett unterschiedlichen Bildschirmen). Als Layout-Kind bleibt
  * dieser Provider bei reinen Client-Navigationen zwischen den Schritten
  * gemountet, der Zustand geht dabei nicht verloren.
- *
- * Die Foto-zu-3D-Generierung wird hier zentral gestartet (sobald `file`
- * gesetzt wird), nicht erst im Vorschau-Schritt - so läuft sie im
- * Hintergrund bereits weiter, während der Nutzer noch auf dem Upload-Schritt
- * ist oder direkt weiterklickt.
  */
 export function KonfiguratorProvider({ children }: { children: ReactNode }) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [materialId, setMaterialId] = useState(DEFAULT_MATERIAL_ID);
   const [sizeId, setSizeId] = useState(DEFAULT_SIZE_ID);
-  const generation = useSculptureGeneration(file);
+  const { state: generation, start } = useSculptureGeneration();
+
+  function addFile(file: File) {
+    setFiles((prev) => (prev.length >= MAX_PHOTOS ? prev : [...prev, file]));
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function startGeneration() {
+    start(files);
+  }
 
   return (
     <KonfiguratorContext.Provider
-      value={{ file, setFile, materialId, setMaterialId, sizeId, setSizeId, generation }}
+      value={{ files, addFile, removeFile, materialId, setMaterialId, sizeId, setSizeId, generation, startGeneration }}
     >
       {children}
     </KonfiguratorContext.Provider>

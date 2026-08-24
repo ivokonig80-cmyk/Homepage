@@ -10,7 +10,7 @@ import { CONFIGURATOR_STEPS } from "@/lib/configurator-steps";
 
 function KonfiguratorChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { file } = useKonfigurator();
+  const { files, startGeneration } = useKonfigurator();
 
   const currentIndex = Math.max(
     0,
@@ -19,7 +19,7 @@ function KonfiguratorChrome({ children }: { children: ReactNode }) {
   const currentStep = CONFIGURATOR_STEPS[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === CONFIGURATOR_STEPS.length - 1;
-  const canProceed = currentStep.id !== "upload" || file !== null;
+  const canProceed = currentStep.id !== "upload" || files.length > 0;
 
   const prevHref = !isFirst ? `/konfigurator/${CONFIGURATOR_STEPS[currentIndex - 1].id}` : null;
   const nextHref = !isLast ? `/konfigurator/${CONFIGURATOR_STEPS[currentIndex + 1].id}` : null;
@@ -58,6 +58,14 @@ function KonfiguratorChrome({ children }: { children: ReactNode }) {
           (canProceed ? (
             <Link
               href={nextHref}
+              onClick={() => {
+                // Explizit erst hier gestartet, nicht schon beim ersten Foto
+                // (siehe useSculptureGeneration.ts) - so ist beim Verlassen
+                // des Upload-Schritts das komplette, vom Nutzer gewaehlte
+                // Foto-Set (1-4 Fotos) bekannt, bevor der kostenpflichtige
+                // Tripo-Task ausgeloest wird.
+                if (currentStep.id === "upload") startGeneration();
+              }}
               className="rounded-full bg-accent-warm px-6 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.03]"
             >
               Weiter

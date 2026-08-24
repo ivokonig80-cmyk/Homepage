@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createSculptureTask, getSculptureStatus } from "@/lib/sculptureApi";
 import { trackEvent } from "@/lib/analytics";
 
@@ -23,33 +23,45 @@ export interface GenerationState {
 const IDLE_STATE: GenerationState = { status: "idle", progress: null, modelUrl: null, error: null };
 
 /**
- * Stößt die Tripo-Generierung an, sobald ein Foto gesetzt wird (in
- * KonfiguratorProvider genutzt, läuft dadurch schon während der Nutzer
- * Farbe/Größe wählt weiter im Hintergrund) und pollt bis Ergebnis oder
- * Fehler/Timeout. Jedes File wird nur einmal angestoßen, auch wenn die
- * Komponente durch Routenwechsel zwischen den Konfigurator-Schritten neu
- * rendert.
+ * Stößt die Tripo-Generierung an - NICHT mehr automatisch beim ersten Foto
+ * (siehe KonfiguratorContext.tsx), sondern explizit per `start(files)`,
+ * aufgerufen beim Verlassen des Upload-Schritts. Grund: mit optionalen
+ * Zusatzfotos (bis zu 4, siehe StepUpload.tsx) wuerde ein Auto-Start beim
+ * ersten Foto einen (kostenpflichtigen!) Tripo-Task ausloesen, bevor der
+ * Nutzer weitere Blickwinkel-Fotos ueberhaupt hinzugefuegt hat - doppelt
+ * abgerechnete/verworfene Tasks waeren die Folge. `start` ist idempotent
+ * fuer dieselbe Files-Array-Referenz (verhindert Doppel-Start bei
+ * mehrfachem Klick) und bricht einen noch laufenden vorherigen Versuch
+ * sauber ab, falls der Nutzer zurueckgeht und ein neues Foto-Set waehlt.
  */
-export function useSculptureGeneration(file: File | null): GenerationState {
+export function useSculptureGeneration(): { state: GenerationState; start: (files: File[]) => void } {
   const [state, setState] = useState<GenerationState>(IDLE_STATE);
-  const startedForFile = useRef<File | null>(null);
+  const startedForFilesRef = useRef<File[] | null>(null);
+  // Erhoehter Token macht jeden vorherigen Lauf ungueltig (statt eines
+  // einzelnen "cancelled"-Flags) - so koennen mehrere aufeinanderfolgende
+  // start()-Aufrufe (neues Foto-Set nach Zurueck-Navigation) sich nicht
+  // gegenseitig ueberschreiben.
+  const tokenRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (!file) {
-      startedForFile.current = null;
-      setState(IDLE_STATE);
-      return;
-    }
-    if (startedForFile.current === file) return;
-    startedForFile.current = file;
-    const currentFile = file;
+    return () => {
+      tokenRef.current += 1;
+      clearTimeout(timerRef.current);
+    };
+  }, []);
 
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
+  const start = useCallback((files: File[]) => {
+    if (files.length === 0) return;
+    if (startedForFilesRef.current === files) return;
+    startedForFilesRef.current = files;
+
+    const myToken = (tokenRef.current += 1);
+    clearTimeout(timerRef.current);
     const startedAt = Date.now();
 
     async function poll(taskId: string) {
-      if (cancelled) return;
+      if (tokenRef.current !== myToken) return;
       if (Date.now() - startedAt > MAX_POLL_MS) {
         setState({ status: "failed", progress: null, modelUrl: null, error: "Zeitüberschreitung bei der Generierung." });
         trackEvent("sculpture_generation_failed", { reason: "timeout" });
@@ -57,7 +69,7 @@ export function useSculptureGeneration(file: File | null): GenerationState {
       }
       try {
         const result = await getSculptureStatus(taskId);
-        if (cancelled) return;
+        if (tokenRef.current !== myToken) return;
         if (result.status === "succeeded" && result.modelUrl) {
           setState({ status: "succeeded", progress: 100, modelUrl: result.modelUrl, error: null });
           trackEvent("sculpture_generation_succeeded");
@@ -74,24 +86,24 @@ export function useSculptureGeneration(file: File | null): GenerationState {
           return;
         }
         setState((s) => ({ ...s, status: "processing", progress: result.progress ?? s.progress }));
-        timer = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
+        timerRef.current = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
       } catch {
         // Transientes Netzwerkproblem beim Pollen selbst - weiter versuchen,
         // der MAX_POLL_MS-Check oben fängt ein echtes Hängenbleiben ab.
-        timer = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
+        timerRef.current = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
       }
     }
 
-    async function start() {
+    async function begin() {
       setState({ status: "uploading", progress: null, modelUrl: null, error: null });
-      trackEvent("sculpture_generation_started");
+      trackEvent("sculpture_generation_started", { photoCount: files.length });
       try {
-        const taskId = await createSculptureTask(currentFile);
-        if (cancelled) return;
+        const taskId = await createSculptureTask(files);
+        if (tokenRef.current !== myToken) return;
         setState((s) => ({ ...s, status: "processing" }));
-        timer = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
+        timerRef.current = setTimeout(() => poll(taskId), POLL_INTERVAL_MS);
       } catch (err) {
-        if (cancelled) return;
+        if (tokenRef.current !== myToken) return;
         const isInvalidToken = err instanceof Error && err.message === "invalid_access_token";
         setState({
           status: "failed",
@@ -105,13 +117,8 @@ export function useSculptureGeneration(file: File | null): GenerationState {
       }
     }
 
-    start();
+    begin();
+  }, []);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [file]);
-
-  return state;
+  return { state, start };
 }

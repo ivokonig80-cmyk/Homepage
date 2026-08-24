@@ -9,6 +9,7 @@
 // (Bestellungen/Warenkorb), Stripe-Checkout, Low-Poly-Nachbearbeitung übers
 // reine Remeshing hinaus. Kommt in den nächsten Schritten dazu.
 
+mod collage;
 mod providers;
 
 use axum::{
@@ -114,8 +115,11 @@ async fn create_sculpture(State(state): State<AppState>, headers: HeaderMap, mut
         }
     }
 
-    let mut photo_bytes: Option<Vec<u8>> = None;
-    let mut content_type: Option<String> = None;
+    // Bis zu 4 "photo"-Felder statt nur einem: optionale Zusatzfotos aus
+    // anderen Blickwinkeln (siehe StepUpload.tsx) werden unten zu einer
+    // Collage zusammengesetzt - mehr tatsaechliche Information fuer den
+    // Provider statt Rateverfahren bei verdeckten Koerperteilen.
+    let mut photos: Vec<(Vec<u8>, String)> = Vec::new();
 
     loop {
         let field = match multipart.next_field().await {
@@ -128,29 +132,43 @@ async fn create_sculpture(State(state): State<AppState>, headers: HeaderMap, mut
             continue;
         }
 
-        content_type = field.content_type().map(|s| s.to_string());
-        match field.bytes().await {
-            Ok(bytes) => photo_bytes = Some(bytes.to_vec()),
+        let Some(field_content_type) = field.content_type().map(|s| s.to_string()) else {
+            return error_response(StatusCode::BAD_REQUEST, "Fehlender Content-Type für ein Foto.");
+        };
+        let bytes = match field.bytes().await {
+            Ok(bytes) => bytes.to_vec(),
             Err(e) => return error_response(StatusCode::BAD_REQUEST, format!("Foto konnte nicht gelesen werden: {e}")),
+        };
+
+        if !ALLOWED_CONTENT_TYPES.contains(&field_content_type.as_str()) {
+            return error_response(
+                StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                "Nur JPG-, PNG- oder WebP-Bilder werden akzeptiert.",
+            );
         }
+        if bytes.len() > MAX_UPLOAD_BYTES {
+            return error_response(StatusCode::PAYLOAD_TOO_LARGE, "Jedes Foto darf höchstens 20 MB groß sein.");
+        }
+
+        photos.push((bytes, field_content_type));
     }
 
-    let Some(bytes) = photo_bytes else {
+    if photos.is_empty() {
         return error_response(StatusCode::BAD_REQUEST, "Kein Feld 'photo' in der Anfrage gefunden.");
-    };
-    let Some(content_type) = content_type else {
-        return error_response(StatusCode::BAD_REQUEST, "Fehlender Content-Type für das Foto.");
-    };
+    }
+    if photos.len() > 4 {
+        return error_response(StatusCode::BAD_REQUEST, "Höchstens 4 Fotos pro Skulptur.");
+    }
 
-    if !ALLOWED_CONTENT_TYPES.contains(&content_type.as_str()) {
-        return error_response(
-            StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            "Nur JPG-, PNG- oder WebP-Bilder werden akzeptiert.",
-        );
-    }
-    if bytes.len() > MAX_UPLOAD_BYTES {
-        return error_response(StatusCode::PAYLOAD_TOO_LARGE, "Das Foto darf höchstens 20 MB groß sein.");
-    }
+    let (bytes, content_type) = if photos.len() == 1 {
+        photos.into_iter().next().unwrap()
+    } else {
+        let raw: Vec<Vec<u8>> = photos.into_iter().map(|(b, _)| b).collect();
+        match collage::build_collage(&raw) {
+            Ok(png) => (png, "image/png".to_string()),
+            Err(e) => return error_response(StatusCode::BAD_REQUEST, format!("Fotos konnten nicht zusammengefügt werden: {e}")),
+        }
+    };
 
     match state.provider.create_task(&bytes, &content_type).await {
         Ok(task_id) => {

@@ -55,9 +55,12 @@ function accessTokenHeaders(): HeadersInit {
   return token ? { "X-Access-Token": token } : {};
 }
 
-export async function createSculptureTask(file: File): Promise<string> {
+export async function createSculptureTask(files: File[]): Promise<string> {
   const form = new FormData();
-  form.append("photo", file);
+  // Mehrere Felder mit demselben Namen "photo" - das Backend baut daraus
+  // bei 2-4 Fotos eine Collage (siehe backend/src/collage.rs), bei genau
+  // einem Foto bleibt das Verhalten unveraendert.
+  for (const file of files) form.append("photo", file);
   const res = await fetch(`${API_BASE}/api/sculptures`, {
     method: "POST",
     headers: accessTokenHeaders(),
