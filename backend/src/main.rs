@@ -41,8 +41,18 @@ async fn main() {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok(); // .env lokal optional, in Produktion echte Env-Vars
 
-    let frontend_origin =
-        std::env::var("FRONTEND_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    // Kommagetrennte Liste statt einer einzelnen URL: das Frontend ist unter
+    // mehreren Origins erreichbar (die Render-eigene onrender.com-URL UND
+    // eine eingerichtete Custom-Domain) - eine davon zu vergessen bedeutet,
+    // dass CORS dort ausnahmslos jede Anfrage blockiert (live beobachtet:
+    // die Custom-Domain war ohne dass wir es wussten im Einsatz und wurde
+    // deshalb dauerhaft blockiert, waehrend Tests direkt gegen die
+    // onrender.com-URL nie ein Problem zeigten).
+    let frontend_origins: Vec<_> = std::env::var("FRONTEND_ORIGIN")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string())
+        .split(',')
+        .map(|s| s.trim().parse().expect("FRONTEND_ORIGIN enthaelt eine ungueltige URL"))
+        .collect();
     let port: u16 = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse().ok())
@@ -55,7 +65,7 @@ async fn main() {
     };
 
     let cors = CorsLayer::new()
-        .allow_origin(AllowOrigin::exact(frontend_origin.parse().expect("FRONTEND_ORIGIN ist keine gültige URL")))
+        .allow_origin(AllowOrigin::list(frontend_origins))
         .allow_methods([Method::GET, Method::POST])
         .allow_headers([header::CONTENT_TYPE, HeaderName::from_static("x-access-token")]);
 
