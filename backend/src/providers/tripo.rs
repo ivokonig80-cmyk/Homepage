@@ -13,8 +13,15 @@
 //   {"code":0,"data":{"image_token":"<token>"}}
 // - Task-Erstellung: POST /task mit
 //   {"type":"image_to_model","file":{"type":"jpg|png|webp","file_token":"<token>"},
-//    "face_limit":1200,"texture":false,"pbr":false}
+//    "face_limit":2000,"smart_low_poly":true,"texture":false,"pbr":false}
 //   -> {"code":0,"data":{"task_id":"<id>"}}
+//   WICHTIG (live beobachtet 24.08.2026): ohne "smart_low_poly":true liefert
+//   Tripo trotz gesetztem face_limit ein dicht rekonstruiertes Mesh (~100.000
+//   Dreiecke statt der gewuenschten grossflaechigen Facetten) - face_limit
+//   allein dezimiert offenbar nicht sichtbar. Laut Tripo-Doku
+//   (docs.tripo3d.ai) braucht "hand-crafted"-Low-Poly-Topologie explizit
+//   smart_low_poly=true; der sinnvolle face_limit-Bereich dafuer ist dann
+//   1000-20000 (kostet +10 Credits pro Task).
 // - Task-Status: GET /task/{id} -> {"code":0,"data":{"status":"...",
 //   "progress":0-100,"output":{"model":...,"base_model":...,"pbr_model":...,
 //   "rendered_image":...}}}. Status-Werte: QUEUED, RUNNING, SUCCESS, FAILED,
@@ -32,8 +39,12 @@ const TRIPO_BASE_URL: &str = "https://api.tripo3d.ai/v2/openapi";
 
 /// Tripos Äquivalent zu Meshys `target_polycount` heißt `face_limit`
 /// (-1 = adaptiv/kein festes Limit). Wir setzen bewusst eine feste Zahl, um
-/// denselben Low-Poly-Look wie beim Meshy-Pfad zu erhalten.
-const FACE_LIMIT: i32 = 1200;
+/// denselben Low-Poly-Look wie beim Meshy-Pfad zu erhalten. Nur zusammen mit
+/// `smart_low_poly: true` wirksam (siehe Datei-Kommentar oben) - deren
+/// empfohlener Wertebereich ist 1000-20000; 2000 statt dem Minimum, da
+/// Tripo bei sehr niedrigen Werten mit smart_low_poly laut eigener Doku
+/// bei komplexeren Motiven eher fehlschlaegt.
+const FACE_LIMIT: i32 = 2000;
 
 pub struct TripoProvider {
     client: reqwest::Client,
@@ -59,6 +70,7 @@ struct CreateTaskRequest {
     task_type: &'static str,
     file: FilePayload,
     face_limit: i32,
+    smart_low_poly: bool,
     texture: bool,
     pbr: bool,
 }
@@ -141,6 +153,7 @@ impl ImageTo3dProvider for TripoProvider {
                 file_token: image_token,
             },
             face_limit: FACE_LIMIT,
+            smart_low_poly: true,
             texture: false,
             pbr: false,
         };
