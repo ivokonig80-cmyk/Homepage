@@ -6,8 +6,10 @@ import { trackEvent } from "@/lib/analytics";
 
 const POLL_INTERVAL_MS = 3000;
 // Grobe Obergrenze, ab der wir dem Nutzer lieber ehrlich "hat nicht
-// geklappt" statt endlos "wird generiert..." zeigen.
-const MAX_POLL_MS = 5 * 60 * 1000;
+// geklappt" statt endlos "wird generiert..." zeigen. Grosszuegig ueber der
+// live beobachteten Dauer mit smart_low_poly (~3-4 Minuten statt der
+// vorherigen ~30s ohne smart_low_poly, siehe providers/tripo.rs) bemessen.
+const MAX_POLL_MS = 7 * 60 * 1000;
 
 export type GenerationStatus = "idle" | "uploading" | "processing" | "succeeded" | "failed";
 

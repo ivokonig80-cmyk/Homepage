@@ -1,8 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { SculptureViewer } from "@/components/three/SculptureViewer";
 import { CATALOG } from "@/lib/catalog";
 import type { GenerationState } from "@/lib/useSculptureGeneration";
+
+// Echte Low-Poly-Topologie (smart_low_poly, siehe backend/src/providers/
+// tripo.rs) dauert live beobachtet 3-4 Minuten statt der vorherigen ~30s -
+// Tripos eigener Fortschrittswert bewegt sich dabei zeitweise kaum. Ohne
+// zusaetzlichen Hinweis wirkt das schnell wie ein haengengebliebener Ladevorgang
+// und verleitet zum Abbrechen. Diese Nachrichten wechseln rein zeitbasiert
+// (unabhaengig vom rohen progress-Wert), damit staendig sichtbar ist, dass
+// im Hintergrund weitergearbeitet wird.
+const WAITING_MESSAGES: { afterSeconds: number; text: string }[] = [
+  { afterSeconds: 0, text: "Dein Foto wird hochgeladen …" },
+  { afterSeconds: 15, text: "Die KI analysiert die Form deines Fotos …" },
+  { afterSeconds: 45, text: "Low-Poly-Facetten werden berechnet — das dauert für die echte Facetten-Optik etwas länger …" },
+  { afterSeconds: 120, text: "Noch etwas Geduld, die Facetten werden verfeinert …" },
+  { afterSeconds: 210, text: "Fast geschafft, letzter Feinschliff …" },
+];
+
+function useElapsedSeconds(active: boolean): number {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setElapsed(0);
+      return;
+    }
+    const start = Date.now();
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+  return elapsed;
+}
 
 // Solange kein echtes generiertes Mesh vorliegt (Upload noch nicht
 // gestartet, Generierung läuft noch oder ist fehlgeschlagen), zeigen wir
@@ -21,6 +51,8 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
   const { status, progress, modelUrl, error } = generation;
   const isGenerating = status === "uploading" || status === "processing";
   const hasModel = status === "succeeded" && Boolean(modelUrl);
+  const elapsedSeconds = useElapsedSeconds(isGenerating);
+  const waitingMessage = [...WAITING_MESSAGES].reverse().find((m) => elapsedSeconds >= m.afterSeconds)!.text;
 
   return (
     <div className="mx-auto max-w-xl text-center">
@@ -37,9 +69,13 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
       )}
       {isGenerating && (
         <p className="mt-2 text-foreground-muted">
-          Dein Foto wird gerade in ein 3D-Modell verwandelt
-          {typeof progress === "number" ? ` (${progress}%)` : "…"} — das kann bis zu ein bis
-          zwei Minuten dauern.
+          {waitingMessage}
+          {typeof progress === "number" && ` (${progress}%)`}
+          <br />
+          <span className="text-sm">
+            Echte Low-Poly-Optik braucht etwas Geduld — meist 3 bis 4 Minuten. Bitte diese Seite
+            offen lassen.
+          </span>
         </p>
       )}
       {status === "idle" && (
@@ -79,7 +115,7 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
           className="mx-auto mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-border-subtle"
         >
           <div
-            className="h-full rounded-full bg-accent-warm transition-all"
+            className="h-full animate-pulse rounded-full bg-accent-warm transition-all duration-1000"
             style={{ width: `${progress ?? 8}%` }}
           />
         </div>
