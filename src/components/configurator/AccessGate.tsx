@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { readAccessToken, writeAccessToken } from "@/lib/sculptureApi";
 
 /**
@@ -13,8 +13,20 @@ import { readAccessToken, writeAccessToken } from "@/lib/sculptureApi";
  * oeffentlichen JS-Bundle.
  */
 export function AccessGate({ children }: { children: ReactNode }) {
-  const [hasCode, setHasCode] = useState(() => typeof window !== "undefined" && Boolean(readAccessToken()));
+  // Bewusst IMMER mit false initialisiert (nicht per readAccessToken() im
+  // useState-Initializer): der Server rendert zwangslaeufig ohne Zugriff auf
+  // localStorage, also immer die Formular-Ansicht. Wuerde der initiale
+  // Client-Render stattdessen sofort auf Basis eines bereits gespeicherten
+  // Codes "children" zeigen, weicht das vom Server-Markup ab - React-
+  // Hydration-Fehler #418 (live beobachtet). Der eigentliche Check passiert
+  // deshalb erst NACH dem Mounten im Effect unten, wenn die Hydration schon
+  // abgeschlossen ist.
+  const [hasCode, setHasCode] = useState(false);
   const [value, setValue] = useState("");
+
+  useEffect(() => {
+    if (readAccessToken()) setHasCode(true);
+  }, []);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
