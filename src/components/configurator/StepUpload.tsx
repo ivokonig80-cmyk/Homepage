@@ -45,7 +45,7 @@ export function StepUpload({ file, onFileSelected }: StepUploadProps) {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
-        Lade ein Foto deines Haustiers hoch
+        Lade ein Foto hoch und baue deine Low Poly Skulptur jetzt
       </h1>
       <p className="mt-2 text-foreground-muted">
         Am besten frontal fotografiert und gut beleuchtet — das ergibt das

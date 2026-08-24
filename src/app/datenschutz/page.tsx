@@ -15,10 +15,9 @@ export default function DatenschutzPage() {
           Datenschutzerklärung
         </h1>
         <p className="mt-3 text-sm text-foreground-muted">
-          Diese Seite ist ein Entwurf für das laufende Projekt und ersetzt
-          keine rechtliche Prüfung. Vor einem echten Live-Betrieb sollte sie
-          von fachkundiger Stelle geprüft und um die konkreten
-          Verantwortlichen-Angaben ergänzt werden (siehe Platzhalter unten).
+          Diese Seite ist ein nicht-kommerzielles Schulprojekt. Es wird kein
+          Gewerbe betrieben, es finden keine echten Verkäufe statt und der
+          Bestellprozess läuft ausschließlich im Testmodus.
         </p>
 
         <section className="mt-10 space-y-3">
@@ -26,8 +25,9 @@ export default function DatenschutzPage() {
             1. Verantwortlicher
           </h2>
           <p className="text-foreground-muted">
-            [Name, Anschrift und Kontaktdaten des Betreibers — wird vor dem
-            Livegang ergänzt.]
+            Ivo Konig
+            <br />
+            E-Mail: ivokonig80@gmail.com
           </p>
         </section>
 
@@ -76,7 +76,12 @@ export default function DatenschutzPage() {
             statt, und es werden keine echten Namen oder Adressen abgefragt —
             ein anonymer Nickname genügt. Eine E-Mail-Adresse ist freiwillig
             und wird nur erfasst, wenn Sie persönlich eine Kopie vom
-            Betreiber erhalten möchten.
+            Betreiber erhalten möchten. Test-Bestellungen werden lokal beim
+            Betreiber gespeichert (Nickname, freiwillige E-Mail, gewähltes
+            Modell/Material/Größe) und zusammen mit dem zu diesem Zeitpunkt
+            aktuellsten, bereits anonymisierten Nutzungsstatistik-Snapshot
+            (siehe Punkt 3) abgelegt — nur zur Auswertung des Schulprojekts,
+            keine Weitergabe an Dritte.
           </p>
         </section>
 

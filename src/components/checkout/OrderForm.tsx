@@ -9,6 +9,10 @@ interface OrderFormProps {
   sizeLabel: string;
   totalPrice: number;
   eventContext: "konfigurator" | "shop";
+  /** Konfigurator: die generierte Modell-URL (GLB) aus dem KI-Backend.
+   * Shop: der Katalog-Slug des bestellten Produkts. Rein informativ fuer
+   * die lokal gespeicherte Bestellung (siehe /api/orders). */
+  modelRef?: string;
 }
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -23,7 +27,7 @@ const emptyForm = { nickname: "", email: "" };
  * Kaufabsicht und Bestellabschluss als Analytics-Events, damit der Funnel
  * bis zum Kauf-Klick auswertbar ist.
  */
-export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eventContext }: OrderFormProps) {
+export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eventContext, modelRef }: OrderFormProps) {
   const [form, setForm] = useState(emptyForm);
   const [status, setStatus] = useState<Status>("idle");
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -49,6 +53,7 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
           size: sizeLabel,
           price: totalPrice,
           context: eventContext,
+          modelRef,
         }),
       });
       if (!res.ok) throw new Error("request_failed");

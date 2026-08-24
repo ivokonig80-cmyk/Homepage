@@ -10,25 +10,37 @@
 // reine Remeshing hinaus. Kommt in den nächsten Schritten dazu.
 
 mod providers;
+mod rate_limit;
 
 use axum::{
     Json, Router,
-    extract::{Multipart, Path, State},
-    http::{Method, StatusCode, header},
+    extract::{ConnectInfo, Multipart, Path, State},
+    http::{HeaderMap, Method, StatusCode, header},
     response::{IntoResponse, Response},
     routing::{get, post},
 };
 use providers::ImageTo3dProvider;
+use rate_limit::RateLimiter;
 use serde::Serialize;
+use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 const MAX_UPLOAD_BYTES: usize = 20 * 1024 * 1024; // 20 MB, identisch zum Frontend-Limit
 const ALLOWED_CONTENT_TYPES: [&str; 3] = ["image/jpeg", "image/png", "image/webp"];
 
+// Jeder Aufruf von /api/sculptures loest einen echten, kostenpflichtigen
+// Tripo/Meshy-Task aus. Ohne Limit koennte das im oeffentlichen Testbetrieb
+// jede/r anonym beliebig oft ausloesen und die Credits verbrauchen - siehe
+// rate_limit.rs fuer die Umsetzung.
+const SCULPTURE_RATE_LIMIT_MAX: u32 = 5;
+const SCULPTURE_RATE_LIMIT_WINDOW: Duration = Duration::from_secs(15 * 60);
+
 #[derive(Clone)]
 struct AppState {
     provider: Arc<Box<dyn ImageTo3dProvider>>,
+    sculpture_rate_limiter: Arc<RateLimiter>,
 }
 
 #[tokio::main]
@@ -46,6 +58,7 @@ async fn main() {
     let provider = providers::build_provider(reqwest::Client::new());
     let state = AppState {
         provider: Arc::new(provider),
+        sculpture_rate_limiter: Arc::new(RateLimiter::new(SCULPTURE_RATE_LIMIT_MAX, SCULPTURE_RATE_LIMIT_WINDOW)),
     };
 
     let cors = CorsLayer::new()
@@ -64,7 +77,27 @@ async fn main() {
         .await
         .expect("Port konnte nicht gebunden werden");
     tracing::info!("Backend läuft auf http://localhost:{port}");
-    axum::serve(listener, app).await.expect("Server abgestürzt");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .expect("Server abgestürzt");
+}
+
+/// Render (wie die meisten PaaS-Hoster) terminiert TLS an einem vorgelagerten
+/// Proxy - die tatsaechliche Client-IP steht deshalb nicht in der TCP-
+/// Verbindung (ConnectInfo waere sonst immer die Proxy-IP), sondern im
+/// `X-Forwarded-For`-Header (erster Eintrag = urspruenglicher Client).
+/// ConnectInfo bleibt als Fallback fuer lokale Entwicklung ohne Proxy.
+fn client_ip(headers: &HeaderMap, connect_info: SocketAddr) -> std::net::IpAddr {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .map(|s| s.trim())
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(connect_info.ip())
 }
 
 async fn health() -> &'static str {
@@ -90,7 +123,20 @@ fn error_response(status: StatusCode, message: impl Into<String>) -> Response {
 /// (Dateityp/Größe - client-seitige Prüfung im Frontend ist nur für sofortiges
 /// Feedback, kein Sicherheitsmechanismus, siehe Konzept Abschnitt 6) und als
 /// Meshy-Image-to-3D-Task anstoßen.
-async fn create_sculpture(State(state): State<AppState>, mut multipart: Multipart) -> Response {
+async fn create_sculpture(
+    State(state): State<AppState>,
+    ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    mut multipart: Multipart,
+) -> Response {
+    let ip = client_ip(&headers, connect_info);
+    if !state.sculpture_rate_limiter.check(ip) {
+        return error_response(
+            StatusCode::TOO_MANY_REQUESTS,
+            "Zu viele Anfragen. Bitte versuch es später noch einmal.",
+        );
+    }
+
     let mut photo_bytes: Option<Vec<u8>> = None;
     let mut content_type: Option<String> = None;
 

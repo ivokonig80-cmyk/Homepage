@@ -39,6 +39,6 @@ export function KonfiguratorStepView({ step }: { step: ConfiguratorStepId }) {
     case "platzierung":
       return <StepPlatzierung materialId={materialId} sizeId={sizeId} modelUrl={modelUrl} />;
     case "checkout":
-      return <StepCheckout materialId={materialId} sizeId={sizeId} />;
+      return <StepCheckout materialId={materialId} sizeId={sizeId} modelUrl={modelUrl} />;
   }
 }

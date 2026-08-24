@@ -12,9 +12,10 @@ const CUSTOM_BASE_PRICE = 279;
 interface StepCheckoutProps {
   materialId: string;
   sizeId: string;
+  modelUrl?: string;
 }
 
-export function StepCheckout({ materialId, sizeId }: StepCheckoutProps) {
+export function StepCheckout({ materialId, sizeId, modelUrl }: StepCheckoutProps) {
   const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1];
   const totalPrice = CUSTOM_BASE_PRICE + material.priceDelta + size.priceDelta;
@@ -54,6 +55,7 @@ export function StepCheckout({ materialId, sizeId }: StepCheckoutProps) {
         sizeLabel={size.label}
         totalPrice={totalPrice}
         eventContext="konfigurator"
+        modelRef={modelUrl}
       />
     </div>
   );

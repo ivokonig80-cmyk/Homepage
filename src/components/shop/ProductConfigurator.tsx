@@ -118,6 +118,7 @@ export function ProductConfigurator({ item }: { item: CatalogItem }) {
           sizeLabel={size.label}
           totalPrice={totalPrice}
           eventContext="shop"
+          modelRef={item.slug}
         />
       </div>
     </div>

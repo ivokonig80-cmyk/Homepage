@@ -50,7 +50,15 @@ const EXPLODE_DURATION = 0.9;
 // gekreuzt. Der kurze Fade versteckt dort den Identitätswechsel; Konvergenz
 // und Austritt aus der Quelle haben eigene, längere Bewegungsphasen.
 const CROSSFADE_DURATION = 0.35;
-const SOURCE_CONVERGE_DURATION = 0.68;
+// Der universelle Pool wird schon waehrend der unveraenderten Explosion
+// vorsichtig sichtbar. Die realen Facetten beginnen zugleich nur minimal in
+// ihr bestehendes Quellfeld einzulenken (bei Explosionsende erst 2,8 % des
+// raeumlichen Wegs) und nutzen danach das bisherige Zeitbudget bis zum exakt
+// gleichen Full-Source-/Handoff-Punkt bei 1,58 s.
+const SOURCE_PREVIEW_LEVEL = 0.35;
+const SOURCE_PREVIEW_DURATION = EXPLODE_DURATION;
+const SOURCE_CAPTURE_AT_EXPLOSION_END = 0.1;
+const SOURCE_CONVERGE_DURATION = EXPLODE_DURATION + 0.68;
 const SOURCE_EMERGE_DURATION = 0.68;
 // Sobald die maus-/scroll-getriebene Montage diese Schwelle erreicht,
 // uebernimmt eine garantiert weiche, fest getimte Animation den letzten
@@ -144,6 +152,14 @@ export function HeroCarousel() {
   // Materialpool. Dieses MotionValue gehoert dem Hero und wird von altem,
   // neuem und neutralem Quell-Layer gemeinsam gelesen.
   const sourceProgress = useMotionValue(0);
+  // Rein zeitlicher Sichtbarkeits-Vorlauf fuer den persistenten Quell-Layer:
+  // Die Quelle kann den explodierenden Realfacetten bereits entgegenkommen,
+  // ohne deren Geometrie, Ziel oder Handoff-Progress vorwegzunehmen.
+  const sourcePreviewProgress = useMotionValue(0);
+  const sharedSourceProgress = useTransform(
+    [sourceProgress, sourcePreviewProgress],
+    (values: number[]) => Math.max(values[0], values[1])
+  );
   // SSR/erster Client-Render starten deterministisch bei 0. Erst nach der
   // Hydration schreibt der reale Seiten-Scroll in diese Umwelteinwirkung.
   const fallProgress = useMotionValue(0);
@@ -344,6 +360,7 @@ export function HeroCarousel() {
       assemblyDirection.set(0);
       setChaosEnabled(true);
       sourceProgress.set(0);
+      sourcePreviewProgress.set(0);
       activeMeshOpacity.set(1);
       leavingOpacity.set(1);
 
@@ -352,6 +369,7 @@ export function HeroCarousel() {
         setActiveIndex(wrapped);
         progress.set(1);
         sourceProgress.set(0);
+        sourcePreviewProgress.set(0);
         returnSourcePresence.set(0);
         isTransitioning.current = false;
         return;
@@ -360,6 +378,29 @@ export function HeroCarousel() {
       // Defensive Bereinigung eines eventuell noch vorhandenen Vormotivs.
       // Die Interaktionssperre verhindert regulär überlappende Wechsel.
       setLeavingSlideIndex(null);
+
+      // Quelle und Einlenkung beginnen bereits mit der Explosion, aber in
+      // getrennten Geschwindigkeiten: Der neutrale Pool wird frueh lesbar,
+      // waehrend die reale Geometrie bis zum Explosionsende nur 0 -> 0,1 des
+      // bestehenden sourceProgress-Wegs zuruecklegt. Danach laeuft derselbe
+      // Pfad linear und deutlich ruhiger bis zum unveraenderten Handoff.
+      const sourcePreviewAnimation = animate(
+        sourcePreviewProgress,
+        SOURCE_PREVIEW_LEVEL,
+        {
+          duration: SOURCE_PREVIEW_DURATION,
+          ease: [1 / 3, 1, 2 / 3, 1],
+        }
+      );
+      const sourceConvergenceAnimation = animate(
+        sourceProgress,
+        [0, SOURCE_CAPTURE_AT_EXPLOSION_END, 1],
+        {
+          duration: SOURCE_CONVERGE_DURATION,
+          times: [0, EXPLODE_DURATION / SOURCE_CONVERGE_DURATION, 1],
+          ease: "linear",
+        }
+      );
 
       await animate(progress, 0, { duration: EXPLODE_DURATION, ease: [0.55, 0, 1, 0.45] });
       chaosStartTime.set(time.get());
@@ -372,10 +413,10 @@ export function HeroCarousel() {
       setActiveIndex(wrapped);
       mouseTravel.set(0);
 
-      await animate(sourceProgress, 1, {
-        duration: SOURCE_CONVERGE_DURATION,
-        ease: [0.45, 0, 0.35, 1],
-      });
+      await Promise.all([sourcePreviewAnimation, sourceConvergenceAnimation]);
+      // Der reale Progress steht hier bereits bei 1; das Entfernen des
+      // begrenzten Preview-Anteils aendert deshalb keinen sichtbaren Wert.
+      sourcePreviewProgress.set(0);
 
       // Erst im dichtesten, neutral ueberlagerten Pool werden Alt- und
       // Neumotiv uebergeben. Beide realen Meshes sind hier stark gedimmt;
@@ -412,6 +453,7 @@ export function HeroCarousel() {
       chaosStartTime,
       assemblyDirection,
       sourceProgress,
+      sourcePreviewProgress,
       returnSourcePresence,
       activeMeshOpacity,
       leavingOpacity,
@@ -473,7 +515,15 @@ export function HeroCarousel() {
     >
       <div className="mx-auto grid w-full max-w-7xl items-stretch gap-8 md:grid-cols-[1fr_1.3fr] md:gap-4">
         <div className="relative z-30 flex h-full flex-col items-center justify-center text-center md:items-start md:justify-end md:pb-6 md:text-left">
-          <AnimatePresence mode="sync">
+          {/* mode="popLayout" statt "sync": beim Slide-Wechsel bleibt das
+              austretende Textelement sonst kurz GLEICHZEITIG mit dem
+              eintretenden im normalen Flex-Fluss stehen (beide zaehlen zur
+              Container-Hoehe), wodurch der Textblock inkl. Buttons fuer die
+              Dauer des Crossfades sichtbar aufblaeht und danach wieder
+              zusammenschnappt. popLayout nimmt das austretende Element per
+              position:absolute aus dem Fluss, sodass nur noch die Hoehe des
+              eintretenden Elements zaehlt - kein Hoehensprung mehr. */}
+          <AnimatePresence mode="popLayout">
             <motion.div
               key={slide.id}
               initial={textInitial}
@@ -484,7 +534,18 @@ export function HeroCarousel() {
               <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-accent-warm">
                 {slide.eyebrow}
               </p>
-              <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+              {/* min-h reserviert durchgaengig die Hoehe von ZWEI Zeilen
+                  (groesster Fall ueber alle Slides), obwohl manche Slides
+                  ("Definiere Kunstobjekte.", "Dein Kaktus...?") nur eine
+                  Zeile Text haben. Ohne das wuerde beim Slide-Wechsel
+                  zwischen 1- und 2-zeiligen Ueberschriften die Blockhoehe
+                  springen (Container ist bottom-anchored via md:justify-end
+                  - jede Hoehenaenderung der Ueberschrift verschiebt den
+                  gesamten Block inkl. Buttons nach oben/unten). Werte
+                  entsprechen 2 Zeilen bei leading-tight (1.25) fuer
+                  text-4xl (2.25rem) bzw. md:text-5xl (3rem).
+              */}
+              <h1 className="min-h-[5.625rem] font-display text-4xl font-semibold leading-tight tracking-tight md:min-h-[7.5rem] md:text-5xl">
                 {slide.headingLines.map((line, i) => (
                   <span key={i}>
                     {line}
@@ -593,7 +654,7 @@ export function HeroCarousel() {
           </motion.div>
           <SharedMaterialSource
             time={time}
-            sourceProgress={sourceProgress}
+            sourceProgress={sharedSourceProgress}
             fallProgress={fallProgress}
             fallDirection={fallDirection}
             returnPresence={returnSourcePresence}

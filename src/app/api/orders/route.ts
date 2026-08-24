@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { mkdir, appendFile } from "node:fs/promises";
+import { mkdir, appendFile, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 // Demo-Bestellannahme OHNE echte Zahlung (siehe OrderForm.tsx): erfasst nur
@@ -11,6 +11,11 @@ import path from "node:path";
 // stehen - das Log ist bewusst simpel gehalten und uebersteht keine
 // Neu-Deploys.
 const ORDERS_LOG = path.join(process.cwd(), ".data", "orders.log");
+// Taegliche Clarity-Snapshots aus reporting/clarity-snapshot.mjs (siehe
+// dort) - der jeweils neueste wird unveraendert an jede Bestellung
+// angehaengt, damit beim manuellen Durchsehen der Test-Bestellungen sofort
+// erkennbar ist, wie die Traffic-/Verhaltenslage zum Bestellzeitpunkt war.
+const ANALYTICS_SNAPSHOT_DIR = path.join(process.cwd(), "reporting", "data");
 
 interface OrderPayload {
   nickname: string;
@@ -20,6 +25,7 @@ interface OrderPayload {
   size: string;
   price: number;
   context: string;
+  modelRef?: string;
 }
 
 function isValidPayload(body: unknown): body is OrderPayload {
@@ -32,8 +38,25 @@ function isValidPayload(body: unknown): body is OrderPayload {
     typeof b.material === "string" &&
     typeof b.size === "string" &&
     typeof b.price === "number" && b.price > 0 &&
-    typeof b.context === "string"
+    typeof b.context === "string" &&
+    (b.modelRef === undefined || typeof b.modelRef === "string")
   );
+}
+
+// Bestmoeglich, kein harter Fehler: fehlt der Reporting-Ordner oder noch
+// kein Snapshot (z.B. lokal ohne CLARITY_API_TOKEN, siehe reporting/README),
+// bekommt die Bestellung trotzdem einen orderId - nur eben ohne
+// Analytics-Anhang.
+async function loadLatestAnalyticsSnapshot(): Promise<unknown | null> {
+  try {
+    const files = (await readdir(ANALYTICS_SNAPSHOT_DIR)).filter((f) => f.endsWith(".json")).sort();
+    const latest = files.at(-1);
+    if (!latest) return null;
+    const raw = await readFile(path.join(ANALYTICS_SNAPSHOT_DIR, latest), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -53,6 +76,7 @@ export async function POST(request: Request) {
     orderId,
     createdAt: new Date().toISOString(),
     ...body,
+    analyticsSnapshot: await loadLatestAnalyticsSnapshot(),
   };
 
   await mkdir(path.dirname(ORDERS_LOG), { recursive: true });
