@@ -14,7 +14,7 @@ mod providers;
 use axum::{
     Json, Router,
     extract::{Multipart, Path, State},
-    http::{HeaderMap, Method, StatusCode, header},
+    http::{HeaderMap, HeaderName, Method, StatusCode, header},
     response::{IntoResponse, Response},
     routing::{get, post},
 };
@@ -57,7 +57,7 @@ async fn main() {
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::exact(frontend_origin.parse().expect("FRONTEND_ORIGIN ist keine gültige URL")))
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([header::CONTENT_TYPE]);
+        .allow_headers([header::CONTENT_TYPE, HeaderName::from_static("x-access-token")]);
 
     let app = Router::new()
         .route("/health", get(health))
