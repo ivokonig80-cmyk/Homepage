@@ -41,10 +41,21 @@ const TRIPO_BASE_URL: &str = "https://api.tripo3d.ai/v2/openapi";
 /// (-1 = adaptiv/kein festes Limit). Wir setzen bewusst eine feste Zahl, um
 /// denselben Low-Poly-Look wie beim Meshy-Pfad zu erhalten. Nur zusammen mit
 /// `smart_low_poly: true` wirksam (siehe Datei-Kommentar oben) - deren
-/// empfohlener Wertebereich ist 1000-20000; 2000 statt dem Minimum, da
-/// Tripo bei sehr niedrigen Werten mit smart_low_poly laut eigener Doku
-/// bei komplexeren Motiven eher fehlschlaegt.
-const FACE_LIMIT: i32 = 2000;
+/// empfohlener Wertebereich ist 1000-20000.
+///
+/// 1000 (statt z.B. 2000) bewusst als unterster von Tripo noch als
+/// zuverlaessig dokumentierter Wert gewaehlt: Die eigene Marken-Optik ist
+/// deutlich reduzierter als das bei 2000 erzeugte Ergebnis (~2000 Dreiecke,
+/// live getestet) - siehe die vorhandenen Referenzen im Projekt
+/// (public/hero-source/Lady-Gaga-Geometric-Low-Poly-Bust0000.jpg als grobe
+/// Stil-Referenz, heroSlides.ts mit nur ~40 handgesetzten Facetten pro
+/// Hero-Motiv, catalog.ts mit je 5-10 grob zusammengesetzten Grundkoerpern
+/// pro Katalog-Figur). Tripo warnt in der eigenen Doku aber explizit vor
+/// Fehlschlaegen bei komplexeren Motiven, wenn smart_low_poly mit Werten
+/// UNTER 1000 kombiniert wird - 1000 ist daher die Untergrenze, die noch
+/// zuverlaessig funktionieren soll, auch wenn sie ueber dem eigentlichen
+/// Stil-Ziel liegt.
+const FACE_LIMIT: i32 = 1000;
 
 pub struct TripoProvider {
     client: reqwest::Client,

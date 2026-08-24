@@ -36,7 +36,14 @@ function KonfiguratorChrome({ children }: { children: ReactNode }) {
 
       <main className="flex flex-1 items-center justify-center px-6 py-16">{children}</main>
 
-      <div className="mx-auto flex w-full max-w-xl items-center justify-between px-6 pb-12">
+      {/* relative + z-[110] noetig: das Cookie-Banner (Analytics.tsx) ist
+          ebenfalls "fixed bottom-0" mit z-100 und ueberlagert sonst diese
+          Zurueck/Weiter-Leiste vollstaendig - der "Weiter"-Klick landete
+          dadurch auf dem Banner statt dem Button (per Playwright live
+          reproduziert: "element intercepts pointer events"). Neue Besucher
+          ohne bereits getroffene Cookie-Entscheidung konnten so nicht vom
+          Foto-Upload zum naechsten Schritt gelangen. */}
+      <div className="relative z-[110] mx-auto flex w-full max-w-xl items-center justify-between px-6 pb-12">
         {prevHref ? (
           <Link
             href={prevHref}
