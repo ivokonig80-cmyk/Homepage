@@ -57,7 +57,7 @@ export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierun
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
-        So sieht sie bei dir aus
+        Platziere deine Kunst bereits jetzt
       </h1>
       <p className="mt-2 text-foreground-muted">
         Lade ein Foto deines Gartens oder deiner Terrasse hoch und platziere

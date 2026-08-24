@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SculptureViewer } from "@/components/three/SculptureViewer";
+import { WeldingSparksDecor } from "./WeldingSparksDecor";
 import { CATALOG } from "@/lib/catalog";
 import type { GenerationState } from "@/lib/useSculptureGeneration";
 
@@ -55,7 +56,7 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
   const waitingMessage = [...WAITING_MESSAGES].reverse().find((m) => elapsedSeconds >= m.afterSeconds)!.text;
 
   return (
-    <div className="mx-auto max-w-xl text-center">
+    <div className="mx-auto max-w-3xl text-center">
       <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
         Deine 3D-Vorschau
       </h1>
@@ -85,25 +86,31 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
         </p>
       )}
 
-      {hasModel && modelUrl ? (
-        <SculptureViewer
-          modelUrl={modelUrl}
-          colorHex={colorHex}
-          scale={scale}
-          interactive
-          autoRotateSpeed={0.3}
-          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-stage-border bg-stage"
-        />
-      ) : (
-        <SculptureViewer
-          parts={PLACEHOLDER_ITEM.parts}
-          colorHex={colorHex}
-          scale={scale}
-          interactive
-          autoRotateSpeed={isGenerating ? 0.15 : 0.3}
-          className="mx-auto mt-8 h-80 w-full rounded-2xl border border-stage-border bg-stage"
-        />
-      )}
+      <div className="mt-8 flex items-center justify-center gap-3">
+        {isGenerating && <WeldingSparksDecor className="hidden h-[28rem] md:block" />}
+
+        {hasModel && modelUrl ? (
+          <SculptureViewer
+            modelUrl={modelUrl}
+            colorHex={colorHex}
+            scale={scale}
+            interactive
+            autoRotateSpeed={0.3}
+            className="h-[28rem] w-full max-w-xl rounded-2xl border border-stage-border bg-stage"
+          />
+        ) : (
+          <SculptureViewer
+            parts={PLACEHOLDER_ITEM.parts}
+            colorHex={colorHex}
+            scale={scale}
+            interactive
+            autoRotateSpeed={isGenerating ? 0.15 : 0.3}
+            className="h-[28rem] w-full max-w-xl rounded-2xl border border-stage-border bg-stage"
+          />
+        )}
+
+        {isGenerating && <WeldingSparksDecor className="hidden h-[28rem] md:block" />}
+      </div>
 
       {isGenerating && (
         <div

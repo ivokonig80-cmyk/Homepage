@@ -46,7 +46,7 @@ export function PlacementCanvas({ backgroundUrl, stickerUrl }: PlacementCanvasPr
     <div>
       <div
         ref={containerRef}
-        className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-border-subtle bg-background-elevated"
+        className="relative h-[28rem] w-full overflow-hidden rounded-2xl border border-border-subtle bg-background-elevated"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={backgroundUrl} alt="Dein hochgeladenes Foto" className="h-full w-full object-cover" />
