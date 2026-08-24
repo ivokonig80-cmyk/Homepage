@@ -123,9 +123,17 @@ interface SculptureViewerProps {
   scale?: number;
   interactive?: boolean;
   autoRotateSpeed?: number;
+  /** Fester Basis-Drehwinkel in Radiant (z.B. fuer mehrere Blickwinkel-
+   * Snapshots aus verschiedenen Perspektiven, siehe StepPlatzierung.tsx).
+   * Addiert sich zur laufenden RotatingGroup-Rotation, aendert bei
+   * autoRotateSpeed=0 also einfach die statische Ausgangsposition. */
+  rotationY?: number;
   className?: string;
   /** Wenn gesetzt, wird einmalig nach dem ersten Render ein transparentes
-   * PNG-Snapshot des aktuellen Zustands erzeugt und zurückgegeben. */
+   * PNG-Snapshot des aktuellen Zustands erzeugt und zurückgegeben. Der
+   * Canvas rendert in diesem Fall bewusst mit hoeherem dpr (schaerferes
+   * Ergebnis) - kein Performance-Problem, da es sich um einen einmaligen,
+   * unsichtbaren Off-Screen-Render handelt, keinen dauerhaften. */
   onSnapshot?: (dataUrl: string) => void;
 }
 
@@ -136,6 +144,7 @@ export function SculptureViewer({
   scale = 1,
   interactive = false,
   autoRotateSpeed = 0.5,
+  rotationY = 0,
   className,
   onSnapshot,
 }: SculptureViewerProps) {
@@ -145,7 +154,7 @@ export function SculptureViewer({
   return (
     <div className={className}>
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={onSnapshot ? [2, 3] : [1, 1.5]}
         gl={{ antialias: true, alpha: true, powerPreference: "low-power", preserveDrawingBuffer: true }}
         camera={{ position: [0, 0.5, 4.4], fov: 36 }}
       >
@@ -154,7 +163,7 @@ export function SculptureViewer({
         <directionalLight position={[-3, -1.5, -2]} intensity={0.6} />
         <directionalLight position={[0, 5, -2]} intensity={0.5} />
         <Suspense fallback={null}>
-          <group scale={scale}>
+          <group scale={scale} rotation-y={rotationY}>
             <RotatingGroup speed={effectiveSpeed}>
               {modelUrl ? (
                 <GeneratedModel url={modelUrl} color={colorHex} />

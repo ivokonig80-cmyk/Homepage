@@ -9,6 +9,19 @@ const PLACEHOLDER_ITEM = CATALOG.find((item) => item.slug === "katze") ?? CATALO
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_MB = 20;
 
+// Drei feste Blickwinkel statt eines einzelnen starren Schnappschusses -
+// der Nutzer waehlt die Perspektive, die am besten zu seinem Foto passt,
+// bevor er Groesse/Position festlegt (siehe rotationY-Prop in
+// SculptureViewer.tsx). 512px Basisgroesse * dpr bis 3 (siehe dort, greift
+// automatisch bei gesetztem onSnapshot) ergibt bis zu ~1536x1536px pro
+// Schnappschuss - deutlich hochaufloesender als der vorherige 160x160px-
+// Capture-Canvas.
+const PERSPECTIVES = [
+  { label: "Vorne", rotationY: 0 },
+  { label: "3/4 links", rotationY: Math.PI / 4 },
+  { label: "3/4 rechts", rotationY: -Math.PI / 4 },
+] as const;
+
 interface StepPlatzierungProps {
   materialId: string;
   sizeId: string;
@@ -20,8 +33,14 @@ export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierun
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1];
 
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  // Ein Slot pro Perspektive (siehe PERSPECTIVES oben) - null solange der
+  // jeweilige Schnappschuss noch nicht gerendert ist.
+  const [snapshots, setSnapshots] = useState<(string | null)[]>(() => PERSPECTIVES.map(() => null));
+  const [selectedPerspective, setSelectedPerspective] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const allSnapshotsReady = snapshots.every((s) => s !== null);
+  const snapshotUrl = snapshots[selectedPerspective];
 
   // Object-URL wird direkt aus dem File abgeleitet (kein setState-in-Effect
   // nötig) - der Effekt darunter kümmert sich nur noch ums Aufräumen.
@@ -36,8 +55,12 @@ export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierun
     };
   }, [backgroundUrl]);
 
-  const handleSnapshot = useCallback((dataUrl: string) => {
-    setSnapshotUrl(dataUrl);
+  const handleSnapshot = useCallback((index: number, dataUrl: string) => {
+    setSnapshots((prev) => {
+      const next = [...prev];
+      next[index] = dataUrl;
+      return next;
+    });
   }, []);
 
   function handleFile(candidate: File | undefined) {
@@ -64,19 +87,28 @@ export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierun
         deine Skulptur darauf. (Platzhalter-Form, siehe Vorschau-Schritt.)
       </p>
 
-      {/* Unsichtbarer Snapshot-Renderer: erzeugt einmalig ein PNG der
-          aktuellen Skulptur (Farbe/Größe aus den vorigen Schritten), das
-          danach als frei platzierbarer Sticker auf dein Foto gelegt wird. */}
-      {!snapshotUrl && (
+      {/* Unsichtbare Snapshot-Renderer: erzeugen einmalig je einen
+          hochaufgeloesten PNG-Schnappschuss der aktuellen Skulptur (Farbe/
+          Größe aus den vorigen Schritten) aus drei festen Blickwinkeln
+          (siehe PERSPECTIVES oben) - der Nutzer waehlt danach die
+          passendste Perspektive als frei platzierbaren Sticker auf seinem
+          Foto. */}
+      {!allSnapshotsReady && (
         <div className="sr-only" aria-hidden>
-          <SculptureViewer
-            {...(modelUrl ? { modelUrl } : { parts: PLACEHOLDER_ITEM.parts })}
-            colorHex={material.colorHex}
-            scale={size.scale}
-            autoRotateSpeed={0}
-            className="h-40 w-40"
-            onSnapshot={handleSnapshot}
-          />
+          {PERSPECTIVES.map((p, i) =>
+            snapshots[i] ? null : (
+              <SculptureViewer
+                key={p.label}
+                {...(modelUrl ? { modelUrl } : { parts: PLACEHOLDER_ITEM.parts })}
+                colorHex={material.colorHex}
+                scale={size.scale}
+                autoRotateSpeed={0}
+                rotationY={p.rotationY}
+                className="h-[512px] w-[512px]"
+                onSnapshot={(dataUrl) => handleSnapshot(i, dataUrl)}
+              />
+            )
+          )}
         </div>
       )}
 
@@ -94,8 +126,34 @@ export function StepPlatzierung({ materialId, sizeId, modelUrl }: StepPlatzierun
             aria-label="Foto für die Platzierung auswählen"
           />
         </label>
-      ) : snapshotUrl ? (
+      ) : allSnapshotsReady && snapshotUrl ? (
         <div className="mt-8">
+          <p className="mb-3 text-sm font-medium">Perspektive wählen</p>
+          <div className="mb-4 flex gap-3">
+            {PERSPECTIVES.map((p, i) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => setSelectedPerspective(i)}
+                aria-pressed={selectedPerspective === i}
+                className={`overflow-hidden rounded-xl border-2 transition-colors ${
+                  selectedPerspective === i
+                    ? "border-accent-warm"
+                    : "border-border-subtle hover:border-accent"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={snapshots[i]!}
+                  alt={`Perspektive: ${p.label}`}
+                  className="h-16 w-16 bg-background-elevated object-contain"
+                />
+                <span className="block bg-background-elevated px-2 py-1 text-xs text-foreground-muted">
+                  {p.label}
+                </span>
+              </button>
+            ))}
+          </div>
           <PlacementCanvas backgroundUrl={backgroundUrl} stickerUrl={snapshotUrl} />
           <button
             type="button"
