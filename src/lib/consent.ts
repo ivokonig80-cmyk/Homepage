@@ -14,10 +14,22 @@ export type ConsentState = "unknown" | "granted" | "denied";
 
 const listeners = new Set<() => void>();
 
+// localStorage-Zugriff kann in manchen Browsern/Datenschutz-Einstellungen
+// eine Exception werfen statt einfach leer zu sein. readConsent() laeuft
+// ueber useSyncExternalStore synchron waehrend des Renderns in
+// Analytics.tsx (im Root-Layout, siehe app/layout.tsx) UND in
+// HeroCarousel.tsx - ungefangen wuerde das die GESAMTE Seite bei jedem
+// Aufruf zum Absturz bringen, nicht nur eine einzelne Komponente. Fehlt
+// die Zustimmung, gilt einfach "unknown" (Banner wird gezeigt, kein
+// Tracking laedt) statt eines harten Fehlers.
 export function readConsent(): ConsentState {
   if (typeof window === "undefined") return "unknown";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "granted" || stored === "denied" ? stored : "unknown";
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === "granted" || stored === "denied" ? stored : "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 export function getServerSnapshot(): ConsentState {
@@ -30,6 +42,12 @@ export function subscribe(listener: () => void) {
 }
 
 export function setConsent(value: "granted" | "denied") {
-  window.localStorage.setItem(STORAGE_KEY, value);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // localStorage nicht verfuegbar - Entscheidung gilt dann nur fuer den
+    // aktuellen Seitenaufruf (Listener werden trotzdem benachrichtigt,
+    // damit das Banner sofort verschwindet).
+  }
   listeners.forEach((notify) => notify());
 }
