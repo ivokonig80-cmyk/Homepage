@@ -10,6 +10,7 @@ import { StepCheckout } from "@/components/configurator/StepCheckout";
 import { useKonfigurator } from "@/components/configurator/KonfiguratorContext";
 import { MATERIALS, SIZES } from "@/lib/catalog";
 import { trackEvent } from "@/lib/analytics";
+import { captureLead } from "@/lib/captureLead";
 import type { ConfiguratorStepId } from "@/lib/configurator-steps";
 
 export function KonfiguratorStepView({ step }: { step: ConfiguratorStepId }) {
@@ -18,6 +19,21 @@ export function KonfiguratorStepView({ step }: { step: ConfiguratorStepId }) {
   useEffect(() => {
     trackEvent("configurator_step_view", { step });
   }, [step]);
+
+  // Haelt den tatsaechlichen Konfigurationsstand lokal fest (siehe
+  // captureLead.ts), nicht nur das aggregierte Mixpanel-Event oben - auch
+  // wenn der Besucher vor dem Checkout abbricht, bleibt so nachvollziehbar,
+  // was er bis dahin gewaehlt hatte (Material, Groesse, Foto-Anzahl).
+  useEffect(() => {
+    captureLead({
+      type: "step_reached",
+      step,
+      materialId,
+      sizeId,
+      photoCount: files.length,
+      generationStatus: generation.status,
+    });
+  }, [step, materialId, sizeId, files.length, generation.status]);
 
   const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1];

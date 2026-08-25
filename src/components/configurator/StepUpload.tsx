@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { checkBrightness } from "@/lib/photoQuality";
+import { ConfiguratorWeldingField } from "./ConfiguratorWeldingField";
 
 const MAX_SIZE_MB = 20;
 const MAX_PHOTOS = 4;
@@ -71,6 +72,8 @@ export function StepUpload({ files, onFileAdded, onFileRemoved }: StepUploadProp
 
   return (
     <div className="mx-auto max-w-xl">
+      <ConfiguratorWeldingField />
+
       <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
         Lade ein Foto hoch und baue deine Low Poly Skulptur jetzt
       </h1>

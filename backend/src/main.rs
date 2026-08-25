@@ -10,6 +10,8 @@
 // reine Remeshing hinaus. Kommt in den nächsten Schritten dazu.
 
 mod collage;
+mod mesh_check;
+mod model_download;
 mod providers;
 
 use axum::{
@@ -21,7 +23,9 @@ use axum::{
 };
 use providers::ImageTo3dProvider;
 use serde::Serialize;
-use std::sync::Arc;
+use std::collections::HashSet;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 const MAX_UPLOAD_BYTES: usize = 20 * 1024 * 1024; // 20 MB, identisch zum Frontend-Limit
@@ -35,6 +39,20 @@ struct AppState {
     // unkontrolliertem, kostenpflichtigem Zugriff. None = Pruefung
     // deaktiviert (kein ACCESS_TOKEN gesetzt).
     access_token: Option<String>,
+    // Eigener Client fuer den QA-Download des fertigen Modells (siehe
+    // model_download.rs) - getrennt vom providerinternen Client, damit
+    // dessen Timeouts/Header unabhaengig bleiben.
+    download_client: reqwest::Client,
+    // Wohin jedes erfolgreich generierte Modell zur manuellen Pruefung
+    // gespiegelt wird (siehe save_for_qa unten). Kein S3/Storage - siehe
+    // Konzept: das ist bewusst nur ein lokaler QA-Ordner, kein Ersatz fuer
+    // echtes Hosting, und ueberlebt auf Render ohne Persistent Disk keinen
+    // Neu-Deploy.
+    test_models_dir: PathBuf,
+    // Verhindert, dass derselbe Task bei jedem Polling-Request (alle 3s vom
+    // Frontend) erneut heruntergeladen wird, sobald er einmal SUCCESS
+    // gemeldet hat.
+    processed_tasks: Arc<Mutex<HashSet<String>>>,
 }
 
 #[tokio::main]
@@ -60,9 +78,20 @@ async fn main() {
         .unwrap_or(8080);
 
     let provider = providers::build_provider(reqwest::Client::new());
+    // Relativ zum ueblichen Arbeitsverzeichnis beim lokalen Start (`cd
+    // backend && cargo run`/das gebaute .exe) - liegt damit im selben
+    // test-models/ neben dem Repo-Root, das schon fuer manuelle QA-Downloads
+    // benutzt wird. Per Env-Var ueberschreibbar (z.B. fuer Render mit
+    // Persistent Disk unter einem anderen Pfad).
+    let test_models_dir = std::env::var("TEST_MODELS_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("../test-models"));
     let state = AppState {
         provider: Arc::new(provider),
         access_token: std::env::var("ACCESS_TOKEN").ok().filter(|s| !s.is_empty()),
+        download_client: reqwest::Client::new(),
+        test_models_dir,
+        processed_tasks: Arc::new(Mutex::new(HashSet::new())),
     };
 
     let cors = CorsLayer::new()
@@ -206,17 +235,114 @@ struct SculptureStatusResponse {
 /// Provider (providers/meshy.rs, providers/tripo.rs).
 async fn get_sculpture(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match state.provider.get_task(&id).await {
-        Ok(task) => Json(SculptureStatusResponse {
-            status: task.status.as_str().to_string(),
-            progress: task.progress,
-            model_url: task.model_url,
-            thumbnail_url: task.thumbnail_url,
-            error: task.error,
-        })
-        .into_response(),
+        Ok(task) => {
+            // Fire-and-forget: sobald ein Task zum ersten Mal SUCCESS meldet,
+            // wird das Modell im Hintergrund heruntergeladen, auf Watertight
+            // geprueft und in test_models_dir abgelegt - ohne die Antwort an
+            // das Frontend zu verzoegern. `processed_tasks` verhindert, dass
+            // das bei jedem weiteren Polling-Request (alle 3s) wiederholt
+            // wird.
+            if task.status == providers::NormalizedStatus::Succeeded {
+                if let Some(model_url) = task.model_url.clone() {
+                    let is_new = {
+                        let mut seen = state.processed_tasks.lock().unwrap();
+                        seen.insert(id.clone())
+                    };
+                    if is_new {
+                        let client = state.download_client.clone();
+                        let dir = state.test_models_dir.clone();
+                        let task_id = id.clone();
+                        tokio::spawn(async move {
+                            save_for_qa(client, dir, task_id, model_url).await;
+                        });
+                    }
+                }
+            }
+
+            Json(SculptureStatusResponse {
+                status: task.status.as_str().to_string(),
+                progress: task.progress,
+                model_url: task.model_url,
+                thumbnail_url: task.thumbnail_url,
+                error: task.error,
+            })
+            .into_response()
+        }
         Err(e) => {
             tracing::error!("Task-Status konnte nicht abgerufen werden: {e}");
             error_response(StatusCode::BAD_GATEWAY, "Status konnte nicht abgerufen werden.")
+        }
+    }
+}
+
+/// Laedt das fertige Modell robust herunter (siehe model_download.rs fuer
+/// Chunk-/Retry-Details), prueft die Topologie (siehe mesh_check.rs) und legt
+/// beides lokal ab - GLB plus JSON-Begleitbericht mit demselben Task-Id-
+/// Praefix. Der Dateiname traegt das Watertight-Ergebnis sichtbar im Namen,
+/// damit beim manuellen Durchsehen von test-models/ sofort auffaellt, welche
+/// Modelle NICHT schweissbar waren (die eigentliche "halbe Figur"-Gefahr -
+/// Tripos eigener SUCCESS-Status allein sagt das nicht aus, siehe
+/// mesh_check.rs).
+async fn save_for_qa(client: reqwest::Client, dir: PathBuf, task_id: String, model_url: String) {
+    let bytes = match model_download::download_with_retry(&client, &model_url).await {
+        Ok(b) => b,
+        Err(e) => {
+            tracing::error!(task_id = %task_id, error = %e, "QA-Download des Modells fehlgeschlagen");
+            return;
+        }
+    };
+
+    let report = mesh_check::check_glb(&bytes);
+    let tag = match &report {
+        Ok(r) if r.is_watertight => "watertight",
+        Ok(_) => "NOTWATERTIGHT",
+        Err(_) => "CHECKFAILED",
+    };
+
+    if let Err(e) = tokio::fs::create_dir_all(&dir).await {
+        tracing::error!(error = %e, dir = %dir.display(), "test-models-Ordner konnte nicht angelegt werden");
+        return;
+    }
+
+    let glb_path = dir.join(format!("{task_id}_{tag}.glb"));
+    if let Err(e) = tokio::fs::write(&glb_path, &bytes).await {
+        tracing::error!(task_id = %task_id, error = %e, "Modell konnte nicht in test-models/ gespeichert werden");
+        return;
+    }
+
+    let downloaded_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let report_json = serde_json::json!({
+        "taskId": task_id,
+        "downloadedAtEpochSeconds": downloaded_at,
+        "byteLen": bytes.len(),
+        "meshReport": report.as_ref().ok(),
+        "meshCheckError": report.as_ref().err().map(|e| e.to_string()),
+    });
+    let report_path = dir.join(format!("{task_id}_{tag}.json"));
+    let _ = tokio::fs::write(
+        &report_path,
+        serde_json::to_vec_pretty(&report_json).unwrap_or_default(),
+    )
+    .await;
+
+    match &report {
+        Ok(r) if r.is_watertight => {
+            tracing::info!(task_id = %task_id, triangles = r.triangle_count, "Modell wasserdicht, in test-models/ abgelegt");
+        }
+        Ok(r) => {
+            tracing::warn!(
+                task_id = %task_id,
+                boundary_edges = r.boundary_edges,
+                non_manifold_edges = r.non_manifold_edges,
+                degenerate_triangles = r.degenerate_triangles,
+                "Modell NICHT wasserdicht - siehe test-models/ fuer Details"
+            );
+        }
+        Err(e) => {
+            tracing::warn!(task_id = %task_id, error = %e, "Topologie-Check fehlgeschlagen");
         }
     }
 }

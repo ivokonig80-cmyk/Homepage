@@ -40,6 +40,11 @@ yarn-error.log*
 # Testdaten mit Namen/Adressen, gehört nicht ins Repo
 /.data
 
+# lokaler QA-Ordner fuer generierte Skulptur-Modelle (siehe backend) - kann
+# von echten Besucher-Fotos abgeleitete GLBs sowie eingegebene E-Mails
+# enthalten, gehört aus demselben Grund wie /.data nicht ins Repo
+/test-models
+
 # generierte Analytics-Reports (siehe reporting/README.md) - jederzeit aus
 # reporting/data + reporting/screenshots neu erzeugbar, gehört nicht ins Repo
 /reporting/out

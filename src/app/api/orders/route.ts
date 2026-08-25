@@ -20,6 +20,11 @@ const ANALYTICS_SNAPSHOT_DIR = path.join(process.cwd(), "reporting", "data");
 interface OrderPayload {
   nickname: string;
   email?: string;
+  // Freiwillige Kurzumfrage im Bestellformular (siehe OrderForm.tsx,
+  // Fragen 1-3) - rein informativ, keine der drei wird validiert/erzwungen.
+  feedback?: string;
+  age?: string;
+  origin?: string;
   item: string;
   material: string;
   size: string;
@@ -28,12 +33,19 @@ interface OrderPayload {
   modelRef?: string;
 }
 
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === "string";
+}
+
 function isValidPayload(body: unknown): body is OrderPayload {
   if (typeof body !== "object" || body === null) return false;
   const b = body as Record<string, unknown>;
   return (
     typeof b.nickname === "string" && b.nickname.trim().length > 0 &&
     (b.email === undefined || b.email === "" || (typeof b.email === "string" && /\S+@\S+\.\S+/.test(b.email))) &&
+    isOptionalString(b.feedback) &&
+    isOptionalString(b.age) &&
+    isOptionalString(b.origin) &&
     typeof b.item === "string" &&
     typeof b.material === "string" &&
     typeof b.size === "string" &&

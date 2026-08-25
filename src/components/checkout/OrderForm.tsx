@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FocusEvent, type FormEvent } from "react";
 import { trackEvent, identifyUser } from "@/lib/analytics";
+import { captureLead } from "@/lib/captureLead";
 
 interface OrderFormProps {
   itemLabel: string;
@@ -17,7 +18,7 @@ interface OrderFormProps {
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-const emptyForm = { nickname: "", email: "" };
+const emptyForm = { nickname: "", email: "", feedback: "", age: "", origin: "" };
 
 /**
  * Gemeinsames Bestellformular für Konfigurator- und Shop-Checkout. Sendet an
@@ -35,6 +36,16 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
   function update(field: keyof typeof emptyForm) {
     return (e: ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [field]: e.target.value }));
+  }
+
+  // Faengt E-Mail-Eingaben ab, BEVOR der Besucher ueberhaupt absendet (der
+  // Grossteil bricht vorher ab, siehe /api/orders - das dortige Log haelt
+  // nur abgeschlossene Bestellungen fest). Auf blur statt pro Tastendruck,
+  // damit nicht bei jedem Buchstaben ein Request rausgeht.
+  function handleEmailBlur(e: FocusEvent<HTMLInputElement>) {
+    const email = e.target.value.trim();
+    if (!email) return;
+    captureLead({ type: "email_entered", email, context: eventContext, item: itemLabel });
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -116,6 +127,31 @@ export function OrderForm({ itemLabel, materialLabel, sizeLabel, totalPrice, eve
         autoComplete="email"
         value={form.email}
         onChange={update("email")}
+        onBlur={handleEmailBlur}
+        className={inputClass}
+      />
+      <input
+        type="text"
+        placeholder="1. Wie gefällt dir diese Seite? (freiwillig)"
+        value={form.feedback}
+        onChange={update("feedback")}
+        className={inputClass}
+      />
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={120}
+        placeholder="2. Wie alt bist du? (freiwillig)"
+        value={form.age}
+        onChange={update("age")}
+        className={inputClass}
+      />
+      <input
+        type="text"
+        placeholder="3. Wo kommst du her? (freiwillig)"
+        value={form.origin}
+        onChange={update("origin")}
         className={inputClass}
       />
 
