@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SculptureViewer } from "@/components/three/SculptureViewer";
-import { WeldingSparksDecor } from "./WeldingSparksDecor";
+import { ConfiguratorWeldingField } from "./ConfiguratorWeldingField";
 import { CATALOG } from "@/lib/catalog";
 import type { GenerationState } from "@/lib/useSculptureGeneration";
 
@@ -57,6 +57,8 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
 
   return (
     <div className="mx-auto max-w-3xl text-center">
+      {isGenerating && <ConfiguratorWeldingField />}
+
       <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
         Deine 3D-Vorschau
       </h1>
@@ -87,8 +89,6 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
       )}
 
       <div className="mt-8 flex items-center justify-center gap-3">
-        {isGenerating && <WeldingSparksDecor className="hidden h-[28rem] md:block" />}
-
         {hasModel && modelUrl ? (
           <SculptureViewer
             modelUrl={modelUrl}
@@ -108,8 +108,6 @@ export function StepVorschau({ colorHex, scale, generation }: StepVorschauProps)
             className="h-[28rem] w-full max-w-xl rounded-2xl border border-stage-border bg-stage"
           />
         )}
-
-        {isGenerating && <WeldingSparksDecor className="hidden h-[28rem] md:block" />}
       </div>
 
       {isGenerating && (

@@ -283,9 +283,12 @@ const UNIVERSAL_SOURCE_VIEW_BOX = "0 0 240 300";
 const UNIVERSAL_SOURCE_WIDTH = 240;
 const UNIVERSAL_SOURCE_HEIGHT = 300;
 const UNIVERSAL_SOURCE_SLOT_COUNT = 18;
-const ADDITIONAL_SOURCE_SLOT_COUNT = 18;
-const UNIVERSAL_SOURCE_HOT_BEAD_COUNT = 12;
-const UNIVERSAL_SOURCE_SPARK_REMNANT_COUNT = 4;
+// Rein dekorative Pools (kein Facetten-Mapping) - bewusst groesser als
+// UNIVERSAL_SOURCE_SLOT_COUNT gewaehlt, damit auf der Startseite mehr
+// Material-Teile und mehr Gluteffekte sichtbar sind.
+const ADDITIONAL_SOURCE_SLOT_COUNT = 26;
+const UNIVERSAL_SOURCE_HOT_BEAD_COUNT = 18;
+const UNIVERSAL_SOURCE_SPARK_REMNANT_COUNT = 7;
 const UNIVERSAL_SOURCE_CENTER = { x: 146, y: 177 };
 const SOURCE_HANDOFF_RESIDUE_MS = 2800;
 const SOURCE_HOT_PARTICLE_COOLDOWN_MS = 4500;
@@ -522,12 +525,18 @@ const ADDITIONAL_SOURCE_SLOTS: NeutralSourceSlot[] = Array.from(
   { length: ADDITIONAL_SOURCE_SLOT_COUNT },
   (_, index) => {
     const seedIndex = 10_000 + index * 97;
+    // Anteile proportional zur Poolgroesse statt fixer Indizes, damit sich
+    // ADDITIONAL_SOURCE_SLOT_COUNT frei erhoehen laesst (mehr Teile, davon
+    // auch mehr in der "large"-Klasse fuer sichtbar groessere Elemente).
+    const smallCutoff = Math.round(ADDITIONAL_SOURCE_SLOT_COUNT * 0.5);
+    const mediumCutoff = Math.round(ADDITIONAL_SOURCE_SLOT_COUNT * 0.83);
     const sizeClass: SourceFragmentSize =
-      index < 9 ? "small" : index < 15 ? "medium" : "large";
+      index < smallCutoff ? "small" : index < mediumCutoff ? "medium" : "large";
+    const backCutoff = Math.round(ADDITIONAL_SOURCE_SLOT_COUNT * 0.44);
     const depthPlane: SourceDepthPlane =
-      index < 6 || index === 9 || index === 10
+      index < backCutoff
         ? "back"
-        : index < 9 || index < 15
+        : index < mediumCutoff
           ? "mid"
           : "front";
     const zone: UniversalSourceZone = ADDITIONAL_MIXING_INDICES.has(index)
@@ -541,13 +550,13 @@ const ADDITIONAL_SOURCE_SLOTS: NeutralSourceSlot[] = Array.from(
         ? 6 + sourceRandom(seedIndex + 61) * 5
         : sizeClass === "medium"
           ? 10 + sourceRandom(seedIndex + 61) * 7
-          : 18 + sourceRandom(seedIndex + 61) * 12;
+          : 22 + sourceRandom(seedIndex + 61) * 16;
     const shardHeight =
       sizeClass === "small"
         ? 4 + sourceRandom(seedIndex + 73) * 4
         : sizeClass === "medium"
           ? 7 + sourceRandom(seedIndex + 73) * 5
-          : 12 + sourceRandom(seedIndex + 73) * 9;
+          : 15 + sourceRandom(seedIndex + 73) * 12;
     const skew = (sourceRandom(seedIndex + 89) - 0.5) * shardWidth * 0.7;
     const captureDistance =
       sizeClass === "large" ? 34 : zone === "outer" ? 28 : 19;
@@ -663,8 +672,9 @@ interface SourceHotParticleGeometry {
 const SOURCE_HOT_PARTICLE_SLOT_INDICES = [
   0, 2, 3, 4, 7,
   9, 10, 11, 13, 15,
-  5, 8,
-  0, 7, 11, 1,
+  5, 8, 12, 14, 16,
+  17, 6, 3,
+  0, 7, 11, 1, 9, 4, 13,
 ] as const;
 
 const SOURCE_HOT_PARTICLES: SourceHotParticleGeometry[] = Array.from(
@@ -704,8 +714,8 @@ const SOURCE_HOT_PARTICLES: SourceHotParticleGeometry[] = Array.from(
       ),
       radius: stableSvgValue(
         (kind === "bead"
-          ? 1 + sourceRandom(index + 631) * 0.74
-          : 0.72 + sourceRandom(index + 631) * 0.38) * depthRadius
+          ? 1.15 + sourceRandom(index + 631) * 1.05
+          : 0.85 + sourceRandom(index + 631) * 0.55) * depthRadius
       ),
       launchX: stableSvgValue(Math.cos(angle) * launchDistance),
       launchY: stableSvgValue(Math.sin(angle) * launchDistance),
