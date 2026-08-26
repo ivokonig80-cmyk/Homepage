@@ -8,7 +8,7 @@ import { CATALOG } from "@/lib/catalog";
 export const metadata: Metadata = {
   title: "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
   description:
-    "Sechs vorgefertigte Low-Poly-Stahlskulpturen, konfigurierbar in Größe und Material — sofort bestellbar, ohne Fotoupload.",
+    "Zehn vorgefertigte Low-Poly-Stahlskulpturen, konfigurierbar in Größe und Material — sofort bestellbar, ohne Fotoupload.",
 };
 
 export default function ShopPage() {
@@ -22,7 +22,7 @@ export default function ShopPage() {
               Fertige Modelle
             </p>
             <h1 className="mt-3 max-w-2xl font-display text-3xl font-semibold tracking-tight md:text-5xl">
-              Sechs Motive, drei Größen, vier Materialien
+              Zehn Motive, drei Größen, vier Materialien
             </h1>
             <p className="mt-4 max-w-xl text-foreground-muted">
               Kein eigenes Foto nötig: Diese Skulpturen sind bereits fertig
