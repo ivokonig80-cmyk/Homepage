@@ -1,0 +1,1192 @@
+{
+  "date": "2026-09-02",
+  "fetchedAt": "2026-09-02T14:00:52.756Z",
+  "overall": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": 38,
+          "sessionsWithMetricPercentage": 10.53,
+          "sessionsWithoutMetricPercentage": 89.47,
+          "pagesViews": 4,
+          "subTotal": 6
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": "38",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": "38",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": 38,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": 38,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": "38",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0"
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 64.45
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": "38",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "38",
+          "pagesPerSessionPercentage": 1
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": 48,
+          "activeTime": 40
+        }
+      ]
+    },
+    {
+      "metricName": "Browser",
+      "information": [
+        {
+          "name": "Chrome",
+          "sessionsCount": 30
+        },
+        {
+          "name": "Edge",
+          "sessionsCount": 8
+        }
+      ]
+    },
+    {
+      "metricName": "Device",
+      "information": [
+        {
+          "name": "PC",
+          "sessionsCount": "38"
+        }
+      ]
+    },
+    {
+      "metricName": "OS",
+      "information": [
+        {
+          "name": "Windows",
+          "sessionsCount": 38
+        }
+      ]
+    },
+    {
+      "metricName": "Country",
+      "information": [
+        {
+          "name": "Germany",
+          "sessionsCount": 38
+        }
+      ]
+    },
+    {
+      "metricName": "PageTitle",
+      "information": [
+        {
+          "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
+          "sessionsCount": 5
+        },
+        {
+          "name": "Eule — Deine Skulptur",
+          "sessionsCount": 4
+        },
+        {
+          "name": "Datenschutzerklärung — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Fuchs — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Reh — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Eichhörnchen — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Hase — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Bär — Deine Skulptur",
+          "sessionsCount": 3
+        },
+        {
+          "name": "Igel — Deine Skulptur",
+          "sessionsCount": 2
+        },
+        {
+          "name": "Pinguin — Deine Skulptur",
+          "sessionsCount": 2
+        }
+      ]
+    },
+    {
+      "metricName": "ReferrerUrl",
+      "information": [
+        {
+          "name": null,
+          "sessionsCount": "30"
+        },
+        {
+          "name": "https://ntp.msn.com/",
+          "sessionsCount": "8"
+        }
+      ]
+    },
+    {
+      "metricName": "PopularPages",
+      "information": [
+        {
+          "url": "https://polinova.store/shop",
+          "visitsCount": "5"
+        },
+        {
+          "url": "https://polinova.store/shop/eule",
+          "visitsCount": "4"
+        },
+        {
+          "url": "https://polinova.store/shop/reh",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/fuchs",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/hase",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/eichhoernchen",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/datenschutz",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/baer",
+          "visitsCount": "3"
+        },
+        {
+          "url": "https://polinova.store/shop/pinguin",
+          "visitsCount": "2"
+        },
+        {
+          "url": "https://polinova.store/shop/katze",
+          "visitsCount": "2"
+        }
+      ]
+    }
+  ],
+  "byUrl": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 25,
+          "sessionsWithoutMetricPercentage": 75,
+          "pagesViews": "1",
+          "subTotal": "3",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 33.33,
+          "sessionsWithoutMetricPercentage": 66.67,
+          "pagesViews": "1",
+          "subTotal": "1",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 33.33,
+          "sessionsWithoutMetricPercentage": 66.67,
+          "pagesViews": "1",
+          "subTotal": "1",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 50,
+          "sessionsWithoutMetricPercentage": 50,
+          "pagesViews": "1",
+          "subTotal": "1",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "5",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "sessionsCount": "4",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "sessionsCount": "3",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 66,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "averageScrollDepth": 72.2,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "averageScrollDepth": 62.67,
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "averageScrollDepth": 54.5,
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "averageScrollDepth": 66.75,
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "averageScrollDepth": 54.33,
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "averageScrollDepth": 62.67,
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "averageScrollDepth": 54.33,
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "averageScrollDepth": 54,
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "averageScrollDepth": 54,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "averageScrollDepth": 54,
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "averageScrollDepth": 97,
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "averageScrollDepth": 54.5,
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": "2",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "2",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "totalSessionCount": "5",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "5",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "totalSessionCount": "2",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "2",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "totalSessionCount": "4",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "4",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "totalSessionCount": "1",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "1",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "totalSessionCount": "2",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "2",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "totalSessionCount": "2",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "2",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "totalSessionCount": "3",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "3",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "totalSessionCount": "2",
+          "totalBotSessionCount": "0",
+          "distinctUserCount": "2",
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": 188,
+          "activeTime": 188,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "totalTime": 33,
+          "activeTime": 30,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "totalTime": 8,
+          "activeTime": 8,
+          "Url": "https://polinova.store/shop/baer"
+        },
+        {
+          "totalTime": 14,
+          "activeTime": 14,
+          "Url": "https://polinova.store/shop/wolf"
+        },
+        {
+          "totalTime": 36,
+          "activeTime": 36,
+          "Url": "https://polinova.store/shop/eule"
+        },
+        {
+          "totalTime": 52,
+          "activeTime": 52,
+          "Url": "https://polinova.store/impressum"
+        },
+        {
+          "totalTime": 34,
+          "activeTime": 34,
+          "Url": "https://polinova.store/shop/reh"
+        },
+        {
+          "totalTime": 18,
+          "activeTime": 18,
+          "Url": "https://polinova.store/shop/hase"
+        },
+        {
+          "totalTime": 15,
+          "activeTime": 15,
+          "Url": "https://polinova.store/shop/fuchs"
+        },
+        {
+          "totalTime": 14,
+          "activeTime": 14,
+          "Url": "https://polinova.store/shop/igel"
+        },
+        {
+          "totalTime": 16,
+          "activeTime": 16,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        },
+        {
+          "totalTime": 16,
+          "activeTime": 16,
+          "Url": "https://polinova.store/shop/pinguin"
+        },
+        {
+          "totalTime": 241,
+          "activeTime": 140,
+          "Url": "https://polinova.store/datenschutz"
+        },
+        {
+          "totalTime": 10,
+          "activeTime": 10,
+          "Url": "https://polinova.store/shop/katze"
+        }
+      ]
+    }
+  ]
+}
