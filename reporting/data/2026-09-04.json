@@ -1,0 +1,764 @@
+{
+  "date": "2026-09-04",
+  "fetchedAt": "2026-09-04T13:55:58.285Z",
+  "overall": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 33.33,
+          "sessionsWithoutMetricPercentage": 66.67,
+          "pagesViews": 4,
+          "subTotal": 7
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": 9,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 93.91
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": 9,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 9,
+          "pagesPerSessionPercentage": 1.2222222222222223
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": 30,
+          "activeTime": 17
+        }
+      ]
+    },
+    {
+      "metricName": "Browser",
+      "information": [
+        {
+          "name": "Firefox",
+          "sessionsCount": 9
+        }
+      ]
+    },
+    {
+      "metricName": "Device",
+      "information": [
+        {
+          "name": "PC",
+          "sessionsCount": "9"
+        }
+      ]
+    },
+    {
+      "metricName": "OS",
+      "information": [
+        {
+          "name": "Windows",
+          "sessionsCount": 9
+        }
+      ]
+    },
+    {
+      "metricName": "Country",
+      "information": [
+        {
+          "name": "Germany",
+          "sessionsCount": 9
+        }
+      ]
+    },
+    {
+      "metricName": "PageTitle",
+      "information": [
+        {
+          "name": "Deine Skulptur — Dein Haustier als Low-Poly-Stahlkunst",
+          "sessionsCount": 7
+        },
+        {
+          "name": "Eichhörnchen — Deine Skulptur",
+          "sessionsCount": 1
+        },
+        {
+          "name": "Shop — Fertige Low-Poly-Skulpturen | Deine Skulptur",
+          "sessionsCount": 1
+        }
+      ]
+    },
+    {
+      "metricName": "ReferrerUrl",
+      "information": [
+        {
+          "name": null,
+          "sessionsCount": 9
+        }
+      ]
+    },
+    {
+      "metricName": "PopularPages",
+      "information": [
+        {
+          "url": "https://polinova.store/",
+          "visitsCount": 2
+        },
+        {
+          "url": "https://polinova.store/shop",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/konfigurator/farbe",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/konfigurator/checkout",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/konfigurator/vorschau",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/konfigurator/sockel",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/konfigurator/platzierung",
+          "visitsCount": 1
+        },
+        {
+          "url": "https://polinova.store/shop/eichhoernchen",
+          "visitsCount": 1
+        }
+      ]
+    }
+  ],
+  "byUrl": [
+    {
+      "metricName": "DeadClickCount",
+      "information": [
+        {
+          "sessionsCount": 2,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 100,
+          "sessionsWithoutMetricPercentage": 0,
+          "pagesViews": 1,
+          "subTotal": 1,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 100,
+          "sessionsWithoutMetricPercentage": 0,
+          "pagesViews": 2,
+          "subTotal": 4,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 100,
+          "sessionsWithoutMetricPercentage": 0,
+          "pagesViews": 1,
+          "subTotal": 2,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "ExcessiveScroll",
+      "information": [
+        {
+          "sessionsCount": 2,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "RageClickCount",
+      "information": [
+        {
+          "sessionsCount": 2,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "QuickbackClick",
+      "information": [
+        {
+          "sessionsCount": 2,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "ScriptErrorCount",
+      "information": [
+        {
+          "sessionsCount": "2",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": "1",
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": "0",
+          "subTotal": "0",
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "ErrorClickCount",
+      "information": [
+        {
+          "sessionsCount": 2,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "sessionsCount": 1,
+          "sessionsWithMetricPercentage": 0,
+          "sessionsWithoutMetricPercentage": 100,
+          "pagesViews": 0,
+          "subTotal": 0,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "ScrollDepth",
+      "information": [
+        {
+          "averageScrollDepth": 77,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "averageScrollDepth": 79,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "averageScrollDepth": 100,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "Traffic",
+      "information": [
+        {
+          "totalSessionCount": 2,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 2,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 2,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 2,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "totalSessionCount": 1,
+          "totalBotSessionCount": 0,
+          "distinctUserCount": 1,
+          "pagesPerSessionPercentage": 1,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    },
+    {
+      "metricName": "EngagementTime",
+      "information": [
+        {
+          "totalTime": 38,
+          "activeTime": 38,
+          "Url": "https://polinova.store/"
+        },
+        {
+          "totalTime": 9,
+          "activeTime": 9,
+          "Url": "https://polinova.store/shop"
+        },
+        {
+          "totalTime": 0,
+          "activeTime": 0,
+          "Url": "https://polinova.store/konfigurator/farbe"
+        },
+        {
+          "totalTime": 121,
+          "activeTime": 8,
+          "Url": "https://polinova.store/konfigurator/checkout"
+        },
+        {
+          "totalTime": 13,
+          "activeTime": 13,
+          "Url": "https://polinova.store/konfigurator/vorschau"
+        },
+        {
+          "totalTime": 0,
+          "activeTime": 0,
+          "Url": "https://polinova.store/konfigurator/sockel"
+        },
+        {
+          "totalTime": 1,
+          "activeTime": 1,
+          "Url": "https://polinova.store/konfigurator/platzierung"
+        },
+        {
+          "totalTime": 48,
+          "activeTime": 48,
+          "Url": "https://polinova.store/shop/eichhoernchen"
+        }
+      ]
+    }
+  ]
+}
